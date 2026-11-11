@@ -30,7 +30,11 @@ import {
   Zap,
   Building,
   Navigation,
-  CheckCircle2
+  CheckCircle2,
+  X,
+  ChevronLeft,
+  Printer,
+  FileText
 } from 'lucide-react';
 
 interface PropertyDetailsPageProps {
@@ -61,6 +65,8 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
   const t = translations[lang];
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showShareToast, setShowShareToast] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isBrochureOpen, setIsBrochureOpen] = useState(false);
 
   const title = lang === 'ta' && property.tamilTitle ? property.tamilTitle : property.title;
   const description = lang === 'ta' && property.tamilDescription ? property.tamilDescription : property.description;
@@ -103,6 +109,15 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsBrochureOpen(true)}
+              className="px-3 py-1.5 rounded-lg border border-stone-200 text-stone-700 hover:text-[#013E18] hover:bg-stone-50 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+              title="Download / Print Property Brochure"
+              aria-label="Download property brochure"
+            >
+              <FileText className="w-4 h-4 text-[#C99325]" />
+              <span className="hidden sm:inline">Brochure</span>
+            </button>
             <button
               onClick={handleShare}
               className="p-2 rounded-lg border border-stone-200 text-stone-600 hover:text-[#013E18] hover:bg-stone-50 transition-colors cursor-pointer"
@@ -150,11 +165,14 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
             {/* Gallery Section */}
             <div className="bg-white rounded-3xl p-3 sm:p-4 border border-stone-200 shadow-xs overflow-hidden">
               {/* Main Image */}
-              <div className="relative h-72 sm:h-96 md:h-[460px] rounded-2xl overflow-hidden bg-stone-100">
+              <div
+                onClick={() => setIsLightboxOpen(true)}
+                className="relative h-72 sm:h-96 md:h-[460px] rounded-2xl overflow-hidden bg-stone-100 cursor-zoom-in group"
+              >
                 <img
                   src={images[selectedImageIndex]}
                   alt={title}
-                  className="w-full h-full object-cover transition-all duration-300"
+                  className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
 
@@ -168,6 +186,19 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                   )}
                   {property.featured && <Badge type="featured" size="md" />}
                 </div>
+
+                {/* Fullscreen Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsLightboxOpen(true);
+                  }}
+                  className="absolute bottom-4 left-4 bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-[#C99325]" />
+                  <span>View Photos</span>
+                </button>
 
                 {/* Image Count Indicator */}
                 <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-xs font-semibold px-3 py-1 rounded-full">
@@ -511,10 +542,10 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 text-xs text-amber-900 leading-relaxed">
                 <div className="font-bold text-amber-950 flex items-center gap-1.5 mb-1">
                   <ShieldCheck className="w-4 h-4 text-amber-700" />
-                  <span>Marketplace Verified Listing</span>
+                  <span>CEO Presentation Demo Listing</span>
                 </div>
                 <p className="text-[11px] text-amber-800">
-                  Real photographs are illustrative media. All specifications, seller names, and prices are demonstration records for Grounds & Gates platform preview.
+                  Real photographs are illustrative media. All specifications, seller names, and prices are demonstration records prepared for executive evaluation.
                 </p>
               </div>
 
@@ -547,6 +578,162 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
         )}
 
       </div>
+
+      {/* Lightbox Modal */}
+      {isLightboxOpen && (
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-4 sm:p-6 animate-in fade-in duration-200 select-none">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between text-white pb-3 border-b border-white/10">
+            <div>
+              <h3 className="font-bold text-sm sm:text-base line-clamp-1">{title}</h3>
+              <p className="text-xs text-white/60">
+                {property.location}, {property.district} • {formatPriceINR(property.price, property.listingType, property.priceUnit)}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-white/70 font-mono">
+                {selectedImageIndex + 1} / {images.length}
+              </span>
+              <button
+                onClick={() => setIsLightboxOpen(false)}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                aria-label="Close lightbox"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Center Image with Previous / Next Arrows */}
+          <div className="relative flex-1 flex items-center justify-center my-4">
+            {images.length > 1 && (
+              <button
+                onClick={() => setSelectedImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1))}
+                className="absolute left-2 sm:left-6 z-10 p-3 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/20 transition-all cursor-pointer"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            <img
+              src={images[selectedImageIndex]}
+              alt={title}
+              className="max-h-[75vh] max-w-[90vw] object-contain rounded-xl shadow-2xl transition-all duration-200"
+            />
+
+            {images.length > 1 && (
+              <button
+                onClick={() => setSelectedImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1))}
+                className="absolute right-2 sm:right-6 z-10 p-3 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/20 transition-all cursor-pointer"
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+
+          {/* Bottom Thumbnails Strip */}
+          {images.length > 1 && (
+            <div className="flex items-center justify-center gap-2 overflow-x-auto pt-2">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImageIndex(idx)}
+                  className={`w-16 h-12 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                    selectedImageIndex === idx
+                      ? 'border-[#C99325] scale-105 opacity-100'
+                      : 'border-white/20 opacity-50 hover:opacity-80'
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Luxury Printable Brochure Modal */}
+      {isBrochureOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-stone-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-[#013E18] text-white p-6 flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#C99325] flex items-center justify-center font-serif text-white font-black text-xl">
+                  G
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-widest text-[#C99325] font-bold">Grounds & Gates Official Brochure</div>
+                  <h3 className="text-lg font-bold text-white line-clamp-1">{title}</h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsBrochureOpen(false)}
+                className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label="Close brochure modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Brochure Content */}
+            <div className="p-6 sm:p-8 space-y-6 text-stone-800">
+              <div className="relative h-64 rounded-2xl overflow-hidden bg-stone-100">
+                <img src={images[0]} alt={title} className="w-full h-full object-cover" />
+                <div className="absolute bottom-3 left-3 bg-[#013E18]/90 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  {formatPriceINR(property.price, property.listingType, property.priceUnit)}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center border-y border-stone-100 py-4">
+                <div className="p-2 bg-[#FAF8F2] rounded-xl">
+                  <div className="text-[10px] text-stone-400 font-bold uppercase">Area</div>
+                  <div className="text-sm font-extrabold text-[#013E18]">{property.plotArea} {property.plotAreaUnit}</div>
+                </div>
+                <div className="p-2 bg-[#FAF8F2] rounded-xl">
+                  <div className="text-[10px] text-stone-400 font-bold uppercase">Road Width</div>
+                  <div className="text-sm font-extrabold text-[#013E18]">{property.roadWidthFeet || 30} Feet</div>
+                </div>
+                <div className="p-2 bg-[#FAF8F2] rounded-xl">
+                  <div className="text-[10px] text-stone-400 font-bold uppercase">Facing</div>
+                  <div className="text-sm font-extrabold text-[#013E18]">{property.facing}</div>
+                </div>
+                <div className="p-2 bg-[#FAF8F2] rounded-xl">
+                  <div className="text-[10px] text-stone-400 font-bold uppercase">Approval</div>
+                  <div className="text-sm font-extrabold text-[#013E18]">{property.approvalAuthority || 'Verified'}</div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#013E18] mb-1.5">Location & Address</h4>
+                <p className="text-xs text-stone-600 leading-relaxed">{property.address || `${property.location}, ${property.district}, Tamil Nadu - ${property.pincode}`}</p>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#013E18] mb-1.5">Summary & Highlights</h4>
+                <p className="text-xs text-stone-600 leading-relaxed line-clamp-4">{description}</p>
+              </div>
+
+              {/* Corporate Contact Footer */}
+              <div className="bg-[#FAF8F2] rounded-2xl p-4 border border-stone-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-xs">
+                  <div className="font-bold text-[#013E18]">Grounds & Gates Reality Pvt Ltd</div>
+                  <div className="text-stone-500">Avinashi Road, Coimbatore • +91 422 298 7000</div>
+                </div>
+                <button
+                  onClick={() => window.print()}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-[#013E18] hover:bg-[#00280f] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <Printer className="w-4 h-4 text-[#C99325]" />
+                  <span>Print / Save PDF</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

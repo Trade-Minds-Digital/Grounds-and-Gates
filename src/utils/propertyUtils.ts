@@ -87,7 +87,17 @@ export function filterProperties(properties: Property[], filter: Partial<Propert
 
     // District
     if (filter.district && filter.district !== 'All' && filter.district.trim() !== '') {
-      if (normalize(prop.district) !== normalize(filter.district)) return false;
+      const targetDist = normalize(filter.district);
+      const propDist = normalize(prop.district);
+      const propLoc = normalize(prop.location);
+      
+      const isOotyMatch = (targetDist.includes('ooty') || targetDist.includes('nilgiris')) && 
+                          (propDist.includes('ooty') || propDist.includes('nilgiris') || propLoc.includes('ooty') || propLoc.includes('nilgiris'));
+      const isPollachiMatch = targetDist.includes('pollachi') && (propDist.includes('pollachi') || propLoc.includes('pollachi'));
+
+      if (!isOotyMatch && !isPollachiMatch && propDist !== targetDist) {
+        return false;
+      }
     }
 
     // Locality

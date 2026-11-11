@@ -25,6 +25,25 @@ const DISTRICT_COORDINATES: Record<string, { x: number; y: number; labelPos: 'to
   'Hosur': { x: 275, y: 155, labelPos: 'top' },
 };
 
+const matchDistrictProperties = (props: Property[], distName: string): Property[] => {
+  const norm = (s: string) => (s || '').toLowerCase().trim();
+  const target = norm(distName);
+  return props.filter(p => {
+    const pDist = norm(p.district);
+    const pLoc = norm(p.location);
+    if (target.includes('ooty') || target.includes('nilgiris')) {
+      return pDist.includes('ooty') || pDist.includes('nilgiris') || pLoc.includes('ooty') || pLoc.includes('nilgiris');
+    }
+    if (target.includes('pollachi')) {
+      return pDist.includes('pollachi') || pLoc.includes('pollachi');
+    }
+    if (target === 'coimbatore') {
+      return pDist === 'coimbatore' && !pLoc.includes('pollachi');
+    }
+    return pDist === target;
+  });
+};
+
 export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = ({
   properties,
   lang,
@@ -34,7 +53,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Coimbatore');
 
   // Filter properties matching selected district
-  const districtProperties = properties.filter(p => p.district === selectedDistrict);
+  const districtProperties = matchDistrictProperties(properties, selectedDistrict);
   const selectedLocationMeta = LOCATIONS_DATA.find(l => l.name === selectedDistrict);
 
   return (
@@ -154,7 +173,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
               {/* District Interactive Pins */}
               {Object.entries(DISTRICT_COORDINATES).map(([distName, coord]) => {
                 const isSelected = selectedDistrict === distName;
-                const count = properties.filter(p => p.district === distName).length;
+                const count = matchDistrictProperties(properties, distName).length;
 
                 return (
                   <g

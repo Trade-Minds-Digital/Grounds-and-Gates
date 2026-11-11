@@ -141,3 +141,27 @@ test('calculateLoanBreakdown provides correct downpayment and interest shares', 
   assert.ok(breakdown.totalInterest > 0);
   assert.equal(breakdown.principalPercentage + breakdown.interestPercentage, 100);
 });
+
+test('filterProperties matches Ooty/Nilgiris aliases and Pollachi localities', () => {
+  const ootyProp = {
+    ...mockProperties[0],
+    id: 'ooty-1',
+    district: 'Ooty',
+    location: 'Kotagiri'
+  };
+  const pollachiProp = {
+    ...mockProperties[0],
+    id: 'pollachi-1',
+    district: 'Coimbatore',
+    location: 'Pollachi Road'
+  };
+  const dataset = [ootyProp, pollachiProp];
+
+  const ootyFilter = filterProperties(dataset, { district: 'Ooty / Nilgiris' });
+  assert.equal(ootyFilter.length, 1);
+  assert.equal(ootyFilter[0].id, 'ooty-1');
+
+  const pollachiFilter = filterProperties(dataset, { district: 'Pollachi' });
+  assert.equal(pollachiFilter.length, 1);
+  assert.equal(pollachiFilter[0].id, 'pollachi-1');
+});
