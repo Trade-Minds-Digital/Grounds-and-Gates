@@ -1,0 +1,6 @@
+{
+  "name": "Grounds and Gates - Premium Property Marketplace",
+  "description": "Property Decisions Simplified. Explore premium residential plots, agricultural land, villas, apartments and commercial properties across Tamil Nadu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
