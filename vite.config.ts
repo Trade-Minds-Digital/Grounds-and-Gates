@@ -5,7 +5,6 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/Grounds-and-Gates/',
     base: './',
     plugins: [react(), tailwindcss()],
     resolve: {
