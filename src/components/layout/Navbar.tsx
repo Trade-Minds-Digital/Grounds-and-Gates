@@ -83,23 +83,23 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-[#FFFFFF] border-b border-[#18241B]/10 shadow-xs backdrop-blur-md bg-white/95">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-20 gap-2 sm:gap-4">
           
           {/* Left: Brand Logo & Location Selector */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 shrink-0">
             <button
               onClick={() => handleLinkClick('home')}
-              className="text-left focus:outline-hidden cursor-pointer"
+              className="text-left focus:outline-hidden cursor-pointer shrink-0"
               aria-label="Grounds and Gates Home"
             >
-              <Logo variant="horizontal" size="md" />
+              <Logo variant="horizontal" size="md" className="shrink-0" />
             </button>
 
             {/* Location Selector (Desktop) */}
-            <div className="relative hidden lg:block">
+            <div className="relative hidden xl:block shrink-0">
               <button
                 onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#18241B]/15 bg-[#F5F2E9] hover:bg-[#ede9dc] text-xs font-semibold text-[#18241B] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#18241B]/15 bg-[#F5F2E9] hover:bg-[#ede9dc] text-xs font-semibold text-[#18241B] transition-colors cursor-pointer shrink-0"
                 aria-label="Choose target district or city"
               >
                 <MapPin className="w-3.5 h-3.5 text-[#C99325]" />
@@ -157,7 +157,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Middle: Primary Navigation Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 shrink-0">
             {navLinks.map(link => {
               const isActive =
                 (link.id === 'home' && currentView === 'home') ||
@@ -169,7 +169,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={link.id}
                   onClick={() => handleLinkClick(link.id, link.filter)}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                  className={`px-2.5 xl:px-3 py-2 rounded-lg text-xs xl:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                     isActive
                       ? 'text-[#013E18] bg-[#013E18]/8 font-bold'
                       : 'text-[#18241B] hover:text-[#013E18] hover:bg-stone-100/70'
@@ -182,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Right: Actions, Badges, Language, Profile & Post Property */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             
             {/* Language Switcher */}
             <div className="flex items-center rounded-lg border border-stone-200 bg-stone-50 p-0.5 text-xs font-bold">

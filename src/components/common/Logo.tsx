@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface LogoProps {
+export interface LogoProps {
   variant?: 'horizontal' | 'mark-only' | 'stacked' | 'light';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -16,16 +16,16 @@ export const Logo: React.FC<LogoProps> = ({
   // Brand color tokens
   const forestGreen = variant === 'light' ? '#FFFFFF' : '#013E18';
   const gateGold = '#C99325';
-  const taglineColor = variant === 'light' ? '#E0AA3E' : '#735213';
+  const taglineColor = variant === 'light' ? '#F5F2E9' : '#013E18';
 
   // Sizing styles
   const markSize = {
     sm: 28,
-    md: 38,
+    md: 36,
     lg: 48,
   }[size];
 
-  // The 04A Logo Mark: Architectural Heritage Gate rising from geometric Ground layers
+  // The official Grounds and Gates 04A Monogram: Architectural Interlocking "G"
   const LogoMarkSvg = (
     <svg
       width={markSize}
@@ -34,98 +34,83 @@ export const Logo: React.FC<LogoProps> = ({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="shrink-0 transition-transform duration-300 group-hover:scale-105"
-      aria-label="Grounds & Gates Logo Mark"
+      aria-label="Grounds and Gates Logo Mark"
     >
-      {/* Outer Protective Gate Arch */}
-      <rect x="8" y="8" width="84" height="84" rx="8" stroke={gateGold} strokeWidth="3" opacity="0.35" />
-      
-      {/* Foundation / Grounds Terraced Base */}
+      {/* Forest Green Outer Frame: Top bar, vertical left column, and bottom base */}
       <path
-        d="M16 82H84M22 75H78M28 68H72"
-        stroke={gateGold}
-        strokeWidth="3.5"
-        strokeLinecap="round"
+        d="M0 0H100V20.5H22.7V79.5H72.6V100H0V0Z"
+        fill={forestGreen}
       />
-      
-      {/* Twin Gate Pillars */}
-      <rect x="30" y="32" width="7" height="36" rx="1.5" fill={forestGreen} />
-      <rect x="63" y="32" width="7" height="36" rx="1.5" fill={forestGreen} />
-      
-      {/* Pillar Capital Caps */}
-      <rect x="27" y="29" width="13" height="3.5" rx="1" fill={gateGold} />
-      <rect x="60" y="29" width="13" height="3.5" rx="1" fill={gateGold} />
-      
-      {/* Grand Keystone Archway */}
+      {/* Gate Gold Interlocking Center Crossbar & Right Column */}
       <path
-        d="M33 32C33 21 67 21 67 32"
-        stroke={forestGreen}
-        strokeWidth="5"
-        strokeLinecap="round"
-      />
-      
-      {/* Central Gate Spearhead / Crest */}
-      <path
-        d="M50 17L53.5 24H46.5L50 17Z"
+        d="M38.7 40H100V100H79V60.5H38.7V40Z"
         fill={gateGold}
       />
-      <circle cx="50" cy="27" r="3" fill={gateGold} />
-      
-      {/* Inner Gate Grille / Spindles */}
-      <line x1="43" y1="36" x2="43" y2="68" stroke={gateGold} strokeWidth="2" strokeDasharray="3 2" />
-      <line x1="50" y1="33" x2="50" y2="68" stroke={forestGreen} strokeWidth="2.5" />
-      <line x1="57" y1="36" x2="57" y2="68" stroke={gateGold} strokeWidth="2" strokeDasharray="3 2" />
     </svg>
   );
 
   if (variant === 'mark-only') {
-    return <div className={`inline-flex items-center ${className}`}>{LogoMarkSvg}</div>;
+    return <div className={`inline-flex items-center shrink-0 ${className}`}>{LogoMarkSvg}</div>;
+  }
+
+  if (variant === 'stacked') {
+    return (
+      <div className={`inline-flex flex-col items-center text-center gap-2 select-none shrink-0 group ${className}`}>
+        {LogoMarkSvg}
+        <div className="flex flex-col items-center whitespace-nowrap shrink-0">
+          <span
+            className="font-extrabold tracking-tight leading-none whitespace-nowrap"
+            style={{
+              color: forestGreen,
+              fontSize: size === 'sm' ? '1.05rem' : size === 'lg' ? '1.5rem' : '1.25rem',
+              letterSpacing: '-0.02em',
+              fontFamily: 'Noto Sans, sans-serif'
+            }}
+          >
+            Grounds and Gates
+          </span>
+          {showTagline && (
+            <span
+              className="font-semibold leading-tight mt-1 whitespace-nowrap"
+              style={{
+                color: taglineColor,
+                fontSize: size === 'sm' ? '0.58rem' : size === 'lg' ? '0.78rem' : '0.66rem',
+                letterSpacing: '0.01em',
+                fontFamily: 'Noto Sans, sans-serif'
+              }}
+            >
+              Property Decisions Simplified
+            </span>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className={`inline-flex items-center gap-3 select-none group ${className}`}>
+    <div className={`inline-flex items-center gap-2.5 sm:gap-3 select-none shrink-0 group ${className}`}>
       {LogoMarkSvg}
       
-      <div className="flex flex-col justify-center">
-        <div className="flex items-center tracking-tight leading-none">
-          <span
-            className="font-extrabold uppercase"
-            style={{
-              color: forestGreen,
-              fontSize: size === 'sm' ? '1.05rem' : size === 'lg' ? '1.5rem' : '1.25rem',
-              letterSpacing: '0.04em',
-              fontFamily: 'Noto Sans, sans-serif'
-            }}
-          >
-            Grounds
-          </span>
-          <span
-            className="mx-1 font-light"
-            style={{
-              color: gateGold,
-              fontSize: size === 'sm' ? '1.05rem' : size === 'lg' ? '1.5rem' : '1.25rem'
-            }}
-          >
-            &
-          </span>
-          <span
-            className="font-extrabold uppercase"
-            style={{
-              color: forestGreen,
-              fontSize: size === 'sm' ? '1.05rem' : size === 'lg' ? '1.5rem' : '1.25rem',
-              letterSpacing: '0.04em',
-              fontFamily: 'Noto Sans, sans-serif'
-            }}
-          >
-            Gates
-          </span>
-        </div>
+      <div className="flex flex-col justify-center whitespace-nowrap shrink-0">
+        <span
+          className="font-extrabold tracking-tight leading-none whitespace-nowrap"
+          style={{
+            color: forestGreen,
+            fontSize: size === 'sm' ? '1.02rem' : size === 'lg' ? '1.55rem' : '1.25rem',
+            letterSpacing: '-0.02em',
+            fontFamily: 'Noto Sans, sans-serif'
+          }}
+        >
+          Grounds and Gates
+        </span>
         
         {showTagline && (
           <span
-            className="text-[0.62rem] font-bold tracking-widest uppercase mt-0.5"
+            className="font-semibold leading-tight mt-1 opacity-95 whitespace-nowrap"
             style={{
               color: taglineColor,
-              letterSpacing: '0.12em',
+              fontSize: size === 'sm' ? '0.58rem' : size === 'lg' ? '0.78rem' : '0.66rem',
+              letterSpacing: '0.01em',
               fontFamily: 'Noto Sans, sans-serif'
             }}
           >
@@ -136,3 +121,4 @@ export const Logo: React.FC<LogoProps> = ({
     </div>
   );
 };
+
