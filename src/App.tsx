@@ -27,6 +27,7 @@ import { AuthPages } from './pages/AuthPages';
 import { AiPropertyAssistant } from './components/ai/AiPropertyAssistant';
 import { ToastContainer, ToastMessage } from './components/common/Toast';
 import { EmiCalculator } from './components/calculator/EmiCalculator';
+import { api } from './services/api';
 
 export default function App() {
   // Master Property Dataset (Stateful for runtime demo listing additions/modifications)
@@ -244,6 +245,17 @@ export default function App() {
     showToast(`Listing status updated to: ${newStatus.toUpperCase()}`, 'info');
   };
 
+  // Sync properties from live REST API if available
+  useEffect(() => {
+    let isMounted = true;
+    api.getProperties().then(res => {
+      if (isMounted && res && res.data && res.data.length > 0) {
+        setProperties(res.data);
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
+
   // Enquiry Submission Handler
   const handleSubmitEnquiry = (submissionData: any) => {
     const newEnquiry: EnquirySubmission = {
@@ -252,6 +264,20 @@ export default function App() {
       status: 'pending',
       ...submissionData
     };
+
+    // Asynchronously sync to backend
+    if (submissionData.propertyId) {
+      api.createEnquiry({
+        propertyId: submissionData.propertyId,
+        fullName: submissionData.fullName,
+        phone: submissionData.phone,
+        email: submissionData.email,
+        message: submissionData.message,
+        visitDate: submissionData.visitDate,
+        preferredTimeSlot: submissionData.preferredTimeSlot,
+      }).catch(err => console.warn('Could not persist enquiry to backend:', err));
+    }
+
     setEnquiries(prev => [newEnquiry, ...prev]);
     showToast(`Site visit scheduled! Our Grounds & Gates coordinator will call you.`, 'success');
   };

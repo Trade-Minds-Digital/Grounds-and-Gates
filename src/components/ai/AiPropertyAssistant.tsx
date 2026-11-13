@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Property, LanguageCode } from '../../types/property';
 import { formatPriceINR } from '../../utils/propertyUtils';
+import { api } from '../../services/api';
 import {
   Sparkles,
   MessageSquare,
@@ -73,7 +74,7 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
     }
   ];
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
     if (!text) return;
 
@@ -88,7 +89,28 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
     if (!textToSend) setInputText('');
     setIsTyping(true);
 
-    // Simulated Smart Local Matching against 32 properties
+    // Try backend AI proxy first
+    try {
+      const aiResponse = await api.askAiAssistant(text, lang);
+      if (aiResponse && aiResponse.reply) {
+        const botMsg: ChatMessage = {
+          id: `bot-${Date.now()}`,
+          sender: 'assistant',
+          text: aiResponse.reply,
+          matchedProperties: (aiResponse.matchedProperties && aiResponse.matchedProperties.length > 0)
+            ? (aiResponse.matchedProperties as unknown as Property[])
+            : undefined,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, botMsg]);
+        setIsTyping(false);
+        return;
+      }
+    } catch {
+      // Backend not running, proceed to client-side heuristic matching
+    }
+
+    // Simulated Smart Local Matching against loaded properties
     setTimeout(() => {
       const lower = text.toLowerCase();
       let matched: Property[] = [];
