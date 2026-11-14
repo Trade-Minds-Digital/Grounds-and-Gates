@@ -28,8 +28,8 @@ export const translations = {
     },
     hero: {
       badge: 'Tamil Nadu’s Next-Gen Property Platform',
-      headline: 'Find a Property That Fits Your Future.',
-      subtext: 'Explore property opportunities, compare important details and make confident property decisions.',
+      headline: 'Find More Than a Property. Find Your Place in the World.',
+      subtext: 'Explore thoughtfully presented properties across Tamil Nadu with Grounds and Gates.',
       tabBuy: 'Buy Property',
       tabRent: 'Rent / Lease',
       searchPlaceholder: 'Search by locality, landmark or project (e.g. Saravanampatti, OMR, Vadavalli)...',
@@ -372,8 +372,8 @@ export const translations = {
     },
     hero: {
       badge: 'தமிழ்நாட்டின் முன்னணி சொத்து சந்தை',
-      headline: 'உங்கள் எதிர்காலத்திற்கு ஏற்ற சொத்தைக் கண்டறியுங்கள்.',
-      subtext: 'சொத்து வாய்ப்புகளை ஆராயுங்கள், முக்கிய விவரங்களை ஒப்பிடுங்கள், நம்பிக்கையான முடிவுகளை எடுங்கள்.',
+      headline: 'சொத்தை விட மேலானது. உங்கள் உலகத்தைக் கண்டறியுங்கள்.',
+      subtext: 'கிரவுண்ட்ஸ் அண்ட் கேட்ஸ் உடன் தமிழ்நாடு முழுவதும் உள்ள தனித்துவமான சொத்துக்களை ஆராயுங்கள்.',
       tabBuy: 'சொத்து வாங்க',
       tabRent: 'வாடகை / குத்தகை',
       searchPlaceholder: 'பகுதி அல்லது லேண்ட்மார்க்கை தேடுங்கள் (எ.கா. சரவணம்பட்டி, ஓ.எம்.ஆர், வடவள்ளி)...',

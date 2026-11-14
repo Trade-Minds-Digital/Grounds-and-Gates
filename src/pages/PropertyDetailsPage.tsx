@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Property, LanguageCode } from '../types/property';
 import { formatPriceINR, formatArea } from '../utils/propertyUtils';
 import { translations } from '../i18n/translations';
@@ -43,8 +44,10 @@ interface PropertyDetailsPageProps {
   lang: LanguageCode;
   onBack: () => void;
   isSaved: boolean;
+  savedPropertyIds?: string[];
   onToggleSave: (id: string) => void;
   isCompared: boolean;
+  comparedPropertyIds?: string[];
   onToggleCompare: (id: string) => void;
   onSelectProperty: (id: string) => void;
   onOpenEnquiry: () => void;
@@ -56,8 +59,10 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
   lang,
   onBack,
   isSaved,
+  savedPropertyIds = [],
   onToggleSave,
   isCompared,
+  comparedPropertyIds = [],
   onToggleCompare,
   onSelectProperty,
   onOpenEnquiry
@@ -74,6 +79,21 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
   const images = property.images && property.images.length > 0
     ? property.images
     : ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80'];
+
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [property.id]);
+
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsLightboxOpen(false);
+      if (e.key === 'ArrowRight') setSelectedImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1));
+      if (e.key === 'ArrowLeft') setSelectedImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1));
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isLightboxOpen, images.length]);
 
   const handleShare = () => {
     navigator.clipboard?.writeText(window.location.href);
@@ -154,78 +174,134 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-20 lg:pb-8">
         
-        {/* Main Grid: Gallery & Details (Left 8 Cols) + Sticky Enquiry (Right 4 Cols) */}
+        {/* Full-Width Luxury Architectural Gallery Mosaic */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          className="bg-white rounded-3xl p-3 sm:p-4 border border-stone-200/90 shadow-sm overflow-hidden mb-8"
+        >
+          <div className={`grid grid-cols-1 ${images.length > 1 ? 'md:grid-cols-12' : ''} gap-3`}>
+            {/* Primary Hero Architectural Frame */}
+            <div
+              onClick={() => setIsLightboxOpen(true)}
+              className={`relative ${images.length > 1 ? 'md:col-span-8' : ''} h-72 sm:h-96 md:h-[480px] rounded-2xl overflow-hidden bg-stone-100 cursor-zoom-in group`}
+            >
+              <img
+                src={images[selectedImageIndex]}
+                alt={title}
+                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-104"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/15 pointer-events-none" />
+
+              {/* Top Editorial Badges */}
+              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                <Badge type="demo" size="md" />
+                {property.ownershipType === 'company' ? (
+                  <Badge type="company" size="md" />
+                ) : (
+                  <Badge type="third-party" label={property.seller.badgeTitle} size="md" />
+                )}
+                {property.featured && <Badge type="featured" size="md" />}
+              </div>
+
+              {/* Fullscreen Immersive Viewer Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsLightboxOpen(true);
+                }}
+                className="absolute bottom-4 left-4 bg-black/65 hover:bg-black/85 backdrop-blur-md text-white text-xs font-bold px-3.5 py-2 rounded-full flex items-center gap-2 transition-all cursor-pointer shadow-lg border border-white/15"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-[#C99325]" />
+                <span>Open Immersive Gallery</span>
+              </button>
+
+              <div className="absolute bottom-4 right-4 bg-black/65 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-white/15">
+                {selectedImageIndex + 1} of {images.length} Photos
+              </div>
+            </div>
+
+            {/* Right Asymmetric Preview Tiles on Desktop */}
+            {images.length > 1 && (
+              <div className="hidden md:grid md:col-span-4 grid-rows-2 gap-3 h-[480px]">
+                {images.slice(1, 3).map((img, i) => {
+                  const actualIdx = i + 1;
+                  return (
+                    <div
+                      key={actualIdx}
+                      onClick={() => {
+                        setSelectedImageIndex(actualIdx);
+                        if (i === 1 && images.length > 3) setIsLightboxOpen(true);
+                      }}
+                      className="relative rounded-2xl overflow-hidden bg-stone-100 cursor-pointer group"
+                    >
+                      <img
+                        src={img}
+                        alt={`${title} view ${actualIdx + 1}`}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-106"
+                      />
+                      <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors" />
+                      {i === 1 && images.length > 3 && (
+                        <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px] flex flex-col items-center justify-center text-white">
+                          <span className="text-xl font-black text-[#e0aa3e]">+{images.length - 2}</span>
+                          <span className="text-xs font-bold uppercase tracking-wider mt-0.5">More Photos</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {images.length === 2 && (
+                  <div
+                    onClick={() => setIsBrochureOpen(true)}
+                    className="relative rounded-2xl overflow-hidden bg-[#013E18] text-[#F5F2E9] p-6 flex flex-col justify-between cursor-pointer group border border-[#C99325]/30"
+                  >
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#C99325]">
+                      Executive Dossier
+                    </div>
+                    <div>
+                      <div className="text-lg font-extrabold leading-snug">
+                        Download & Print Official Property Brochure
+                      </div>
+                      <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#e0aa3e] group-hover:translate-x-1 transition-transform">
+                        <FileText className="w-4 h-4" />
+                        <span>Open Brochure Preview</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Interactive Thumbnails Strip */}
+          {images.length > 1 && (
+            <div className="flex items-center gap-3 mt-3 overflow-x-auto pb-1">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImageIndex(idx)}
+                  className={`relative w-24 h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                    selectedImageIndex === idx
+                      ? 'border-[#013E18] ring-2 ring-[#C99325]'
+                      : 'border-transparent opacity-65 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Main Grid: Details Brochure (Left 8 Cols) + Sticky Enquiry (Right 4 Cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left Column (8 cols) */}
           <div className="lg:col-span-8 space-y-8">
-            
-            {/* Gallery Section */}
-            <div className="bg-white rounded-3xl p-3 sm:p-4 border border-stone-200 shadow-xs overflow-hidden">
-              {/* Main Image */}
-              <div
-                onClick={() => setIsLightboxOpen(true)}
-                className="relative h-72 sm:h-96 md:h-[460px] rounded-2xl overflow-hidden bg-stone-100 cursor-zoom-in group"
-              >
-                <img
-                  src={images[selectedImageIndex]}
-                  alt={title}
-                  className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-
-                {/* Top Badges */}
-                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                  <Badge type="demo" size="md" />
-                  {property.ownershipType === 'company' ? (
-                    <Badge type="company" size="md" />
-                  ) : (
-                    <Badge type="third-party" label={property.seller.badgeTitle} size="md" />
-                  )}
-                  {property.featured && <Badge type="featured" size="md" />}
-                </div>
-
-                {/* Fullscreen Button */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsLightboxOpen(true);
-                  }}
-                  className="absolute bottom-4 left-4 bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
-                >
-                  <Maximize2 className="w-3.5 h-3.5 text-[#C99325]" />
-                  <span>View Photos</span>
-                </button>
-
-                {/* Image Count Indicator */}
-                <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  {selectedImageIndex + 1} of {images.length} Photos
-                </div>
-              </div>
-
-              {/* Thumbnails Row */}
-              {images.length > 1 && (
-                <div className="flex items-center gap-3 mt-3 overflow-x-auto pb-1">
-                  {images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImageIndex(idx)}
-                      className={`relative w-20 h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
-                        selectedImageIndex === idx
-                          ? 'border-[#013E18] ring-2 ring-[#C99325]'
-                          : 'border-transparent opacity-70 hover:opacity-100'
-                      }`}
-                    >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Title & Key Pricing Banner */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 pb-6 border-b border-stone-100">
@@ -557,19 +633,26 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
         {/* Similar Properties Section */}
         {similarProperties.length > 0 && (
           <div className="mt-16 pt-12 border-t border-stone-200">
-            <h2 className="text-xl sm:text-2xl font-extrabold text-[#18241B] tracking-tight mb-6">
-              {t.propertyDetails.similarProperties}
-            </h2>
+            <div className="flex items-end justify-between mb-6">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#C99325]">
+                  Curated Alternatives
+                </span>
+                <h2 className="text-xl sm:text-2xl font-extrabold text-[#18241B] tracking-tight mt-0.5">
+                  {t.propertyDetails.similarProperties}
+                </h2>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {similarProperties.map(p => (
                 <PropertyCard
                   key={p.id}
                   property={p}
                   lang={lang}
-                  isSaved={false}
-                  onToggleSave={() => {}}
-                  isCompared={false}
-                  onToggleCompare={() => {}}
+                  isSaved={savedPropertyIds.includes(p.id)}
+                  onToggleSave={onToggleSave}
+                  isCompared={comparedPropertyIds.includes(p.id)}
+                  onToggleCompare={onToggleCompare}
                   onSelect={onSelectProperty}
                 />
               ))}
@@ -579,161 +662,208 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
 
       </div>
 
-      {/* Lightbox Modal */}
-      {isLightboxOpen && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-4 sm:p-6 animate-in fade-in duration-200 select-none">
-          {/* Top Bar */}
-          <div className="flex items-center justify-between text-white pb-3 border-b border-white/10">
-            <div>
-              <h3 className="font-bold text-sm sm:text-base line-clamp-1">{title}</h3>
-              <p className="text-xs text-white/60">
-                {property.location}, {property.district} • {formatPriceINR(property.price, property.listingType, property.priceUnit)}
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-white/70 font-mono">
-                {selectedImageIndex + 1} / {images.length}
-              </span>
-              <button
-                onClick={() => setIsLightboxOpen(false)}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-                aria-label="Close lightbox"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* Sticky Mobile Enquiry Bar */}
+      <div className="fixed bottom-0 inset-x-0 lg:hidden z-30 bg-white/95 backdrop-blur-xl border-t border-stone-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+        <div className="min-w-0">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+            {property.negotiable ? 'Negotiable Price' : 'Direct Price'}
           </div>
-
-          {/* Center Image with Previous / Next Arrows */}
-          <div className="relative flex-1 flex items-center justify-center my-4">
-            {images.length > 1 && (
-              <button
-                onClick={() => setSelectedImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1))}
-                className="absolute left-2 sm:left-6 z-10 p-3 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/20 transition-all cursor-pointer"
-                aria-label="Previous image"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-            )}
-
-            <img
-              src={images[selectedImageIndex]}
-              alt={title}
-              className="max-h-[75vh] max-w-[90vw] object-contain rounded-xl shadow-2xl transition-all duration-200"
-            />
-
-            {images.length > 1 && (
-              <button
-                onClick={() => setSelectedImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1))}
-                className="absolute right-2 sm:right-6 z-10 p-3 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/20 transition-all cursor-pointer"
-                aria-label="Next image"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            )}
+          <div className="text-lg font-black text-[#013E18] truncate">
+            {formatPriceINR(property.price, property.listingType, property.priceUnit)}
           </div>
-
-          {/* Bottom Thumbnails Strip */}
-          {images.length > 1 && (
-            <div className="flex items-center justify-center gap-2 overflow-x-auto pt-2">
-              {images.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImageIndex(idx)}
-                  className={`w-16 h-12 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
-                    selectedImageIndex === idx
-                      ? 'border-[#C99325] scale-105 opacity-100'
-                      : 'border-white/20 opacity-50 hover:opacity-80'
-                  }`}
-                >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
         </div>
-      )}
+        <button
+          onClick={onOpenEnquiry}
+          className="px-5 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs flex items-center gap-2 shrink-0 shadow-md cursor-pointer"
+        >
+          <Calendar className="w-4 h-4 text-[#C99325]" />
+          <span>{t.propertyDetails.scheduleVisit}</span>
+        </button>
+      </div>
+
+      {/* Immersive Fullscreen Lightbox Modal */}
+      <AnimatePresence>
+        {isLightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-4 sm:p-6 select-none"
+          >
+            {/* Top Bar */}
+            <div className="flex items-center justify-between text-white pb-3 border-b border-white/10">
+              <div>
+                <h3 className="font-bold text-sm sm:text-base line-clamp-1">{title}</h3>
+                <p className="text-xs text-white/60">
+                  {property.location}, {property.district} • {formatPriceINR(property.price, property.listingType, property.priceUnit)}
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-white/70 font-mono">
+                  {selectedImageIndex + 1} / {images.length}
+                </span>
+                <button
+                  onClick={() => setIsLightboxOpen(false)}
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                  aria-label="Close lightbox"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Center Image with Previous / Next Arrows */}
+            <div className="relative flex-1 flex items-center justify-center my-4">
+              {images.length > 1 && (
+                <button
+                  onClick={() => setSelectedImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1))}
+                  className="absolute left-2 sm:left-6 z-10 p-3 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/20 transition-all cursor-pointer"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+              )}
+
+              <motion.img
+                key={selectedImageIndex}
+                initial={{ opacity: 0.6, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.22 }}
+                src={images[selectedImageIndex]}
+                alt={title}
+                className="max-h-[75vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+              />
+
+              {images.length > 1 && (
+                <button
+                  onClick={() => setSelectedImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1))}
+                  className="absolute right-2 sm:right-6 z-10 p-3 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/20 transition-all cursor-pointer"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              )}
+            </div>
+
+            {/* Bottom Thumbnails Strip */}
+            {images.length > 1 && (
+              <div className="flex items-center justify-center gap-2 overflow-x-auto pt-2">
+                {images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImageIndex(idx)}
+                    className={`w-16 h-12 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                      selectedImageIndex === idx
+                        ? 'border-[#C99325] scale-105 opacity-100'
+                        : 'border-white/20 opacity-50 hover:opacity-80'
+                    }`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Luxury Printable Brochure Modal */}
-      {isBrochureOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-stone-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="bg-[#013E18] text-white p-6 flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#C99325] flex items-center justify-center font-serif text-white font-black text-xl">
-                  G
-                </div>
-                <div>
-                  <div className="text-xs uppercase tracking-widest text-[#C99325] font-bold">Grounds & Gates Official Brochure</div>
-                  <h3 className="text-lg font-bold text-white line-clamp-1">{title}</h3>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsBrochureOpen(false)}
-                className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                aria-label="Close brochure modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Brochure Content */}
-            <div className="p-6 sm:p-8 space-y-6 text-stone-800">
-              <div className="relative h-64 rounded-2xl overflow-hidden bg-stone-100">
-                <img src={images[0]} alt={title} className="w-full h-full object-cover" />
-                <div className="absolute bottom-3 left-3 bg-[#013E18]/90 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  {formatPriceINR(property.price, property.listingType, property.priceUnit)}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center border-y border-stone-100 py-4">
-                <div className="p-2 bg-[#FAF8F2] rounded-xl">
-                  <div className="text-[10px] text-stone-400 font-bold uppercase">Area</div>
-                  <div className="text-sm font-extrabold text-[#013E18]">{property.plotArea} {property.plotAreaUnit}</div>
-                </div>
-                <div className="p-2 bg-[#FAF8F2] rounded-xl">
-                  <div className="text-[10px] text-stone-400 font-bold uppercase">Road Width</div>
-                  <div className="text-sm font-extrabold text-[#013E18]">{property.roadWidthFeet || 30} Feet</div>
-                </div>
-                <div className="p-2 bg-[#FAF8F2] rounded-xl">
-                  <div className="text-[10px] text-stone-400 font-bold uppercase">Facing</div>
-                  <div className="text-sm font-extrabold text-[#013E18]">{property.facing}</div>
-                </div>
-                <div className="p-2 bg-[#FAF8F2] rounded-xl">
-                  <div className="text-[10px] text-stone-400 font-bold uppercase">Approval</div>
-                  <div className="text-sm font-extrabold text-[#013E18]">{property.approvalAuthority || 'Verified'}</div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#013E18] mb-1.5">Location & Address</h4>
-                <p className="text-xs text-stone-600 leading-relaxed">{property.address || `${property.location}, ${property.district}, Tamil Nadu - ${property.pincode}`}</p>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#013E18] mb-1.5">Summary & Highlights</h4>
-                <p className="text-xs text-stone-600 leading-relaxed line-clamp-4">{description}</p>
-              </div>
-
-              {/* Corporate Contact Footer */}
-              <div className="bg-[#FAF8F2] rounded-2xl p-4 border border-stone-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-xs">
-                  <div className="font-bold text-[#013E18]">Grounds & Gates Reality Pvt Ltd</div>
-                  <div className="text-stone-500">Avinashi Road, Coimbatore • +91 422 298 7000</div>
+      <AnimatePresence>
+        {isBrochureOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 12 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-stone-200 overflow-hidden my-8"
+            >
+              {/* Header */}
+              <div className="bg-[#013E18] text-white p-6 flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 p-2 flex items-center justify-center shrink-0">
+                    <svg viewBox="0 0 100 100" fill="none" className="w-full h-full">
+                      <path d="M0 0H100V20.5H22.7V79.5H72.6V100H0V0Z" fill="#FFFFFF" />
+                      <path d="M38.7 40H100V100H79V60.5H38.7V40Z" fill="#C99325" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-[#C99325] font-bold">Grounds & Gates Official Brochure</div>
+                    <h3 className="text-lg font-bold text-white line-clamp-1">{title}</h3>
+                  </div>
                 </div>
                 <button
-                  onClick={() => window.print()}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-[#013E18] hover:bg-[#00280f] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  onClick={() => setIsBrochureOpen(false)}
+                  className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  aria-label="Close brochure modal"
                 >
-                  <Printer className="w-4 h-4 text-[#C99325]" />
-                  <span>Print / Save PDF</span>
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+
+              {/* Brochure Content */}
+              <div className="p-6 sm:p-8 space-y-6 text-stone-800">
+                <div className="relative h-64 rounded-2xl overflow-hidden bg-stone-100">
+                  <img src={images[0]} alt={title} className="w-full h-full object-cover" />
+                  <div className="absolute bottom-3 left-3 bg-[#013E18]/90 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    {formatPriceINR(property.price, property.listingType, property.priceUnit)}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center border-y border-stone-100 py-4">
+                  <div className="p-2 bg-[#FAF8F2] rounded-xl">
+                    <div className="text-[10px] text-stone-400 font-bold uppercase">Area</div>
+                    <div className="text-sm font-extrabold text-[#013E18]">{property.plotArea} {property.plotAreaUnit}</div>
+                  </div>
+                  <div className="p-2 bg-[#FAF8F2] rounded-xl">
+                    <div className="text-[10px] text-stone-400 font-bold uppercase">Road Width</div>
+                    <div className="text-sm font-extrabold text-[#013E18]">{property.roadWidthFeet || 30} Feet</div>
+                  </div>
+                  <div className="p-2 bg-[#FAF8F2] rounded-xl">
+                    <div className="text-[10px] text-stone-400 font-bold uppercase">Facing</div>
+                    <div className="text-sm font-extrabold text-[#013E18]">{property.facing}</div>
+                  </div>
+                  <div className="p-2 bg-[#FAF8F2] rounded-xl">
+                    <div className="text-[10px] text-stone-400 font-bold uppercase">Approval</div>
+                    <div className="text-sm font-extrabold text-[#013E18]">{property.approvalAuthority || 'Verified'}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#013E18] mb-1.5">Location & Address</h4>
+                  <p className="text-xs text-stone-600 leading-relaxed">{property.address || `${property.location}, ${property.district}, Tamil Nadu - ${property.pincode}`}</p>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#013E18] mb-1.5">Summary & Highlights</h4>
+                  <p className="text-xs text-stone-600 leading-relaxed line-clamp-4">{description}</p>
+                </div>
+
+                {/* Corporate Contact Footer */}
+                <div className="bg-[#FAF8F2] rounded-2xl p-4 border border-stone-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-xs">
+                    <div className="font-bold text-[#013E18]">Grounds & Gates Realty Pvt Ltd</div>
+                    <div className="text-stone-500">Avinashi Road, Coimbatore • +91 422 298 7000</div>
+                  </div>
+                  <button
+                    onClick={() => window.print()}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-[#013E18] hover:bg-[#00280f] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  >
+                    <Printer className="w-4 h-4 text-[#C99325]" />
+                    <span>Print / Save PDF</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

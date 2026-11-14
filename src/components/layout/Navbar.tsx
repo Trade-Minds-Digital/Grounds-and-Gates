@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Logo } from '../common/Logo';
 import { translations } from '../../i18n/translations';
-import { LanguageCode, UserRole } from '../../types/property';
+import { LanguageCode, UserRole, PropertyFilterState } from '../../types/property';
 import { LOCATIONS_DATA } from '../../data/locations';
 import {
   MapPin,
@@ -22,6 +23,7 @@ import {
 
 interface NavbarProps {
   currentView: string;
+  activeFilter?: Partial<PropertyFilterState>;
   onNavigate: (view: string, params?: any) => void;
   lang: LanguageCode;
   onLanguageChange: (lang: LanguageCode) => void;
@@ -38,6 +40,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentView,
+  activeFilter,
   onNavigate,
   lang,
   onLanguageChange,
@@ -92,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="text-left focus:outline-hidden cursor-pointer shrink-0"
               aria-label="Grounds and Gates Home"
             >
-              <Logo variant="horizontal" size="md" className="shrink-0" />
+              <Logo variant="horizontal" size="md" className="shrink-0" animateEntrance />
             </button>
 
             {/* Location Selector (Desktop) */}
@@ -161,21 +164,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             {navLinks.map(link => {
               const isActive =
                 (link.id === 'home' && currentView === 'home') ||
-                (link.id === 'buy' && currentView === 'properties' && link.filter?.listingType === 'buy') ||
-                (link.id === 'rent' && currentView === 'properties' && link.filter?.listingType === 'rent') ||
-                (link.id === 'commercial' && currentView === 'properties' && link.filter?.category === 'commercial-properties');
+                (link.id === 'buy' && currentView === 'properties' && activeFilter?.listingType === 'buy' && activeFilter?.category !== 'commercial-properties') ||
+                (link.id === 'rent' && currentView === 'properties' && activeFilter?.listingType === 'rent') ||
+                (link.id === 'commercial' && currentView === 'properties' && activeFilter?.category === 'commercial-properties') ||
+                (link.id === 'about' && currentView === 'about') ||
+                (link.id === 'contact' && currentView === 'contact');
 
               return (
                 <button
                   key={link.id}
                   onClick={() => handleLinkClick(link.id, link.filter)}
-                  className={`px-2.5 xl:px-3 py-2 rounded-lg text-xs xl:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  className={`relative px-2.5 xl:px-3 py-2 rounded-lg text-xs xl:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                     isActive
-                      ? 'text-[#013E18] bg-[#013E18]/8 font-bold'
+                      ? 'text-[#013E18] font-bold'
                       : 'text-[#18241B] hover:text-[#013E18] hover:bg-stone-100/70'
                   }`}
                 >
                   {link.label}
+                  {isActive && (
+                    <motion.div
+                      layoutId="navbar-active-underline"
+                      transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                      className="absolute bottom-0.5 left-2.5 right-2.5 h-0.5 rounded-full bg-[#C99325]"
+                    />
+                  )}
                 </button>
               );
             })}
@@ -360,7 +372,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-stone-700 hover:bg-stone-100 cursor-pointer"
+              className="lg:hidden p-2 rounded-lg text-stone-700 hover:bg-stone-100 cursor-pointer"
               aria-label="Toggle mobile navigation menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -369,9 +381,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-stone-200 bg-white px-4 pt-3 pb-6 shadow-xl animate-in slide-in-from-top duration-200">
+      {/* Mobile & Tablet Drawer Menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:hidden border-t border-stone-200 bg-white px-4 pt-3 pb-6 shadow-xl overflow-hidden"
+          >
           {/* Location Selector Mobile */}
           <div className="mb-3">
             <label className="text-[11px] font-bold uppercase tracking-wider text-stone-400 block mb-1">
@@ -448,8 +467,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </header>
   );
 };

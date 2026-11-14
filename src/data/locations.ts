@@ -72,7 +72,7 @@ export const LOCATIONS_DATA: LocationHub[] = [
     tamilName: 'பொள்ளாச்சி',
     popularLocalities: ['Mahalingapuram', 'Udumalpet Road', 'Anaimalai', 'Kinathukadavu'],
     listingCount: 3,
-    imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80',
     description: 'Coconut capital offering scenic farmhouses, fertile coconut groves, and tranquil living.',
   },
   {
@@ -81,7 +81,7 @@ export const LOCATIONS_DATA: LocationHub[] = [
     tamilName: 'ஊட்டி / நீலகிரி',
     popularLocalities: ['Coonoor', 'Kotagiri', 'Fernhill', 'Lovedale'],
     listingCount: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80',
     description: 'Queen of Hill Stations with tea estate lands, private holiday cottages, and heritage bungalows.',
   },
   {

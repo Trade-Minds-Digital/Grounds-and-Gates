@@ -325,16 +325,34 @@ export const PropertyDetailsSkeleton: React.FC = () => {
 };
 
 /**
- * Full Page Transition Skeleton for navigation between main views.
+ * Full Page Transition Skeleton with Branded Loading Crest for smooth route transitions.
  */
-export const PageTransitionSkeleton: React.FC<{ title?: string }> = ({ title = 'Loading...' }) => {
+export const PageTransitionSkeleton: React.FC<{ title?: string }> = ({ title = 'Preparing Collection...' }) => {
   return (
     <div
       role="status"
       aria-label={title}
       aria-busy="true"
-      className="min-h-[70vh] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+      className="min-h-[70vh] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
     >
+      {/* Signature Branded Loading Indicator */}
+      <div className="flex flex-col items-center justify-center py-6 mb-10 animate-brand-pulse">
+        <svg
+          width="42"
+          height="42"
+          viewBox="0 0 100 100"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="mb-3"
+        >
+          <path d="M0 0H100V20.5H22.7V79.5H72.6V100H0V0Z" fill="#013E18" />
+          <path d="M38.7 40H100V100H79V60.5H38.7V40Z" fill="#C99325" />
+        </svg>
+        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#013E18]/75">
+          Grounds and Gates
+        </span>
+      </div>
+
       {/* Top Banner Skeleton */}
       <div className="mb-8 space-y-2">
         <div className="w-32 h-4 rounded bg-stone-200/70 animate-shimmer" />

@@ -15,11 +15,17 @@
     font-family: 'Noto Sans', 'Noto Sans Tamil', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: var(--color-ivory);
     color: var(--color-ink);
     font-family: 'Noto Sans', 'Noto Sans Tamil', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 }
 
@@ -55,37 +61,79 @@
   animation: gg-shimmer 1.8s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-shimmer,
-  .animate-shimmer-subtle,
-  .animate-ken-burns {
-    animation: none;
-    background: rgba(235, 230, 218, 0.7);
-  }
-}
-
+/* Editorial Hero Motion */
 @keyframes ken-burns {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% { transform: scale(1.0); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1.0); }
 }
 
 .animate-ken-burns {
-  animation: ken-burns 22s ease-in-out infinite;
+  animation: ken-burns 28s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
 }
 
-/* Custom scrollbar */
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float-gentle {
+  animation: float-gentle 5s ease-in-out infinite;
+}
+
+@keyframes reveal-up {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-reveal-up {
+  animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes brand-pulse {
+  0%, 100% {
+    opacity: 0.75;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.animate-brand-pulse {
+  animation: brand-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer,
+  .animate-shimmer-subtle,
+  .animate-ken-burns,
+  .animate-float-gentle,
+  .animate-reveal-up,
+  .animate-brand-pulse {
+    animation: none;
+  }
+}
+
+/* Custom subtle architectural scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #ede9dc;
+  background: #F5F2E9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c2baa5;
+  background: #c7bfa8;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #a49a80;
+  background: #013E18;
 }

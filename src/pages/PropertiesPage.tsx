@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Property, LanguageCode, PropertyFilterState, PropertyCategory, OwnershipType, FacingDirection } from '../types/property';
 import { filterProperties, sortProperties } from '../utils/propertyUtils';
 import { PropertyCard } from '../components/property/PropertyCard';
@@ -638,52 +639,62 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
 
       </div>
 
-      {/* Mobile Filters Drawer */}
-      {mobileFilterOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden lg:hidden">
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
-            onClick={() => setMobileFilterOpen(false)}
-          />
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
-              
-              <div className="p-5 border-b border-stone-100 flex items-center justify-between bg-[#013E18] text-white">
-                <div className="flex items-center gap-2 font-bold text-sm">
-                  <SlidersHorizontal className="w-4 h-4 text-[#C99325]" />
-                  <span>Filter Properties</span>
+      {/* Animated Mobile Filters Drawer */}
+      <AnimatePresence>
+        {mobileFilterOpen && (
+          <div className="fixed inset-0 z-50 overflow-hidden lg:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+              onClick={() => setMobileFilterOpen(false)}
+            />
+            <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+                className="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between"
+              >
+                <div className="p-5 border-b border-stone-100 flex items-center justify-between bg-[#013E18] text-white">
+                  <div className="flex items-center gap-2 font-bold text-sm">
+                    <SlidersHorizontal className="w-4 h-4 text-[#C99325]" />
+                    <span>Filter Properties</span>
+                  </div>
+                  <button
+                    onClick={() => setMobileFilterOpen(false)}
+                    className="p-1 rounded-lg hover:bg-white/10 cursor-pointer"
+                    aria-label="Close filters"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setMobileFilterOpen(false)}
-                  className="p-1 rounded-lg hover:bg-white/10"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
 
-              <div className="p-6 overflow-y-auto flex-1">
-                {FilterSidebarContent}
-              </div>
+                <div className="p-6 overflow-y-auto flex-1">
+                  {FilterSidebarContent}
+                </div>
 
-              <div className="p-4 border-t border-stone-100 bg-stone-50 flex items-center gap-3">
-                <button
-                  onClick={handleResetFilters}
-                  className="w-1/2 py-2.5 rounded-xl border border-stone-300 font-bold text-xs text-stone-700"
-                >
-                  Reset
-                </button>
-                <button
-                  onClick={() => setMobileFilterOpen(false)}
-                  className="w-1/2 py-2.5 rounded-xl bg-[#013E18] text-white font-bold text-xs"
-                >
-                  Apply Filters ({filteredAndSortedProperties.length})
-                </button>
-              </div>
-
+                <div className="p-4 border-t border-stone-100 bg-stone-50 flex items-center gap-3">
+                  <button
+                    onClick={handleResetFilters}
+                    className="w-1/2 py-2.5 rounded-xl border border-stone-300 font-bold text-xs text-stone-700 cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={() => setMobileFilterOpen(false)}
+                    className="w-1/2 py-2.5 rounded-xl bg-[#013E18] text-white font-bold text-xs cursor-pointer"
+                  >
+                    Apply Filters ({filteredAndSortedProperties.length})
+                  </button>
+                </div>
+              </motion.div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
     </div>
   );

@@ -261,14 +261,36 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
         {/* Right District Properties Preview (5 cols) */}
         <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
           <div>
+            {/* Featured Regional Hub Preview Card with Photography */}
+            {selectedLocationMeta && (
+              <div className="relative h-40 rounded-2xl overflow-hidden mb-4 border border-stone-200 shadow-sm group">
+                <img
+                  key={selectedLocationMeta.id}
+                  src={selectedLocationMeta.imageUrl}
+                  alt={selectedLocationMeta.name}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#001d0b]/90 via-[#001d0b]/35 to-transparent" />
+                <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-black/55 backdrop-blur-md text-[#e0aa3e] text-[10px] font-bold border border-white/15">
+                  {districtProperties.length} Verified Listings
+                </div>
+                <div className="absolute bottom-3 left-4 right-4 text-white">
+                  <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#C99325]">
+                    {selectedLocationMeta.tamilName}
+                  </div>
+                  <h4 className="text-lg font-extrabold leading-tight">
+                    {selectedDistrict} Corridor
+                  </h4>
+                  <p className="text-[11px] text-stone-200 line-clamp-1 mt-0.5">
+                    {selectedLocationMeta.description}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-3">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#C99325]">
-                  {selectedLocationMeta?.tamilName || selectedDistrict}
-                </span>
-                <h4 className="text-xl font-bold text-[#18241B]">
-                  {selectedDistrict} Corridor
-                </h4>
+              <div className="text-xs font-extrabold uppercase tracking-wider text-stone-400">
+                Top Highlights in {selectedDistrict}
               </div>
 
               <button

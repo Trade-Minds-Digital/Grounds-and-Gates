@@ -1,17 +1,20 @@
 import React from 'react';
+import { motion } from 'motion/react';
 
 export interface LogoProps {
   variant?: 'horizontal' | 'mark-only' | 'stacked' | 'light';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   showTagline?: boolean;
+  animateEntrance?: boolean;
 }
 
 export const Logo: React.FC<LogoProps> = ({
   variant = 'horizontal',
   size = 'md',
   className = '',
-  showTagline = true
+  showTagline = true,
+  animateEntrance = false
 }) => {
   // Brand color tokens
   const forestGreen = variant === 'light' ? '#FFFFFF' : '#013E18';
@@ -37,12 +40,18 @@ export const Logo: React.FC<LogoProps> = ({
       aria-label="Grounds and Gates Logo Mark"
     >
       {/* Forest Green Outer Frame: Top bar, vertical left column, and bottom base */}
-      <path
+      <motion.path
+        initial={animateEntrance ? { opacity: 0, x: -6 } : false}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         d="M0 0H100V20.5H22.7V79.5H72.6V100H0V0Z"
         fill={forestGreen}
       />
       {/* Gate Gold Interlocking Center Crossbar & Right Column */}
-      <path
+      <motion.path
+        initial={animateEntrance ? { opacity: 0, x: 6 } : false}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
         d="M38.7 40H100V100H79V60.5H38.7V40Z"
         fill={gateGold}
       />
