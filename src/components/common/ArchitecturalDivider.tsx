@@ -1,4 +1,5 @@
 import React from 'react';
+import Box from '@mui/material/Box';
 
 interface ArchitecturalDividerProps {
   className?: string;
@@ -7,7 +8,7 @@ interface ArchitecturalDividerProps {
 
 /**
  * Signature Architectural Section Divider
- * Echoes the interlocking horizontal lines and precision geometry of the 04A brand monogram.
+ * Powered by Material-UI Box & Geometry with Grounds & Gates Monogram
  */
 export const ArchitecturalDivider: React.FC<ArchitecturalDividerProps> = ({
   className = '',
@@ -15,20 +16,42 @@ export const ArchitecturalDivider: React.FC<ArchitecturalDividerProps> = ({
 }) => {
   const lineBg =
     variant === 'dark'
-      ? 'from-transparent via-[#C99325]/40 to-transparent'
-      : 'from-transparent via-[#C99325]/50 to-transparent';
+      ? 'linear-gradient(90deg, transparent, rgba(201, 147, 37, 0.4), transparent)'
+      : 'linear-gradient(90deg, transparent, rgba(201, 147, 37, 0.5), transparent)';
 
   return (
-    <div className={`w-full flex items-center justify-center py-2 select-none ${className}`} aria-hidden="true">
-      <div className="w-full max-w-4xl mx-auto flex items-center gap-4 px-6">
-        <div className={`h-px flex-1 bg-gradient-to-r ${lineBg}`} />
-        <svg
+    <Box
+      className={className}
+      sx={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        py: 1.5,
+        userSelect: 'none',
+      }}
+      aria-hidden="true"
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 2,
+          width: '100%',
+          maxWidth: 896,
+          px: 3,
+        }}
+      >
+        <Box sx={{ flex: 1, height: '1px', background: lineBg }} />
+        <Box
+          component="svg"
           width="18"
           height="18"
           viewBox="0 0 100 100"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="shrink-0 opacity-85"
+          sx={{ flexShrink: 0, opacity: 0.85 }}
         >
           <path
             d="M0 0H100V20.5H22.7V79.5H72.6V100H0V0Z"
@@ -38,9 +61,9 @@ export const ArchitecturalDivider: React.FC<ArchitecturalDividerProps> = ({
             d="M38.7 40H100V100H79V60.5H38.7V40Z"
             fill="#C99325"
           />
-        </svg>
-        <div className={`h-px flex-1 bg-gradient-to-r ${lineBg}`} />
-      </div>
-    </div>
+        </Box>
+        <Box sx={{ flex: 1, height: '1px', background: lineBg }} />
+      </Box>
+    </Box>
   );
 };

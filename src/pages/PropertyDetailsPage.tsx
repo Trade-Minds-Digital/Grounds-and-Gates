@@ -6,37 +6,27 @@ import { translations } from '../i18n/translations';
 import { Badge } from '../components/common/Badge';
 import { PropertyCard } from '../components/property/PropertyCard';
 import { EmiCalculator } from '../components/calculator/EmiCalculator';
-import {
-  ArrowLeft,
-  MapPin,
-  Heart,
-  Scale,
-  Share2,
-  Calendar,
-  Building2,
-  ShieldCheck,
-  Check,
-  Maximize2,
-  Compass,
-  Bed,
-  Bath,
-  Phone,
-  Mail,
-  Clock,
-  Sparkles,
-  ExternalLink,
-  ChevronRight,
-  Info,
-  Droplets,
-  Zap,
-  Building,
-  Navigation,
-  CheckCircle2,
-  X,
-  ChevronLeft,
-  Printer,
-  FileText
-} from 'lucide-react';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import BalanceIcon from '@mui/icons-material/Balance';
+import ShareIcon from '@mui/icons-material/Share';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from '@mui/icons-material/Email';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import NavigationIcon from '@mui/icons-material/Navigation';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CloseIcon from '@mui/icons-material/Close';
+import PrintIcon from '@mui/icons-material/Print';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 interface PropertyDetailsPageProps {
   property: Property;
@@ -112,7 +102,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
       {/* Toast Notification */}
       {showShareToast && (
         <div className="fixed top-24 right-6 z-50 bg-[#013E18] text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-top-2 duration-200">
-          <CheckCircle2 className="w-4 h-4 text-[#C99325]" />
+          <CheckCircleIcon sx={{ fontSize: 16, color: '#C99325' }} />
           <span>{t.propertyDetails.copiedToClipboard}</span>
         </div>
       )}
@@ -124,7 +114,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
             onClick={onBack}
             className="inline-flex items-center gap-1.5 text-xs font-bold text-[#013E18] hover:text-[#C99325] transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowBackIcon sx={{ fontSize: 16 }} />
             <span>{t.propertyDetails.backToListings}</span>
           </button>
 
@@ -135,7 +125,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               title="Download / Print Property Brochure"
               aria-label="Download property brochure"
             >
-              <FileText className="w-4 h-4 text-[#C99325]" />
+              <DescriptionIcon sx={{ fontSize: 16, color: '#C99325' }} />
               <span className="hidden sm:inline">Brochure</span>
             </button>
             <button
@@ -144,7 +134,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               title={t.propertyDetails.shareProperty}
               aria-label="Share property link"
             >
-              <Share2 className="w-4 h-4" />
+              <ShareIcon sx={{ fontSize: 16 }} />
             </button>
             <button
               onClick={() => onToggleCompare(property.id)}
@@ -156,7 +146,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               title={t.card.compare}
               aria-label="Compare property"
             >
-              <Scale className="w-4 h-4" />
+              <BalanceIcon sx={{ fontSize: 16 }} />
             </button>
             <button
               onClick={() => onToggleSave(property.id)}
@@ -168,7 +158,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               title={isSaved ? t.card.saved : t.card.save}
               aria-label="Save property to favorites"
             >
-              <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+              <FavoriteIcon sx={{ fontSize: 16, color: isSaved ? '#e11d48' : 'inherit' }} />
             </button>
           </div>
         </div>
@@ -216,7 +206,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                 }}
                 className="absolute bottom-4 left-4 bg-black/65 hover:bg-black/85 backdrop-blur-md text-white text-xs font-bold px-3.5 py-2 rounded-full flex items-center gap-2 transition-all cursor-pointer shadow-lg border border-white/15"
               >
-                <Maximize2 className="w-3.5 h-3.5 text-[#C99325]" />
+                <OpenInFullIcon sx={{ fontSize: 14, color: '#C99325' }} />
                 <span>Open Immersive Gallery</span>
               </button>
 
@@ -267,7 +257,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                         Download & Print Official Property Brochure
                       </div>
                       <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#e0aa3e] group-hover:translate-x-1 transition-transform">
-                        <FileText className="w-4 h-4" />
+                        <DescriptionIcon sx={{ fontSize: 16 }} />
                         <span>Open Brochure Preview</span>
                       </div>
                     </div>
@@ -325,7 +315,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                   </h1>
 
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-stone-600 mt-2">
-                    <MapPin className="w-4 h-4 text-[#C99325] shrink-0" />
+                    <LocationOnIcon sx={{ fontSize: 16, color: '#C99325', flexShrink: 0 }} />
                     <span className="font-medium">{property.address || `${property.location}, ${property.district}, Tamil Nadu - ${property.pincode}`}</span>
                   </div>
                 </div>
@@ -390,7 +380,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
             {/* Description & Overview */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
               <h2 className="text-lg font-bold text-[#18241B] mb-3 flex items-center gap-2">
-                <Info className="w-5 h-5 text-[#C99325]" />
+                <InfoOutlinedIcon sx={{ fontSize: 20, color: '#C99325' }} />
                 <span>{t.propertyDetails.overview}</span>
               </h2>
               <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
@@ -401,7 +391,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
             {/* Specifications Table */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
               <h2 className="text-lg font-bold text-[#18241B] mb-4 flex items-center gap-2">
-                <Building className="w-5 h-5 text-[#013E18]" />
+                <ApartmentIcon sx={{ fontSize: 20, color: '#013E18' }} />
                 <span>{t.propertyDetails.specifications}</span>
               </h2>
 
@@ -448,7 +438,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
             {/* Amenities Grid */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
               <h2 className="text-lg font-bold text-[#18241B] mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#C99325]" />
+                <AutoAwesomeIcon sx={{ fontSize: 20, color: '#C99325' }} />
                 <span>{t.propertyDetails.amenities}</span>
               </h2>
 
@@ -458,7 +448,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                     key={idx}
                     className="flex items-center gap-2.5 p-3 rounded-xl bg-[#FAF8F2] border border-stone-200/60 text-xs font-semibold text-stone-800"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-[#013E18] shrink-0" />
+                    <CheckCircleIcon sx={{ fontSize: 16, color: '#013E18', flexShrink: 0 }} />
                     <span>{amenity}</span>
                   </div>
                 ))}
@@ -469,7 +459,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
             {property.nearbyFacilities && property.nearbyFacilities.length > 0 && (
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
                 <h2 className="text-lg font-bold text-[#18241B] mb-4 flex items-center gap-2">
-                  <Navigation className="w-5 h-5 text-[#C99325]" />
+                  <NavigationIcon sx={{ fontSize: 20, color: '#C99325' }} />
                   <span>{t.propertyDetails.nearby}</span>
                 </h2>
 
@@ -493,7 +483,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-bold text-[#18241B] flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-[#C99325]" />
+                  <LocationOnIcon sx={{ fontSize: 20, color: '#C99325' }} />
                   <span>{t.propertyDetails.locationPreview}</span>
                 </h2>
                 <span className="text-[11px] text-stone-400">{t.propertyDetails.mapNotice}</span>
@@ -510,7 +500,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                 {/* Central Pin */}
                 <div className="relative z-10 flex flex-col items-center animate-bounce">
                   <div className="bg-[#013E18] text-[#F5F2E9] p-2 rounded-full shadow-xl border-2 border-[#C99325]">
-                    <MapPin className="w-6 h-6 text-[#C99325] fill-[#C99325]" />
+                    <LocationOnIcon sx={{ fontSize: 24, color: '#C99325' }} />
                   </div>
                   <div className="bg-white px-3 py-1 rounded-full text-xs font-black text-[#18241B] shadow-md mt-1 border border-stone-300">
                     {property.location}, {property.district}
@@ -557,7 +547,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                     {property.seller.avatarUrl ? (
                       <img src={property.seller.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <Building2 className="w-6 h-6 text-[#013E18]" />
+                      <ApartmentIcon sx={{ fontSize: 24, color: '#013E18' }} />
                     )}
                   </div>
                   <div>
@@ -568,7 +558,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                       {property.seller.badgeTitle || (property.ownershipType === 'company' ? 'Grounds & Gates Advisory Team' : 'Property Representative')}
                     </div>
                     <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-semibold mt-0.5">
-                      <Clock className="w-3 h-3" />
+                      <AccessTimeIcon sx={{ fontSize: 12 }} />
                       <span>Responds within {property.seller.responseTimeMinutes || 15} mins</span>
                     </div>
                   </div>
@@ -576,7 +566,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
 
                 {/* Guarantee Banner */}
                 <div className="mt-4 p-3 rounded-xl bg-[#FAF8F2] border border-stone-200/80 text-xs text-stone-600 leading-relaxed flex items-start gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#013E18] shrink-0 mt-0.5" />
+                  <VerifiedUserIcon sx={{ fontSize: 16, color: '#013E18', flexShrink: 0, mt: '2px' }} />
                   <p>
                     {property.ownershipType === 'company'
                       ? '100% transparent legal title, clear single-owner patta, and direct corporate assistance.'
@@ -590,7 +580,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                     onClick={onOpenEnquiry}
                     className="w-full py-3 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
                   >
-                    <Calendar className="w-4 h-4 text-[#C99325]" />
+                    <CalendarMonthIcon sx={{ fontSize: 16, color: '#C99325' }} />
                     <span>{t.propertyDetails.scheduleVisit}</span>
                   </button>
 
@@ -598,7 +588,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                     onClick={onOpenEnquiry}
                     className="w-full py-2.5 rounded-xl border-2 border-[#013E18] text-[#013E18] hover:bg-[#013E18]/5 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
-                    <Mail className="w-4 h-4 text-[#C99325]" />
+                    <EmailIcon sx={{ fontSize: 16, color: '#C99325' }} />
                     <span>{t.propertyDetails.contactSeller}</span>
                   </button>
                 </div>
@@ -608,7 +598,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                     href="tel:+914222987000"
                     className="text-xs text-stone-500 hover:text-[#013E18] font-medium flex items-center justify-center gap-1"
                   >
-                    <Phone className="w-3 h-3 text-[#C99325]" />
+                    <PhoneIcon sx={{ fontSize: 12, color: '#C99325' }} />
                     <span>Direct Desk: +91 422 298 7000</span>
                   </a>
                 </div>
@@ -617,7 +607,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               {/* Demo Listing Disclaimer Banner */}
               <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 text-xs text-amber-900 leading-relaxed">
                 <div className="font-bold text-amber-950 flex items-center gap-1.5 mb-1">
-                  <ShieldCheck className="w-4 h-4 text-amber-700" />
+                  <VerifiedUserIcon sx={{ fontSize: 16, color: '#b45309' }} />
                   <span>CEO Presentation Demo Listing</span>
                 </div>
                 <p className="text-[11px] text-amber-800">
@@ -676,7 +666,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
           onClick={onOpenEnquiry}
           className="px-5 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs flex items-center gap-2 shrink-0 shadow-md cursor-pointer"
         >
-          <Calendar className="w-4 h-4 text-[#C99325]" />
+          <CalendarMonthIcon sx={{ fontSize: 16, color: '#C99325' }} />
           <span>{t.propertyDetails.scheduleVisit}</span>
         </button>
       </div>
@@ -708,7 +698,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                   className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
                   aria-label="Close lightbox"
                 >
-                  <X className="w-5 h-5" />
+                  <CloseIcon sx={{ fontSize: 20 }} />
                 </button>
               </div>
             </div>
@@ -721,7 +711,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                   className="absolute left-2 sm:left-6 z-10 p-3 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/20 transition-all cursor-pointer"
                   aria-label="Previous image"
                 >
-                  <ChevronLeft className="w-6 h-6" />
+                  <ChevronLeftIcon sx={{ fontSize: 24 }} />
                 </button>
               )}
 
@@ -741,7 +731,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                   className="absolute right-2 sm:right-6 z-10 p-3 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/20 transition-all cursor-pointer"
                   aria-label="Next image"
                 >
-                  <ChevronRight className="w-6 h-6" />
+                  <ChevronRightIcon sx={{ fontSize: 24 }} />
                 </button>
               )}
             </div>
@@ -803,7 +793,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                   className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                   aria-label="Close brochure modal"
                 >
-                  <X className="w-5 h-5" />
+                  <CloseIcon sx={{ fontSize: 20 }} />
                 </button>
               </div>
 
@@ -855,7 +845,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                     onClick={() => window.print()}
                     className="w-full sm:w-auto px-5 py-2.5 bg-[#013E18] hover:bg-[#00280f] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md"
                   >
-                    <Printer className="w-4 h-4 text-[#C99325]" />
+                    <PrintIcon sx={{ fontSize: 16, color: '#C99325' }} />
                     <span>Print / Save PDF</span>
                   </button>
                 </div>

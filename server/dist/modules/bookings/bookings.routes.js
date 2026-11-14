@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { getBookings, createBooking, updateBooking, verifyPayment, } from './bookings.controller.js';
+import { authenticate } from '../../middleware/auth.middleware.js';
+import { requireRole } from '../../middleware/rbac.middleware.js';
+const router = Router();
+router.get('/', authenticate, requireRole('super-admin', 'admin', 'sales-manager', 'sales-executive', 'seller', 'buyer'), getBookings);
+router.post('/', authenticate, requireRole('super-admin', 'admin', 'sales-manager', 'sales-executive', 'seller'), createBooking);
+router.patch('/:id', authenticate, requireRole('super-admin', 'admin', 'sales-manager'), updateBooking);
+router.patch('/:id/verify-payment', authenticate, requireRole('super-admin', 'admin', 'sales-manager'), verifyPayment);
+export default router;

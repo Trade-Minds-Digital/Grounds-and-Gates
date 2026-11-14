@@ -88,12 +88,16 @@ export interface Property {
   seller: SellerInfo;
   
   // Marketplace metadata
+  projectId?: string;
   listingDate: string;
   status: ListingStatus;
   featured: boolean;
   demoLabel: string; // 'Demo Listing'
   viewsCount?: number;
   enquiriesCount?: number;
+  verified?: boolean;
+  legalApprovalStatus?: 'pending' | 'approved' | 'rejected';
+  verificationStatus?: 'verified' | 'pending' | 'unverified';
 }
 
 export interface PropertyFilterState {
@@ -154,4 +158,13 @@ export interface CategoryInfo {
 
 export type LanguageCode = 'en' | 'ta';
 
-export type UserRole = 'buyer' | 'owner' | 'agent' | 'company-admin';
+export type UserRole =
+  | 'super-admin'
+  | 'admin'
+  | 'sales-manager'
+  | 'sales-executive'
+  | 'listing-manager'
+  | 'buyer'
+  | 'owner'
+  | 'agent'
+  | 'company-admin';

@@ -1,0 +1,255 @@
+import mongoose, { Schema, Document } from 'mongoose';
+
+export type PropertyCategory =
+  | 'residential-plots'
+  | 'agricultural-land'
+  | 'independent-houses'
+  | 'villas'
+  | 'apartments'
+  | 'commercial-properties';
+
+export type ListingType = 'buy' | 'rent';
+export type OwnershipType = 'company' | 'third-party';
+export type FacingDirection = 'North' | 'South' | 'East' | 'West' | 'North-East' | 'North-West' | 'South-East' | 'South-West';
+export type ListingStatus = 'active' | 'under-negotiation' | 'sold' | 'pending-review';
+export type PublishingStatus = 'draft' | 'pending-review' | 'published' | 'rejected' | 'archived';
+export type AvailabilityStatus = 'available' | 'under-negotiation' | 'sold';
+
+export interface ILegalDocument {
+  title: string;
+  url: string;
+  documentType: string;
+  isPrivate: boolean;
+  uploadedAt: Date;
+}
+
+export interface IVerificationReview {
+  reviewedBy?: mongoose.Types.ObjectId;
+  reviewerEmail?: string;
+  reviewedAt?: Date;
+  status: 'pending' | 'verified' | 'rejected';
+  notes?: string;
+  supportingDocuments?: string[];
+}
+
+export interface IProperty extends Document {
+  referenceId: string;
+  slug: string;
+  title: string;
+  tamilTitle?: string;
+  description: string;
+  tamilDescription?: string;
+  category: PropertyCategory;
+  propertyType?: string;
+  listingType: ListingType;
+  ownershipType: OwnershipType;
+  price: number;
+  priceUnit: string;
+  negotiable: boolean;
+  plotArea: number;
+  plotAreaUnit: 'cents' | 'sq.ft' | 'acres';
+  builtUpArea?: number;
+  builtUpAreaUnit?: 'sq.ft';
+  bedrooms?: number;
+  bathrooms?: number;
+  balconies?: number;
+  facing: FacingDirection;
+  furnishingStatus?: 'unfurnished' | 'semi-furnished' | 'fully-furnished';
+  floors?: number;
+  roadWidthFeet?: number;
+  address: string;
+  district: string;
+  city: string;
+  locality: string;
+  pincode: string;
+  state: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  landmark?: string;
+  images: string[];
+  videos?: string[];
+  floorPlans?: string[];
+  amenities: string[];
+  nearbyFacilities: Array<{
+    name: string;
+    distance: string;
+    type: string;
+  }>;
+  seller: {
+    name: string;
+    type: 'company' | 'owner' | 'agent' | 'builder';
+    phone: string;
+    email: string;
+    experienceYears?: number;
+    totalListings?: number;
+    isCompanyRepresentative?: boolean;
+    avatarUrl?: string;
+  };
+  developer?: mongoose.Types.ObjectId;
+  project?: mongoose.Types.ObjectId;
+  projectId?: string;
+  assignedAgent?: mongoose.Types.ObjectId;
+  approvalAuthority?: 'DTCP' | 'CMDA' | 'RERA' | 'Panchayat' | 'Agricultural Patta';
+  dtcpApproved?: boolean;
+  cmdaApproved?: boolean;
+  reraId?: string;
+  waterSource?: string[];
+  electricitySupply?: string;
+  status: ListingStatus;
+  publishingStatus: PublishingStatus;
+  availability: AvailabilityStatus;
+  verified: boolean;
+  featured: boolean;
+  published: boolean;
+  legalDocuments?: ILegalDocument[];
+  verificationReview?: IVerificationReview;
+  viewsCount: number;
+  enquiriesCount: number;
+  createdBy?: mongoose.Types.ObjectId;
+  updatedBy?: mongoose.Types.ObjectId;
+}
+
+const PropertySchema = new Schema<IProperty>(
+  {
+    referenceId: { type: String, required: true, unique: true, trim: true },
+    slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    title: { type: String, required: true, trim: true },
+    tamilTitle: { type: String, trim: true },
+    description: { type: String, required: true },
+    tamilDescription: { type: String, trim: true },
+    category: {
+      type: String,
+      required: true,
+      enum: [
+        'residential-plots',
+        'agricultural-land',
+        'independent-houses',
+        'villas',
+        'apartments',
+        'commercial-properties',
+      ],
+    },
+    propertyType: { type: String, default: 'Residential' },
+    listingType: { type: String, required: true, enum: ['buy', 'rent'], default: 'buy' },
+    ownershipType: { type: String, required: true, enum: ['company', 'third-party'], default: 'company' },
+    price: { type: Number, required: true, min: 0 },
+    priceUnit: { type: String, default: 'Total' },
+    negotiable: { type: Boolean, default: false },
+    plotArea: { type: Number, required: true, min: 0 },
+    plotAreaUnit: { type: String, required: true, enum: ['cents', 'sq.ft', 'acres'], default: 'cents' },
+    builtUpArea: { type: Number },
+    builtUpAreaUnit: { type: String, default: 'sq.ft' },
+    bedrooms: { type: Number },
+    bathrooms: { type: Number },
+    balconies: { type: Number, default: 0 },
+    facing: {
+      type: String,
+      required: true,
+      enum: ['North', 'South', 'East', 'West', 'North-East', 'North-West', 'South-East', 'South-West'],
+      default: 'North',
+    },
+    furnishingStatus: {
+      type: String,
+      enum: ['unfurnished', 'semi-furnished', 'fully-furnished'],
+      default: 'unfurnished',
+    },
+    floors: { type: Number },
+    roadWidthFeet: { type: Number },
+    address: { type: String, required: true },
+    district: { type: String, required: true, trim: true },
+    city: { type: String, required: true, trim: true },
+    locality: { type: String, required: true, trim: true },
+    pincode: { type: String, required: true, trim: true },
+    state: { type: String, default: 'Tamil Nadu' },
+    coordinates: {
+      lat: Number,
+      lng: Number,
+    },
+    landmark: String,
+    images: [{ type: String, required: true }],
+    videos: [{ type: String }],
+    floorPlans: [{ type: String }],
+    amenities: [{ type: String }],
+    nearbyFacilities: [
+      {
+        name: String,
+        distance: String,
+        type: { type: String },
+      },
+    ],
+    seller: {
+      name: { type: String, required: true },
+      type: { type: String, enum: ['company', 'owner', 'agent', 'builder'], default: 'company' },
+      phone: { type: String, required: true },
+      email: { type: String, required: true },
+      experienceYears: Number,
+      totalListings: Number,
+      isCompanyRepresentative: Boolean,
+      avatarUrl: String,
+    },
+    developer: { type: Schema.Types.ObjectId, ref: 'Developer' },
+    project: { type: Schema.Types.ObjectId, ref: 'Project' },
+    projectId: { type: String, trim: true },
+    assignedAgent: { type: Schema.Types.ObjectId, ref: 'User' },
+    approvalAuthority: {
+      type: String,
+      enum: ['DTCP', 'CMDA', 'RERA', 'Panchayat', 'Agricultural Patta'],
+    },
+    dtcpApproved: { type: Boolean, default: false },
+    cmdaApproved: { type: Boolean, default: false },
+    reraId: String,
+    waterSource: [{ type: String }],
+    electricitySupply: String,
+    status: {
+      type: String,
+      enum: ['active', 'under-negotiation', 'sold', 'pending-review'],
+      default: 'active',
+    },
+    publishingStatus: {
+      type: String,
+      enum: ['draft', 'pending-review', 'published', 'rejected', 'archived'],
+      default: 'published',
+    },
+    availability: {
+      type: String,
+      enum: ['available', 'under-negotiation', 'sold'],
+      default: 'available',
+    },
+    verified: { type: Boolean, default: true },
+    featured: { type: Boolean, default: false },
+    published: { type: Boolean, default: true },
+    legalDocuments: [
+      {
+        title: { type: String, required: true },
+        url: { type: String, required: true },
+        documentType: { type: String, default: 'General' },
+        isPrivate: { type: Boolean, default: true },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+    verificationReview: {
+      reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      reviewerEmail: { type: String },
+      reviewedAt: { type: Date },
+      status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+      notes: { type: String },
+      supportingDocuments: [{ type: String }],
+    },
+    viewsCount: { type: Number, default: 0 },
+    enquiriesCount: { type: Number, default: 0 },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  },
+  { timestamps: true }
+);
+
+PropertySchema.index({ district: 1, locality: 1 });
+PropertySchema.index({ category: 1, listingType: 1 });
+PropertySchema.index({ price: 1 });
+PropertySchema.index({ status: 1, availability: 1, published: 1 });
+PropertySchema.index({ featured: 1 });
+PropertySchema.index({ title: 'text', description: 'text', locality: 'text' });
+
+export const Property = mongoose.model<IProperty>('Property', PropertySchema);

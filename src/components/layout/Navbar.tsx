@@ -1,25 +1,40 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { Logo } from '../common/Logo';
 import { translations } from '../../i18n/translations';
 import { LanguageCode, UserRole, PropertyFilterState } from '../../types/property';
 import { LOCATIONS_DATA } from '../../data/locations';
 import {
-  MapPin,
-  Globe,
-  Heart,
-  Scale,
-  PlusCircle,
+  AppBar,
+  Toolbar,
+  Container,
+  Box,
+  Button,
+  IconButton,
+  Badge,
   Menu,
-  X,
-  User,
-  ChevronDown,
-  Building,
-  KeyRound,
-  LogOut,
-  Layers,
-  Sparkles
-} from 'lucide-react';
+  MenuItem,
+  Drawer,
+  Typography,
+  Chip,
+  Divider,
+  Tooltip,
+  Avatar,
+  FormControl,
+  Select,
+} from '@mui/material';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import BalanceIcon from '@mui/icons-material/Balance';
+import AddIcon from '@mui/icons-material/Add';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
+import PersonIcon from '@mui/icons-material/Person';
+import BusinessIcon from '@mui/icons-material/Business';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import HomeIcon from '@mui/icons-material/Home';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import InfoIcon from '@mui/icons-material/Info';
+import ContactMailIcon from '@mui/icons-material/ContactMail';
+import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk';
 
 interface NavbarProps {
   currentView: string;
@@ -51,25 +66,33 @@ export const Navbar: React.FC<NavbarProps> = ({
   userRole,
   onUserRoleChange,
   onOpenAuth,
-  isLoggedIn,
-  onLogout,
+  isLoggedIn: _isLoggedIn,
+  onLogout: _onLogout,
 }) => {
   const t = translations[lang];
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [userAnchorEl, setUserAnchorEl] = useState<null | HTMLElement>(null);
 
-  const navLinks = [
-    { id: 'home', label: t.nav.home },
+  // Streamlined primary desktop links (clean, non-cluttered)
+  const desktopLinks = [
     { id: 'buy', label: t.nav.buy, filter: { listingType: 'buy' } },
     { id: 'rent', label: t.nav.rent, filter: { listingType: 'rent' } },
     { id: 'commercial', label: t.nav.commercial, filter: { category: 'commercial-properties' } },
-    { id: 'about', label: lang === 'ta' ? 'எங்களைப் பற்றி' : 'About' },
     { id: 'contact', label: lang === 'ta' ? 'தொடர்புக்கு' : 'Contact' },
   ];
 
+  // Full links set for mobile drawer
+  const mobileLinks = [
+    { id: 'home', label: t.nav.home, icon: <HomeIcon sx={{ fontSize: 18 }} /> },
+    { id: 'buy', label: t.nav.buy, filter: { listingType: 'buy' }, icon: <ApartmentIcon sx={{ fontSize: 18 }} /> },
+    { id: 'rent', label: t.nav.rent, filter: { listingType: 'rent' }, icon: <ApartmentIcon sx={{ fontSize: 18 }} /> },
+    { id: 'commercial', label: t.nav.commercial, filter: { category: 'commercial-properties' }, icon: <BusinessIcon sx={{ fontSize: 18 }} /> },
+    { id: 'about', label: lang === 'ta' ? 'எங்களைப் பற்றி' : 'About', icon: <InfoIcon sx={{ fontSize: 18 }} /> },
+    { id: 'contact', label: lang === 'ta' ? 'தொடர்புக்கு' : 'Contact', icon: <ContactMailIcon sx={{ fontSize: 18 }} /> },
+  ];
+
   const handleLinkClick = (id: string, filter?: any) => {
-    setMobileMenuOpen(false);
+    setMobileDrawerOpen(false);
     if (id === 'home') {
       onNavigate('home');
     } else if (id === 'buy' || id === 'rent' || id === 'commercial') {
@@ -84,84 +107,481 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FFFFFF] border-b border-[#18241B]/10 shadow-xs backdrop-blur-md bg-white/95">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 gap-2 sm:gap-4">
-          
-          {/* Left: Brand Logo & Location Selector */}
-          <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 shrink-0">
-            <button
-              onClick={() => handleLinkClick('home')}
-              className="text-left focus:outline-hidden cursor-pointer shrink-0"
-              aria-label="Grounds and Gates Home"
+    <AppBar
+      position="sticky"
+      elevation={0}
+      sx={{
+        bgcolor: 'rgba(255, 255, 255, 0.96)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(1, 62, 24, 0.08)',
+        boxShadow: '0 2px 12px rgba(1, 62, 24, 0.04)',
+        color: '#18241B',
+      }}
+    >
+      <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1240px !important', px: { xs: 2, sm: 3 } }}>
+        <Toolbar
+          disableGutters
+          sx={{
+            height: 64,
+            minHeight: '64px !important',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          {/* Left: Brand Logo (Clicking routes Home) */}
+          <Box
+            component="button"
+            onClick={() => handleLinkClick('home')}
+            sx={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              p: 0,
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              flexShrink: 0,
+              transition: 'opacity 0.2s',
+              '&:hover': { opacity: 0.9 },
+            }}
+            aria-label="Grounds and Gates Home"
+          >
+            <Logo variant="horizontal" size="sm" animateEntrance />
+          </Box>
+
+          {/* Middle: Streamlined Navigation Links */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
+            {desktopLinks.map(link => {
+              const isActive =
+                (link.id === 'buy' && currentView === 'properties' && activeFilter?.listingType === 'buy' && activeFilter?.category !== 'commercial-properties') ||
+                (link.id === 'rent' && currentView === 'properties' && activeFilter?.listingType === 'rent') ||
+                (link.id === 'commercial' && currentView === 'properties' && activeFilter?.category === 'commercial-properties') ||
+                (link.id === 'contact' && currentView === 'contact');
+
+              return (
+                <Button
+                  key={link.id}
+                  variant="text"
+                  onClick={() => handleLinkClick(link.id, link.filter)}
+                  sx={{
+                    color: isActive ? '#013E18' : '#334155',
+                    fontWeight: isActive ? 800 : 600,
+                    fontSize: '0.86rem',
+                    letterSpacing: '-0.01em',
+                    borderRadius: '8px',
+                    px: 1.6,
+                    py: 0.6,
+                    position: 'relative',
+                    transition: 'all 0.15s',
+                    '&:hover': {
+                      bgcolor: 'rgba(1, 62, 24, 0.05)',
+                      color: '#013E18',
+                    },
+                    '&::after': isActive ? {
+                      content: '""',
+                      position: 'absolute',
+                      bottom: 2,
+                      left: 14,
+                      right: 14,
+                      height: 2.5,
+                      borderRadius: 2,
+                      bgcolor: '#C99325',
+                    } : {},
+                  }}
+                >
+                  {link.label}
+                </Button>
+              );
+            })}
+          </Box>
+
+          {/* Right: Compact Language Toggle, Favorites, Profile & Post CTA */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.2 }, flexShrink: 0 }}>
+            
+            {/* Compact Language Pill */}
+            <Box
+              sx={{
+                display: 'flex',
+                bgcolor: '#FAF8F2',
+                border: '1px solid #ECE7DA',
+                borderRadius: '16px',
+                p: '2px',
+              }}
             >
-              <Logo variant="horizontal" size="md" className="shrink-0" animateEntrance />
-            </button>
-
-            {/* Location Selector (Desktop) */}
-            <div className="relative hidden xl:block shrink-0">
-              <button
-                onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#18241B]/15 bg-[#F5F2E9] hover:bg-[#ede9dc] text-xs font-semibold text-[#18241B] transition-colors cursor-pointer shrink-0"
-                aria-label="Choose target district or city"
+              <Button
+                size="small"
+                onClick={() => onLanguageChange('en')}
+                sx={{
+                  minWidth: 28,
+                  px: 0.8,
+                  py: 0.2,
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  borderRadius: '14px',
+                  bgcolor: lang === 'en' ? '#013E18' : 'transparent',
+                  color: lang === 'en' ? '#FFFFFF' : '#5A675D',
+                  boxShadow: 'none',
+                  height: 24,
+                  '&:hover': {
+                    bgcolor: lang === 'en' ? '#00280F' : 'rgba(0,0,0,0.04)',
+                  },
+                }}
               >
-                <MapPin className="w-3.5 h-3.5 text-[#C99325]" />
-                <span className="truncate max-w-[130px]">
-                  {selectedLocation === 'All' ? (lang === 'ta' ? 'அனைத்து தமிழகம்' : 'All Tamil Nadu') : selectedLocation}
-                </span>
-                <ChevronDown className="w-3 h-3 text-[#536458]" />
-              </button>
+                EN
+              </Button>
+              <Button
+                size="small"
+                onClick={() => onLanguageChange('ta')}
+                sx={{
+                  minWidth: 32,
+                  px: 0.8,
+                  py: 0.2,
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  borderRadius: '14px',
+                  bgcolor: lang === 'ta' ? '#013E18' : 'transparent',
+                  color: lang === 'ta' ? '#FFFFFF' : '#5A675D',
+                  boxShadow: 'none',
+                  height: 24,
+                  '&:hover': {
+                    bgcolor: lang === 'ta' ? '#00280F' : 'rgba(0,0,0,0.04)',
+                  },
+                }}
+              >
+                தமிழ்
+              </Button>
+            </Box>
 
-              {locationDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setLocationDropdownOpen(false)}
+            {/* Saved Favorites Icon */}
+            <Tooltip title="Saved Properties">
+              <IconButton
+                onClick={() => onNavigate('favorites')}
+                size="small"
+                sx={{
+                  color: savedCount > 0 ? '#E11D48' : '#334155',
+                  p: 0.8,
+                  '&:hover': { bgcolor: 'rgba(225, 29, 72, 0.08)' },
+                }}
+                aria-label="Saved properties"
+              >
+                <Badge
+                  badgeContent={savedCount}
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      bgcolor: '#E11D48',
+                      color: '#FFFFFF',
+                      fontWeight: 800,
+                      fontSize: '0.62rem',
+                      height: 16,
+                      minWidth: 16,
+                    },
+                  }}
+                >
+                  <FavoriteIcon sx={{ fontSize: 20, color: savedCount > 0 ? '#E11D48' : 'inherit' }} />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+
+            {/* Compact Profile Avatar Button */}
+            <Tooltip title={userRole === 'owner' ? 'Seller CRM & Portals' : 'Buyer Hub & Portals'}>
+              <IconButton
+                onClick={(e) => setUserAnchorEl(e.currentTarget)}
+                size="small"
+                sx={{ p: 0.4 }}
+                aria-label="User account menu"
+              >
+                <Avatar
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    bgcolor: userRole === 'owner' ? '#C99325' : '#013E18',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    color: '#FFFFFF',
+                    border: '2px solid #FFFFFF',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  {userRole === 'owner' ? 'S' : 'B'}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
+
+            <Menu
+              anchorEl={userAnchorEl}
+              open={Boolean(userAnchorEl)}
+              onClose={() => setUserAnchorEl(null)}
+              slotProps={{
+                paper: {
+                  sx: {
+                    borderRadius: '16px',
+                    width: 250,
+                    p: 1,
+                    boxShadow: '0 16px 40px rgba(1, 62, 24, 0.15)',
+                    border: '1px solid #ECE7DA',
+                  },
+                },
+              }}
+            >
+              <Box sx={{ px: 2, py: 1 }}>
+                <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.62rem' }}>
+                  Active Persona
+                </Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#18241B' }}>
+                  {userRole === 'buyer' ? 'Buyer / Investor Hub' : 'Seller / Agency CRM'}
+                </Typography>
+              </Box>
+
+              <Divider sx={{ my: 0.5 }} />
+
+              <MenuItem
+                onClick={() => {
+                  onNavigate('buyer-dashboard');
+                  setUserAnchorEl(null);
+                }}
+                sx={{ borderRadius: '10px', fontSize: '0.82rem', fontWeight: 600, py: 0.8 }}
+              >
+                <PersonIcon sx={{ fontSize: 18, color: '#C99325', mr: 1.2 }} />
+                <span>{t.nav.buyerDashboard}</span>
+              </MenuItem>
+
+              <MenuItem
+                onClick={() => {
+                  onNavigate('seller-dashboard');
+                  setUserAnchorEl(null);
+                }}
+                sx={{ borderRadius: '10px', fontSize: '0.82rem', fontWeight: 600, py: 0.8 }}
+              >
+                <BusinessIcon sx={{ fontSize: 18, color: '#013E18', mr: 1.2 }} />
+                <span>{t.nav.sellerDashboard}</span>
+              </MenuItem>
+
+              <MenuItem
+                onClick={() => {
+                  onNavigate('compare');
+                  setUserAnchorEl(null);
+                }}
+                sx={{ borderRadius: '10px', fontSize: '0.82rem', fontWeight: 600, py: 0.8 }}
+              >
+                <BalanceIcon sx={{ fontSize: 18, color: '#C99325', mr: 1.2 }} />
+                <span>Compare Listings ({compareCount})</span>
+              </MenuItem>
+
+              <Divider sx={{ my: 0.5 }} />
+
+              <Box sx={{ px: 2, py: 0.8 }}>
+                <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.6rem' }}>
+                  Switch Demo Persona:
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, mt: 0.6 }}>
+                  <Chip
+                    label="Buyer"
+                    size="small"
+                    clickable
+                    onClick={() => {
+                      onUserRoleChange('buyer');
+                      setUserAnchorEl(null);
+                    }}
+                    sx={{
+                      bgcolor: userRole === 'buyer' ? '#013E18' : '#FAF8F2',
+                      color: userRole === 'buyer' ? '#FFFFFF' : '#18241B',
+                      fontWeight: 800,
+                      fontSize: '0.68rem',
+                      height: 24,
+                      flex: 1,
+                    }}
                   />
-                  <div className="absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-stone-200 py-2 z-20 max-h-80 overflow-y-auto">
-                    <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                      {lang === 'ta' ? 'முக்கிய நகரங்கள்' : 'Target Hubs'}
-                    </div>
-                    <button
-                      onClick={() => {
-                        onLocationChange('All');
-                        setLocationDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between hover:bg-[#F5F2E9] transition-colors ${
-                        selectedLocation === 'All' ? 'text-[#013E18] bg-[#F5F2E9]' : 'text-stone-700'
-                      }`}
-                    >
-                      <span>{lang === 'ta' ? 'அனைத்து தமிழ்நாடு' : 'All Tamil Nadu'}</span>
-                      <span className="text-[10px] text-stone-400">32 Listings</span>
-                    </button>
-                    {LOCATIONS_DATA.map(loc => (
-                      <button
-                        key={loc.id}
-                        onClick={() => {
-                          onLocationChange(loc.name);
-                          setLocationDropdownOpen(false);
-                          onNavigate('properties', { district: loc.name });
-                        }}
-                        className={`w-full text-left px-3.5 py-2 text-xs font-medium flex items-center justify-between hover:bg-[#F5F2E9] transition-colors ${
-                          selectedLocation === loc.name ? 'text-[#013E18] font-bold bg-[#F5F2E9]' : 'text-stone-700'
-                        }`}
-                      >
-                        <div>
-                          <span>{loc.name}</span>
-                          <span className="text-[10px] text-stone-400 ml-1.5 font-normal">({loc.tamilName})</span>
-                        </div>
-                        <span className="text-[10px] text-[#C99325] font-semibold">{loc.listingCount}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+                  <Chip
+                    label="Seller"
+                    size="small"
+                    clickable
+                    onClick={() => {
+                      onUserRoleChange('owner');
+                      setUserAnchorEl(null);
+                    }}
+                    sx={{
+                      bgcolor: userRole === 'owner' ? '#C99325' : '#FAF8F2',
+                      color: userRole === 'owner' ? '#FFFFFF' : '#18241B',
+                      fontWeight: 800,
+                      fontSize: '0.68rem',
+                      height: 24,
+                      flex: 1,
+                    }}
+                  />
+                </Box>
+              </Box>
 
-          {/* Middle: Primary Navigation Links (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 shrink-0">
-            {navLinks.map(link => {
+              <Divider sx={{ my: 0.5 }} />
+
+              <MenuItem
+                onClick={() => {
+                  setUserAnchorEl(null);
+                  onOpenAuth('login');
+                }}
+                sx={{ borderRadius: '10px', fontSize: '0.78rem', color: '#536458', fontWeight: 600 }}
+              >
+                <VpnKeyIcon sx={{ fontSize: 16, color: 'text.disabled', mr: 1 }} />
+                <span>Sign In / Authentication</span>
+              </MenuItem>
+            </Menu>
+
+            {/* Compact "Post Property" CTA */}
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => onNavigate('post-property')}
+              startIcon={<AddIcon sx={{ fontSize: 16, color: '#C99325' }} />}
+              sx={{
+                display: { xs: 'none', sm: 'inline-flex' },
+                bgcolor: '#013E18',
+                color: '#FFFFFF',
+                borderRadius: '18px',
+                fontWeight: 800,
+                fontSize: '0.75rem',
+                letterSpacing: '0.01em',
+                py: 0.6,
+                px: 1.8,
+                height: 36,
+                boxShadow: '0 2px 8px rgba(1, 62, 24, 0.2)',
+                transition: 'all 0.15s',
+                '&:hover': {
+                  bgcolor: '#00280F',
+                  boxShadow: '0 4px 12px rgba(1, 62, 24, 0.3)',
+                },
+              }}
+            >
+              {t.nav.postProperty}
+            </Button>
+
+            {/* Mobile Menu Hamburger */}
+            <IconButton
+              onClick={() => setMobileDrawerOpen(true)}
+              sx={{
+                display: { md: 'none' },
+                color: '#18241B',
+                p: 0.8,
+              }}
+              aria-label="Open navigation menu"
+            >
+              <MenuIcon sx={{ fontSize: 22 }} />
+            </IconButton>
+
+          </Box>
+        </Toolbar>
+      </Container>
+
+      {/* Sleek Mobile Navigation Drawer */}
+      <Drawer
+        anchor="right"
+        open={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        slotProps={{
+          paper: {
+            sx: {
+              width: 300,
+              p: 2.5,
+              bgcolor: '#FFFFFF',
+              boxShadow: '-8px 0 32px rgba(1, 62, 24, 0.16)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            },
+          },
+        }}
+      >
+        <Box>
+          {/* Drawer Header */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2, borderBottom: '1px solid #ECE7DA' }}>
+            <Logo variant="horizontal" size="sm" />
+            <IconButton
+              onClick={() => setMobileDrawerOpen(false)}
+              size="small"
+              sx={{ border: '1px solid #ECE7DA', borderRadius: '8px' }}
+            >
+              <CloseIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Box>
+
+          {/* Quick Active Persona Switcher */}
+          <Box sx={{ my: 2, p: 1.2, bgcolor: '#FAF8F2', borderRadius: '12px', border: '1px solid #ECE7DA' }}>
+            <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.62rem', display: 'block', mb: 0.8 }}>
+              Active Mode:
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Chip
+                label="Buyer Mode"
+                size="small"
+                clickable
+                onClick={() => onUserRoleChange('buyer')}
+                sx={{
+                  flex: 1,
+                  bgcolor: userRole === 'buyer' ? '#013E18' : '#FFFFFF',
+                  color: userRole === 'buyer' ? '#FFFFFF' : '#18241B',
+                  fontWeight: 800,
+                  fontSize: '0.7rem',
+                  height: 28,
+                  border: userRole === 'buyer' ? 'none' : '1px solid #ECE7DA',
+                }}
+              />
+              <Chip
+                label="Seller CRM"
+                size="small"
+                clickable
+                onClick={() => onUserRoleChange('owner')}
+                sx={{
+                  flex: 1,
+                  bgcolor: userRole === 'owner' ? '#C99325' : '#FFFFFF',
+                  color: userRole === 'owner' ? '#FFFFFF' : '#18241B',
+                  fontWeight: 800,
+                  fontSize: '0.7rem',
+                  height: 28,
+                  border: userRole === 'owner' ? 'none' : '1px solid #ECE7DA',
+                }}
+              />
+            </Box>
+          </Box>
+
+          {/* Corridor Hub Filter */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.62rem', display: 'block', mb: 0.6 }}>
+              {lang === 'ta' ? 'இருப்பிடம்' : 'Tamil Nadu Corridor'}
+            </Typography>
+            <FormControl fullWidth size="small">
+              <Select
+                value={selectedLocation}
+                onChange={(e) => {
+                  onLocationChange(e.target.value);
+                  setMobileDrawerOpen(false);
+                  if (e.target.value !== 'All') {
+                    onNavigate('properties', { district: e.target.value });
+                  }
+                }}
+                sx={{
+                  borderRadius: '10px',
+                  bgcolor: '#FAF8F2',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  color: '#18241B',
+                  height: 38,
+                  '& fieldset': { borderColor: '#ECE7DA' },
+                }}
+              >
+                <MenuItem value="All" sx={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                  {lang === 'ta' ? 'அனைத்து தமிழ்நாடு (32)' : 'All Tamil Nadu (32)'}
+                </MenuItem>
+                {LOCATIONS_DATA.map(loc => (
+                  <MenuItem key={loc.id} value={loc.name} sx={{ fontSize: '0.78rem' }}>
+                    {loc.name} ({loc.tamilName})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          {/* Nav Links */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
+            {mobileLinks.map(link => {
               const isActive =
                 (link.id === 'home' && currentView === 'home') ||
                 (link.id === 'buy' && currentView === 'properties' && activeFilter?.listingType === 'buy' && activeFilter?.category !== 'commercial-properties') ||
@@ -171,305 +591,132 @@ export const Navbar: React.FC<NavbarProps> = ({
                 (link.id === 'contact' && currentView === 'contact');
 
               return (
-                <button
+                <Button
                   key={link.id}
+                  fullWidth
+                  startIcon={React.cloneElement(link.icon, {
+                    sx: { fontSize: 18, color: isActive ? '#C99325' : '#8C9A90' }
+                  })}
                   onClick={() => handleLinkClick(link.id, link.filter)}
-                  className={`relative px-2.5 xl:px-3 py-2 rounded-lg text-xs xl:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                    isActive
-                      ? 'text-[#013E18] font-bold'
-                      : 'text-[#18241B] hover:text-[#013E18] hover:bg-stone-100/70'
-                  }`}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    py: 1,
+                    px: 1.5,
+                    borderRadius: '10px',
+                    fontWeight: isActive ? 800 : 600,
+                    fontSize: '0.84rem',
+                    color: isActive ? '#013E18' : '#334155',
+                    bgcolor: isActive ? 'rgba(1, 62, 24, 0.08)' : 'transparent',
+                    '&:hover': { bgcolor: '#FAF8F2', color: '#013E18' },
+                  }}
                 >
                   {link.label}
-                  {isActive && (
-                    <motion.div
-                      layoutId="navbar-active-underline"
-                      transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-                      className="absolute bottom-0.5 left-2.5 right-2.5 h-0.5 rounded-full bg-[#C99325]"
-                    />
-                  )}
-                </button>
+                </Button>
               );
             })}
-          </nav>
+          </Box>
 
-          {/* Right: Actions, Badges, Language, Profile & Post Property */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            
-            {/* Language Switcher */}
-            <div className="flex items-center rounded-lg border border-stone-200 bg-stone-50 p-0.5 text-xs font-bold">
-              <button
-                onClick={() => onLanguageChange('en')}
-                className={`px-2 py-1 rounded-md transition-all cursor-pointer ${
-                  lang === 'en'
-                    ? 'bg-[#013E18] text-white shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-                aria-label="Switch to English"
-              >
-                EN
-              </button>
-              <button
-                onClick={() => onLanguageChange('ta')}
-                className={`px-2 py-1 rounded-md transition-all cursor-pointer ${
-                  lang === 'ta'
-                    ? 'bg-[#013E18] text-white shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-                aria-label="தமிழுக்கு மாறவும்"
-              >
-                தமிழ்
-              </button>
-            </div>
+          <Divider sx={{ my: 1.5 }} />
 
-            {/* Compare Badge / Link */}
-            <button
-              onClick={() => onNavigate('compare')}
-              className="relative p-2 rounded-lg text-stone-700 hover:text-[#013E18] hover:bg-stone-100 transition-colors cursor-pointer"
-              title="Compare Properties"
-              aria-label={`Compare ${compareCount} properties`}
-            >
-              <Scale className="w-5 h-5" />
-              {compareCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#C99325] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-xs">
-                  {compareCount}
-                </span>
-              )}
-            </button>
-
-            {/* Saved / Favorites Badge */}
-            <button
-              onClick={() => onNavigate('favorites')}
-              className="relative p-2 rounded-lg text-stone-700 hover:text-rose-600 hover:bg-stone-100 transition-colors cursor-pointer"
-              title="Saved Properties"
-              aria-label={`View ${savedCount} saved properties`}
-            >
-              <Heart className={`w-5 h-5 ${savedCount > 0 ? 'text-rose-600 fill-rose-600' : ''}`} />
-              {savedCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-xs">
-                  {savedCount}
-                </span>
-              )}
-            </button>
-
-            {/* Post Property Button (Prominent CTA) */}
-            <button
-              onClick={() => onNavigate('post-property')}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-bold text-xs bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] shadow-xs hover:shadow-md transition-all cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4 text-[#C99325]" />
-              <span>{t.nav.postProperty}</span>
-            </button>
-
-            {/* User Profile / Portal Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="flex items-center gap-1.5 p-2 rounded-lg border border-stone-200 hover:border-stone-300 text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer"
-                aria-label="User portal and demo profiles"
-              >
-                <div className="w-6 h-6 rounded-full bg-[#013E18]/10 text-[#013E18] flex items-center justify-center font-bold text-xs">
-                  <User className="w-3.5 h-3.5 text-[#013E18]" />
-                </div>
-                <ChevronDown className="w-3 h-3 text-stone-500" />
-              </button>
-
-              {userDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setUserDropdownOpen(false)}
-                  />
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-stone-200 py-2 z-20">
-                    <div className="px-4 py-2 border-b border-stone-100">
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                        Demo Mode Portals
-                      </div>
-                      <div className="text-xs font-bold text-[#18241B] mt-0.5">
-                        {userRole === 'buyer' ? 'Logged in as Buyer' : 'Logged in as Property Owner'}
-                      </div>
-                    </div>
-
-                    <div className="py-1">
-                      <button
-                        onClick={() => {
-                          onNavigate('buyer-dashboard');
-                          setUserDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5F2E9] hover:text-[#013E18] flex items-center justify-between"
-                      >
-                        <span className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-[#C99325]" />
-                          {t.nav.buyerDashboard}
-                        </span>
-                        <span className="text-[10px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded">Buyer</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          onNavigate('seller-dashboard');
-                          setUserDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5F2E9] hover:text-[#013E18] flex items-center justify-between"
-                      >
-                        <span className="flex items-center gap-2">
-                          <Building className="w-4 h-4 text-[#013E18]" />
-                          {t.nav.sellerDashboard}
-                        </span>
-                        <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">Seller</span>
-                      </button>
-                    </div>
-
-                    <div className="border-t border-stone-100 pt-1">
-                      <div className="px-4 py-1 text-[10px] font-medium text-stone-400 uppercase">
-                        Switch Active Demo Role
-                      </div>
-                      <div className="grid grid-cols-2 gap-1 px-3 py-1">
-                        <button
-                          onClick={() => {
-                            onUserRoleChange('buyer');
-                            setUserDropdownOpen(false);
-                          }}
-                          className={`text-center py-1 text-xs rounded font-bold ${
-                            userRole === 'buyer'
-                              ? 'bg-[#013E18] text-white'
-                              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                          }`}
-                        >
-                          Buyer Mode
-                        </button>
-                        <button
-                          onClick={() => {
-                            onUserRoleChange('owner');
-                            setUserDropdownOpen(false);
-                          }}
-                          className={`text-center py-1 text-xs rounded font-bold ${
-                            userRole === 'owner'
-                              ? 'bg-[#C99325] text-white'
-                              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                          }`}
-                        >
-                          Seller Mode
-                        </button>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          setUserDropdownOpen(false);
-                          onOpenAuth('login');
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 flex items-center gap-2 mt-1"
-                      >
-                        <KeyRound className="w-3.5 h-3.5 text-stone-400" />
-                        <span>Sign In / Register Modal</span>
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Mobile Hamburger Toggle */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg text-stone-700 hover:bg-stone-100 cursor-pointer"
-              aria-label="Toggle mobile navigation menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile & Tablet Drawer Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:hidden border-t border-stone-200 bg-white px-4 pt-3 pb-6 shadow-xl overflow-hidden"
-          >
-          {/* Location Selector Mobile */}
-          <div className="mb-3">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-stone-400 block mb-1">
-              {lang === 'ta' ? 'இருப்பிடம்' : 'Target Location'}
-            </label>
-            <select
-              value={selectedLocation}
-              onChange={(e) => {
-                onLocationChange(e.target.value);
-                setMobileMenuOpen(false);
-                if (e.target.value !== 'All') {
-                  onNavigate('properties', { district: e.target.value });
-                }
+          {/* Action Hub */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<AddIcon sx={{ fontSize: 16, color: '#C99325' }} />}
+              onClick={() => {
+                setMobileDrawerOpen(false);
+                onNavigate('post-property');
               }}
-              className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-stone-200 bg-[#F5F2E9] text-[#18241B]"
+              sx={{
+                py: 1,
+                borderRadius: '10px',
+                bgcolor: '#013E18',
+                color: '#FFFFFF',
+                fontWeight: 800,
+                fontSize: '0.8rem',
+                boxShadow: '0 2px 8px rgba(1, 62, 24, 0.2)',
+                '&:hover': { bgcolor: '#00280F' },
+              }}
             >
-              <option value="All">{lang === 'ta' ? 'அனைத்து தமிழ்நாடு (32 சொத்துக்கள்)' : 'All Tamil Nadu (32 Listings)'}</option>
-              {LOCATIONS_DATA.map(loc => (
-                <option key={loc.id} value={loc.name}>
-                  {loc.name} ({loc.tamilName}) - {loc.listingCount} listings
-                </option>
-              ))}
-            </select>
-          </div>
+              {t.nav.postProperty} (Free)
+            </Button>
 
-          <div className="flex flex-col gap-1">
-            {navLinks.map(link => (
-              <button
-                key={link.id}
-                onClick={() => handleLinkClick(link.id, link.filter)}
-                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-stone-800 hover:bg-[#F5F2E9] hover:text-[#013E18]"
-              >
-                {link.label}
-              </button>
-            ))}
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<PersonIcon sx={{ fontSize: 16, color: '#C99325' }} />}
+              onClick={() => {
+                setMobileDrawerOpen(false);
+                onNavigate('buyer-dashboard');
+              }}
+              sx={{
+                py: 0.8,
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                color: '#18241B',
+                borderColor: '#ECE7DA',
+                bgcolor: '#FAF8F2',
+                '&:hover': { borderColor: '#013E18', bgcolor: '#FFFFFF' },
+              }}
+            >
+              {t.nav.buyerDashboard}
+            </Button>
 
-            <div className="border-t border-stone-100 my-2 pt-2 flex flex-col gap-1">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onNavigate('post-property');
-                }}
-                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-bold bg-[#013E18] text-[#F5F2E9] flex items-center justify-between"
-              >
-                <span className="flex items-center gap-2">
-                  <PlusCircle className="w-4 h-4 text-[#C99325]" />
-                  {t.nav.postProperty}
-                </span>
-                <span className="text-[10px] bg-[#C99325] text-white px-2 py-0.5 rounded font-bold uppercase">
-                  Free
-                </span>
-              </button>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<BusinessIcon sx={{ fontSize: 16, color: '#013E18' }} />}
+              onClick={() => {
+                setMobileDrawerOpen(false);
+                onNavigate('seller-dashboard');
+              }}
+              sx={{
+                py: 0.8,
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                color: '#18241B',
+                borderColor: '#ECE7DA',
+                bgcolor: '#FAF8F2',
+                '&:hover': { borderColor: '#013E18', bgcolor: '#FFFFFF' },
+              }}
+            >
+              {t.nav.sellerDashboard}
+            </Button>
+          </Box>
+        </Box>
 
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onNavigate('buyer-dashboard');
-                }}
-                className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold text-stone-700 hover:bg-[#F5F2E9] flex items-center gap-2"
-              >
-                <User className="w-4 h-4 text-[#C99325]" />
-                {t.nav.buyerDashboard}
-              </button>
-
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onNavigate('seller-dashboard');
-                }}
-                className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold text-stone-700 hover:bg-[#F5F2E9] flex items-center gap-2"
-              >
-                <Building className="w-4 h-4 text-[#013E18]" />
-                {t.nav.sellerDashboard}
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )}
-      </AnimatePresence>
-    </header>
+        {/* Bottom Concierge */}
+        <Box sx={{ mt: 2, p: 1.5, borderRadius: '12px', bgcolor: '#FAF8F2', border: '1px solid #ECE7DA' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.3 }}>
+            <PhoneInTalkIcon sx={{ fontSize: 14, color: '#C99325' }} />
+            <Typography variant="caption" sx={{ fontWeight: 800, color: '#013E18', fontSize: '0.7rem' }}>
+              Grounds & Gates Concierge
+            </Typography>
+          </Box>
+          <Button
+            component="a"
+            href="tel:+914222987000"
+            fullWidth
+            size="small"
+            variant="outlined"
+            sx={{
+              borderRadius: '6px',
+              fontSize: '0.7rem',
+              fontWeight: 800,
+              borderColor: '#013E18',
+              color: '#013E18',
+              py: 0.4,
+              textTransform: 'none',
+              mt: 0.5,
+            }}
+          >
+            +91 422 298 7000
+          </Button>
+        </Box>
+      </Drawer>
+    </AppBar>
   );
 };

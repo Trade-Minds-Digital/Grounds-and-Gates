@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import { getProperties, getPropertyByIdOrSlug, createProperty, updateProperty, deleteProperty, updatePropertyStatus, reviewPropertyVerification, } from './properties.controller.js';
+import { authenticate } from '../../middleware/auth.middleware.js';
+import { requireRole } from '../../middleware/rbac.middleware.js';
+const router = Router();
+router.get('/', getProperties);
+router.get('/:idOrSlug', getPropertyByIdOrSlug);
+router.post('/', authenticate, requireRole('super-admin', 'admin', 'sales-manager', 'sales-executive', 'agent', 'developer', 'seller'), createProperty);
+router.patch('/:id', authenticate, requireRole('super-admin', 'admin', 'sales-manager', 'sales-executive', 'agent', 'developer', 'seller'), updateProperty);
+router.patch('/:id/status', authenticate, requireRole('super-admin', 'admin', 'sales-manager', 'sales-executive', 'listing-manager'), updatePropertyStatus);
+router.post('/:id/review', authenticate, requireRole('super-admin', 'admin', 'listing-manager'), reviewPropertyVerification);
+router.delete('/:id', authenticate, requireRole('super-admin', 'admin'), deleteProperty);
+export default router;

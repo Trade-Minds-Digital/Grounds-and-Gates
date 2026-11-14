@@ -1,7 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { calculateLoanBreakdown, formatPriceINR } from '../../utils/propertyUtils';
 import { LanguageCode } from '../../types/property';
-import { Calculator, IndianRupee, Percent, Calendar, ShieldCheck, ArrowRight, X } from 'lucide-react';
+import {
+  Dialog,
+  Box,
+  Typography,
+  Slider,
+  TextField,
+  Button,
+  IconButton,
+  Chip,
+  Paper,
+  InputAdornment,
+  Divider,
+} from '@mui/material';
+import CalculateIcon from '@mui/icons-material/Calculate';
+import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface EmiCalculatorProps {
   initialPrice?: number;
@@ -14,7 +31,7 @@ export const EmiCalculator: React.FC<EmiCalculatorProps> = ({
   initialPrice = 5000000,
   lang = 'en',
   onClose,
-  isModal = false
+  isModal = false,
 }) => {
   const [price, setPrice] = useState<number>(initialPrice);
   const [downPaymentPercent, setDownPaymentPercent] = useState<number>(20);
@@ -34,238 +51,321 @@ export const EmiCalculator: React.FC<EmiCalculatorProps> = ({
     { label: '₹2.5 Cr', val: 25000000 },
   ];
 
-  const content = (
-    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/90 shadow-xl max-w-4xl mx-auto">
+  const calculatorBody = (
+    <Box sx={{ p: { xs: 2.5, sm: 4 }, bgcolor: '#FFFFFF', borderRadius: '24px' }}>
       {/* Header */}
-      <div className="flex items-start justify-between pb-6 border-b border-stone-100">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#013E18]/10 text-[#013E18] flex items-center justify-center shrink-0">
-            <Calculator className="w-6 h-6 text-[#013E18]" />
-          </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black text-[#18241B] tracking-tight">
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          pb: 3,
+          borderBottom: '1px solid #ECE7DA',
+        }}
+      >
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '16px',
+              bgcolor: 'rgba(1, 62, 24, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#013E18',
+              flexShrink: 0,
+            }}
+          >
+            <CalculateIcon sx={{ fontSize: 26, color: '#013E18' }} />
+          </Box>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#18241B', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
               {lang === 'ta' ? 'வீட்டுக் கடன் தவணை (EMI) கணக்கீடு' : 'Home Loan EMI Calculator'}
-            </h2>
-            <p className="text-xs text-stone-500 mt-0.5">
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#536458', mt: 0.5 }}>
               {lang === 'ta'
                 ? 'உங்கள் மாதத் தவணை மற்றும் மொத்த வட்டி விவரங்களை உடனடியாக கணக்கிடுங்கள்'
                 : 'Estimate your monthly installments, down payment, and total interest payout'}
-            </p>
-          </div>
-        </div>
+            </Typography>
+          </Box>
+        </Box>
 
         {isModal && onClose && (
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
             aria-label="Close calculator"
+            sx={{
+              color: '#536458',
+              borderRadius: '12px',
+              '&:hover': { bgcolor: 'rgba(24, 36, 27, 0.06)' },
+            }}
           >
-            <X className="w-5 h-5" />
-          </button>
+            <CloseIcon sx={{ fontSize: 22 }} />
+          </IconButton>
         )}
-      </div>
+      </Box>
 
       {/* Main Grid: Controls Left + Breakdown Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '7fr 5fr' }, gap: 4, pt: 3.5 }}>
         
-        {/* Left Inputs (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
+        {/* Left Inputs */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
           {/* Property Price */}
-          <div>
-            <div className="flex items-center justify-between text-xs font-bold text-stone-700 mb-2">
-              <label htmlFor="emi-property-price">
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#18241B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 {lang === 'ta' ? 'சொத்து மதிப்பு (Property Price)' : 'Property Price'}
-              </label>
-              <span className="text-sm font-extrabold text-[#013E18]">
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#013E18' }}>
                 {formatPriceINR(price)}
-              </span>
-            </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
-                <IndianRupee className="w-4 h-4" />
-              </div>
-              <input
-                id="emi-property-price"
-                type="number"
-                min={500000}
-                max={100000000}
-                step={50000}
-                value={price}
-                onChange={(e) => setPrice(Math.max(100000, Number(e.target.value) || 0))}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-sm font-bold text-[#18241B] focus:border-[#013E18] focus:bg-white outline-hidden"
-              />
-            </div>
-            <div className="flex items-center gap-1.5 mt-2">
-              <span className="text-[10px] text-stone-400 uppercase font-semibold">Presets:</span>
+              </Typography>
+            </Box>
+            <TextField
+              fullWidth
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(Math.max(100000, Number(e.target.value) || 0))}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CurrencyRupeeIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5, flexWrap: 'wrap' }}>
+              <Typography variant="caption" sx={{ color: '#536458', fontWeight: 700 }}>PRESETS:</Typography>
               {quickPrices.map((qp) => (
-                <button
+                <Chip
                   key={qp.label}
-                  type="button"
+                  label={qp.label}
+                  size="small"
+                  clickable
                   onClick={() => setPrice(qp.val)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    price === qp.val
-                      ? 'bg-[#013E18] text-white shadow-2xs'
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  }`}
-                >
-                  {qp.label}
-                </button>
+                  sx={{
+                    bgcolor: price === qp.val ? '#013E18' : '#FAF8F2',
+                    color: price === qp.val ? '#F5F2E9' : '#18241B',
+                    fontWeight: 700,
+                    border: '1px solid',
+                    borderColor: price === qp.val ? '#013E18' : '#E5E0D5',
+                    '&:hover': {
+                      bgcolor: price === qp.val ? '#00280F' : '#EFEAE0',
+                    },
+                  }}
+                />
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Down Payment Slider */}
-          <div>
-            <div className="flex items-center justify-between text-xs font-bold text-stone-700 mb-2">
-              <label htmlFor="emi-down-payment">
-                {lang === 'ta' ? 'முன்பணம் (Down Payment)' : 'Down Payment'} ({downPaymentPercent}%)
-              </label>
-              <span className="text-xs font-bold text-stone-900">
-                {formatPriceINR(downPaymentAmount)}
-              </span>
-            </div>
-            <input
-              id="emi-down-payment"
-              type="range"
-              min={10}
-              max={60}
-              step={5}
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#18241B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {lang === 'ta' ? 'முன்பணம் (Down Payment)' : 'Down Payment'}
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#013E18' }}>
+                {downPaymentPercent}% ({formatPriceINR(downPaymentAmount)})
+              </Typography>
+            </Box>
+            <Slider
               value={downPaymentPercent}
-              onChange={(e) => setDownPaymentPercent(Number(e.target.value))}
-              className="w-full accent-[#013E18] cursor-pointer"
+              min={10}
+              max={50}
+              step={5}
+              onChange={(_, val) => setDownPaymentPercent(val as number)}
+              valueLabelDisplay="auto"
+              valueLabelFormat={(v) => `${v}%`}
             />
-            <div className="flex justify-between text-[10px] text-stone-400 font-medium mt-1">
-              <span>10% (Min)</span>
-              <span>20% (Recommended)</span>
-              <span>60%</span>
-            </div>
-          </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="caption" sx={{ color: '#536458' }}>Min 10%</Typography>
+              <Typography variant="caption" sx={{ color: '#536458' }}>Max 50%</Typography>
+            </Box>
+          </Box>
 
-          {/* Interest Rate & Tenure */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Interest Rate */}
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold text-stone-700 mb-2">
-                <label htmlFor="emi-interest-rate">
-                  {lang === 'ta' ? 'வட்டி விகிதம் (Interest)' : 'Interest Rate'}
-                </label>
-                <span className="text-xs font-extrabold text-[#013E18]">{interestRate}% p.a.</span>
-              </div>
-              <input
-                id="emi-interest-rate"
-                type="range"
-                min={6.5}
-                max={13}
-                step={0.1}
-                value={interestRate}
-                onChange={(e) => setInterestRate(Number(e.target.value))}
-                className="w-full accent-[#013E18] cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-stone-400 font-medium mt-1">
-                <span>6.5%</span>
-                <span>8.5% (Prime)</span>
-                <span>13%</span>
-              </div>
-            </div>
+          {/* Interest Rate */}
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#18241B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {lang === 'ta' ? 'வட்டி விகிதம் (Interest Rate % p.a.)' : 'Interest Rate (% p.a.)'}
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#013E18' }}>
+                {interestRate}%
+              </Typography>
+            </Box>
+            <Slider
+              value={interestRate}
+              min={7.0}
+              max={13.5}
+              step={0.1}
+              onChange={(_, val) => setInterestRate(val as number)}
+              valueLabelDisplay="auto"
+              valueLabelFormat={(v) => `${v}%`}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="caption" sx={{ color: '#536458' }}>Prime 7.5%</Typography>
+              <Typography variant="caption" sx={{ color: '#536458' }}>Max 13.5%</Typography>
+            </Box>
+          </Box>
 
-            {/* Loan Tenure */}
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold text-stone-700 mb-2">
-                <label htmlFor="emi-tenure-years">
-                  {lang === 'ta' ? 'கால அளவு (Tenure)' : 'Loan Tenure'}
-                </label>
-                <span className="text-xs font-extrabold text-[#013E18]">{tenureYears} Years</span>
-              </div>
-              <input
-                id="emi-tenure-years"
-                type="range"
-                min={5}
-                max={30}
-                step={1}
-                value={tenureYears}
-                onChange={(e) => setTenureYears(Number(e.target.value))}
-                className="w-full accent-[#013E18] cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-stone-400 font-medium mt-1">
-                <span>5 Yrs</span>
-                <span>20 Yrs</span>
-                <span>30 Yrs</span>
-              </div>
-            </div>
-          </div>
-        </div>
+          {/* Loan Tenure */}
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#18241B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {lang === 'ta' ? 'கடன் காலம் (Loan Tenure in Years)' : 'Loan Tenure (Years)'}
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#013E18' }}>
+                {tenureYears} {lang === 'ta' ? 'ஆண்டுகள்' : 'Years'} ({tenureYears * 12} mos)
+              </Typography>
+            </Box>
+            <Slider
+              value={tenureYears}
+              min={5}
+              max={30}
+              step={1}
+              onChange={(_, val) => setTenureYears(val as number)}
+              valueLabelDisplay="auto"
+              valueLabelFormat={(v) => `${v} Yrs`}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="caption" sx={{ color: '#536458' }}>5 Years</Typography>
+              <Typography variant="caption" sx={{ color: '#536458' }}>30 Years</Typography>
+            </Box>
+          </Box>
+        </Box>
 
-        {/* Right Output Panel (5 cols) */}
-        <div className="lg:col-span-5 bg-[#F5F2E9] rounded-2xl p-6 border border-stone-200/70 flex flex-col justify-between">
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#C99325]">
-              {lang === 'ta' ? 'மதிப்பிடப்பட்ட மாதாந்திர தவணை' : 'Estimated Monthly EMI'}
-            </span>
-            <div className="text-3xl sm:text-4xl font-black text-[#013E18] tracking-tight mt-1 mb-4">
+        {/* Right Breakdown Card */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: '20px',
+            bgcolor: '#013E18',
+            color: '#F5F2E9',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            border: '1px solid rgba(201, 147, 37, 0.3)',
+            boxShadow: '0 8px 30px rgba(1, 62, 24, 0.25)',
+          }}
+        >
+          <Box>
+            <Typography variant="overline" sx={{ letterSpacing: '0.1em', color: '#C99325', fontWeight: 800 }}>
+              {lang === 'ta' ? 'கணக்கிடப்பட்ட மாதத் தவணை' : 'ESTIMATED MONTHLY INSTALLMENT'}
+            </Typography>
+
+            <Typography variant="h3" sx={{ fontWeight: 900, color: '#FFFFFF', my: 1 }}>
               ₹{breakdown.monthlyEmi.toLocaleString('en-IN')}
-              <span className="text-xs font-bold text-stone-500 tracking-normal ml-1">/ month</span>
-            </div>
+              <Typography component="span" variant="body2" sx={{ color: 'rgba(245, 242, 233, 0.7)', ml: 1, fontWeight: 500 }}>
+                / {lang === 'ta' ? 'மாதம்' : 'month'}
+              </Typography>
+            </Typography>
 
-            {/* Proportion Bar */}
-            <div className="space-y-1.5 mb-6">
-              <div className="flex justify-between text-[11px] font-bold text-stone-600">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#013E18]" />
-                  Principal: {breakdown.principalPercentage}%
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#C99325]" />
-                  Interest: {breakdown.interestPercentage}%
-                </span>
-              </div>
-              <div className="w-full h-3 rounded-full bg-stone-200 overflow-hidden flex">
-                <div
-                  style={{ width: `${breakdown.principalPercentage}%` }}
-                  className="bg-[#013E18] h-full transition-all duration-300"
-                />
-                <div
-                  style={{ width: `${breakdown.interestPercentage}%` }}
-                  className="bg-[#C99325] h-full transition-all duration-300"
-                />
-              </div>
-            </div>
+            <Divider sx={{ my: 2.5, borderColor: 'rgba(255, 255, 255, 0.15)' }} />
 
-            {/* Detailed Table */}
-            <div className="space-y-2.5 text-xs text-stone-700 border-t border-stone-200 pt-4">
-              <div className="flex justify-between">
-                <span className="text-stone-500">{lang === 'ta' ? 'கடன் தொகை' : 'Principal Loan Amount'}</span>
-                <span className="font-bold text-[#18241B]">₹{breakdown.principalAmount.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stone-500">{lang === 'ta' ? 'மொத்த வட்டி' : 'Total Interest Payable'}</span>
-                <span className="font-bold text-[#C99325]">₹{breakdown.totalInterest.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-stone-200/80">
-                <span className="font-bold text-[#18241B]">{lang === 'ta' ? 'மொத்த தொகை (அசல்+வட்டி)' : 'Total Amount Payable'}</span>
-                <span className="font-extrabold text-[#013E18] text-sm">₹{breakdown.totalPayment.toLocaleString('en-IN')}</span>
-              </div>
-            </div>
-          </div>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ color: 'rgba(245, 242, 233, 0.7)' }}>
+                  {lang === 'ta' ? 'கடன் தொகை (Principal)' : 'Principal Loan Amount'}
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#FFFFFF' }}>
+                  {formatPriceINR(breakdown.principalAmount)}
+                </Typography>
+              </Box>
 
-          {/* Disclaimer */}
-          <div className="mt-6 pt-3 border-t border-stone-200 text-[10px] text-stone-500 leading-tight">
-            * Illustrative estimate only. Actual rates, processing fees, and eligibility depend on the lending bank and buyer verification.
-          </div>
-        </div>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ color: 'rgba(245, 242, 233, 0.7)' }}>
+                  {lang === 'ta' ? 'மொத்த வட்டி (Total Interest)' : 'Total Interest Payable'}
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#E0AA3E' }}>
+                  {formatPriceINR(breakdown.totalInterest)}
+                </Typography>
+              </Box>
 
-      </div>
-    </div>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ color: 'rgba(245, 242, 233, 0.7)' }}>
+                  {lang === 'ta' ? 'முன்பணம் (Down Payment)' : 'Down Payment Required'}
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#FFFFFF' }}>
+                  {formatPriceINR(downPaymentAmount)}
+                </Typography>
+              </Box>
+
+              <Divider sx={{ my: 1, borderColor: 'rgba(255, 255, 255, 0.15)' }} />
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#F5F2E9' }}>
+                  {lang === 'ta' ? 'மொத்த திருப்பிச் செலுத்துதல்' : 'Total Amount Payable'}
+                </Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#FFFFFF' }}>
+                  {formatPriceINR(breakdown.totalPayment)}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          <Box sx={{ pt: 3 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              color="secondary"
+              endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
+              onClick={() => {
+                if (isModal && onClose) onClose();
+                window.location.hash = '#contact';
+              }}
+              sx={{ py: 1.4, borderRadius: '14px', fontWeight: 800 }}
+            >
+              {lang === 'ta' ? 'முன் அங்கீகரிக்கப்பட்ட கடன் பெற' : 'Apply for Pre-Approved Home Loan'}
+            </Button>
+
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center', mt: 2 }}>
+              <VerifiedUserIcon sx={{ fontSize: 18, color: '#C99325' }} />
+              <Typography variant="caption" sx={{ color: 'rgba(245, 242, 233, 0.65)' }}>
+                {lang === 'ta' ? 'HDFC, SBI, ICICI மற்றும் முன்னணி வங்கிகளுடன் கூட்டு' : 'Partnered with SBI, HDFC, ICICI, Axis Bank'}
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
+    </Box>
   );
 
   if (isModal) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-        <div className="w-full max-h-[90vh] overflow-y-auto">
-          {content}
-        </div>
-      </div>
+      <Dialog
+        open={true}
+        onClose={onClose}
+        maxWidth="md"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '24px',
+              bgcolor: '#FFFFFF',
+              overflow: 'hidden',
+            },
+          },
+        }}
+      >
+        {calculatorBody}
+      </Dialog>
     );
   }
 
-  return content;
+  return (
+    <Paper
+      elevation={2}
+      sx={{
+        borderRadius: '24px',
+        bgcolor: '#FFFFFF',
+        overflow: 'hidden',
+        border: '1px solid rgba(24, 36, 27, 0.08)',
+      }}
+    >
+      {calculatorBody}
+    </Paper>
+  );
 };

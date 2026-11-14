@@ -2,7 +2,17 @@ import React from 'react';
 import { Property, LanguageCode } from '../types/property';
 import { PropertyCard } from '../components/property/PropertyCard';
 import { translations } from '../i18n/translations';
-import { Heart, ArrowRight, Trash2 } from 'lucide-react';
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Chip,
+} from '@mui/material';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import BalanceIcon from '@mui/icons-material/Balance';
 
 interface FavoritesPageProps {
   savedProperties: Property[];
@@ -29,64 +39,140 @@ export const FavoritesPage: React.FC<FavoritesPageProps> = ({
 
   if (savedProperties.length === 0) {
     return (
-      <div className="bg-[#FAF8F2] min-h-[70vh] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-10 text-center border border-stone-200 shadow-sm">
-          <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-4">
-            <Heart className="w-8 h-8" />
-          </div>
-          <h2 className="text-xl font-bold text-[#18241B]">{t.favorites.emptyTitle}</h2>
-          <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+      <Box sx={{ bgcolor: '#FAF8F2', minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
+        <Paper
+          elevation={1}
+          sx={{
+            maxWidth: 450,
+            width: '100%',
+            p: { xs: 4, sm: 5 },
+            textAlign: 'center',
+            borderRadius: '24px',
+            bgcolor: '#FFFFFF',
+            border: '1px solid rgba(24, 36, 27, 0.08)',
+          }}
+        >
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              bgcolor: 'rgba(225, 29, 72, 0.08)',
+              color: '#E11D48',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2.5,
+            }}
+          >
+            <FavoriteIcon sx={{ fontSize: 36, color: '#E11D48' }} />
+          </Box>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: '#18241B', mb: 1 }}>
+            {t.favorites.emptyTitle}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#536458', lineHeight: 1.6, mb: 3 }}>
             {t.favorites.emptySubtitle}
-          </p>
+          </Typography>
 
-          <button
+          <Button
+            variant="contained"
+            color="primary"
             onClick={() => onNavigate('properties')}
-            className="mt-6 px-6 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] font-bold text-xs hover:bg-[#00280f] shadow-md transition-all cursor-pointer"
+            sx={{ borderRadius: '12px', fontWeight: 800, px: 3.5, py: 1.2 }}
           >
             {t.favorites.browseCta}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Paper>
+      </Box>
     );
   }
 
   return (
-    <div className="bg-[#FAF8F2] min-h-screen py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+    <Box sx={{ bgcolor: '#FAF8F2', minHeight: '100vh', py: 6 }}>
+      <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1280px !important', px: { xs: 2, sm: 3, md: 4 } }}>
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 uppercase tracking-wider mb-2">
-              <Heart className="w-3.5 h-3.5 fill-current" />
-              <span>Shortlisted Listings</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#18241B] tracking-tight">
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', sm: 'flex-end' },
+            gap: 2,
+            mb: 5,
+          }}
+        >
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Chip
+                size="small"
+                icon={<FavoriteIcon sx={{ fontSize: 14, color: '#BE123C' }} />}
+                label="Shortlisted Listings"
+                sx={{
+                  bgcolor: 'rgba(225, 29, 72, 0.1)',
+                  color: '#BE123C',
+                  fontWeight: 800,
+                  fontSize: '0.65rem',
+                  textTransform: 'uppercase',
+                  height: 22,
+                }}
+              />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 900, color: '#18241B', letterSpacing: '-0.02em' }}>
               {t.favorites.title} ({savedProperties.length})
-            </h1>
-            <p className="text-xs sm:text-sm text-stone-500 mt-1">
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#536458', mt: 0.5 }}>
               {t.favorites.subtitle}
-            </p>
-          </div>
+            </Typography>
+          </Box>
 
-          <div className="flex items-center gap-3">
-            <button
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<DeleteOutlineIcon sx={{ fontSize: 18 }} />}
               onClick={onClearAll}
-              className="px-4 py-2 rounded-xl border border-stone-300 text-stone-600 hover:text-rose-600 hover:border-rose-300 text-xs font-bold transition-all cursor-pointer"
+              sx={{
+                borderRadius: '12px',
+                borderColor: '#ECE7DA',
+                color: '#536458',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                '&:hover': {
+                  borderColor: '#E11D48',
+                  color: '#E11D48',
+                  bgcolor: 'rgba(225, 29, 72, 0.05)',
+                },
+              }}
             >
               {t.favorites.clearAll}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              startIcon={<BalanceIcon sx={{ fontSize: 18, color: '#C99325' }} />}
               onClick={() => onNavigate('compare')}
-              className="px-4 py-2 rounded-xl bg-[#013E18] text-[#F5F2E9] text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
+              sx={{
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.75rem',
+                px: 2,
+              }}
             >
               Compare Selected ({comparedPropertyIds.length})
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Box>
+        </Box>
 
         {/* Saved Listings Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+            gap: 3.5,
+          }}
+        >
           {savedProperties.map(prop => (
             <PropertyCard
               key={prop.id}
@@ -99,9 +185,8 @@ export const FavoritesPage: React.FC<FavoritesPageProps> = ({
               onSelect={onSelectProperty}
             />
           ))}
-        </div>
-
-      </div>
-    </div>
+        </Box>
+      </Container>
+    </Box>
   );
 };

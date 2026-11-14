@@ -1,8 +1,11 @@
 import React from 'react';
-import { OwnershipType, ListingStatus } from '../../types/property';
-import { Building2, ShieldCheck, UserCheck, Sparkles } from 'lucide-react';
+import { ListingStatus } from '../../types/property';
+import Chip from '@mui/material/Chip';
+import BusinessIcon from '@mui/icons-material/Business';
+import HowToRegIcon from '@mui/icons-material/HowToReg';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
-interface BadgeProps {
+export interface BadgeProps {
   type: 'demo' | 'company' | 'third-party' | 'featured' | 'status' | 'category';
   status?: ListingStatus;
   label?: string;
@@ -15,75 +18,139 @@ export const Badge: React.FC<BadgeProps> = ({
   status,
   label,
   className = '',
-  size = 'md'
+  size = 'md',
 }) => {
-  const sizeClasses = size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs font-semibold';
+  const muiSize = size === 'sm' ? 'small' : 'medium';
 
   if (type === 'demo') {
     return (
-      <span
-        className={`inline-flex items-center gap-1 rounded font-medium border border-amber-600/30 bg-amber-500/10 text-amber-900 tracking-wide uppercase text-[10px] ${sizeClasses} ${className}`}
+      <Chip
+        size={muiSize}
+        label="Demo Listing"
+        className={className}
+        icon={
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse ml-1 inline-block" />
+        }
+        sx={{
+          fontWeight: 700,
+          fontSize: size === 'sm' ? '0.65rem' : '0.72rem',
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          bgcolor: 'rgba(245, 158, 11, 0.12)',
+          color: '#78350F',
+          border: '1px solid rgba(217, 119, 6, 0.35)',
+          height: size === 'sm' ? 22 : 26,
+          '& .MuiChip-label': { px: 1 },
+        }}
         title="Simulated sample listing for demonstration purposes"
-      >
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
-        Demo Listing
-      </span>
+      />
     );
   }
 
   if (type === 'company') {
     return (
-      <span
-        className={`inline-flex items-center gap-1.5 rounded font-bold bg-[#013E18] text-[#F5F2E9] shadow-xs tracking-tight ${sizeClasses} ${className}`}
+      <Chip
+        size={muiSize}
+        icon={<BusinessIcon sx={{ fontSize: 14, color: '#C99325' }} />}
+        label="Grounds & Gates Direct"
+        className={className}
+        sx={{
+          fontWeight: 800,
+          fontSize: size === 'sm' ? '0.7rem' : '0.75rem',
+          bgcolor: '#013E18',
+          color: '#F5F2E9',
+          boxShadow: '0 2px 6px rgba(1, 62, 24, 0.25)',
+          height: size === 'sm' ? 24 : 28,
+          '& .MuiChip-label': { px: 1 },
+          '& .MuiChip-icon': { ml: 0.8 },
+        }}
         title="Official Grounds & Gates Company Owned Listing"
-      >
-        <Building2 className="w-3.5 h-3.5 text-[#C99325]" />
-        <span>Grounds & Gates Direct</span>
-      </span>
+      />
     );
   }
 
   if (type === 'third-party') {
     return (
-      <span
-        className={`inline-flex items-center gap-1.5 rounded font-medium bg-[#18241B]/10 text-[#18241B] border border-[#18241B]/20 ${sizeClasses} ${className}`}
+      <Chip
+        size={muiSize}
+        icon={<HowToRegIcon sx={{ fontSize: 14, color: '#536458' }} />}
+        label={label || 'Third-Party Seller'}
+        className={className}
+        sx={{
+          fontWeight: 600,
+          fontSize: size === 'sm' ? '0.7rem' : '0.75rem',
+          bgcolor: 'rgba(24, 36, 27, 0.08)',
+          color: '#18241B',
+          border: '1px solid rgba(24, 36, 27, 0.18)',
+          height: size === 'sm' ? 24 : 28,
+          '& .MuiChip-label': { px: 1 },
+          '& .MuiChip-icon': { ml: 0.8 },
+        }}
         title="Third-Party Seller / Registered Channel Partner"
-      >
-        <UserCheck className="w-3.5 h-3.5 text-[#536458]" />
-        <span>{label || 'Third-Party Seller'}</span>
-      </span>
+      />
     );
   }
 
   if (type === 'featured') {
     return (
-      <span
-        className={`inline-flex items-center gap-1 rounded font-bold bg-[#C99325] text-white shadow-xs ${sizeClasses} ${className}`}
-      >
-        <Sparkles className="w-3 h-3 fill-current" />
-        <span>Featured</span>
-      </span>
+      <Chip
+        size={muiSize}
+        icon={<AutoAwesomeIcon sx={{ fontSize: 13, color: '#FFFFFF' }} />}
+        label="Featured"
+        className={className}
+        sx={{
+          fontWeight: 800,
+          fontSize: size === 'sm' ? '0.7rem' : '0.75rem',
+          bgcolor: '#C99325',
+          color: '#FFFFFF',
+          boxShadow: '0 2px 8px rgba(201, 147, 37, 0.35)',
+          height: size === 'sm' ? 24 : 28,
+          '& .MuiChip-label': { px: 1 },
+          '& .MuiChip-icon': { ml: 0.8 },
+        }}
+      />
     );
   }
 
   if (type === 'status' && status) {
-    const statusMap: Record<ListingStatus, { bg: string; label: string }> = {
-      active: { bg: 'bg-emerald-100 text-emerald-800 border-emerald-300', label: 'Active Listing' },
-      'under-negotiation': { bg: 'bg-orange-100 text-orange-800 border-orange-300', label: 'Under Negotiation' },
-      sold: { bg: 'bg-rose-100 text-rose-800 border-rose-300', label: 'Sold Out' },
-      'pending-review': { bg: 'bg-gray-100 text-gray-800 border-gray-300', label: 'Pending Review' }
+    const statusMap: Record<ListingStatus, { bg: string; color: string; border: string; label: string }> = {
+      active: { bg: '#ECFDF5', color: '#065F46', border: '#A7F3D0', label: 'Active Listing' },
+      'under-negotiation': { bg: '#FFFBEB', color: '#92400E', border: '#FDE68A', label: 'Under Negotiation' },
+      sold: { bg: '#FFE4E6', color: '#9F1239', border: '#FECDD3', label: 'Sold Out' },
+      'pending-review': { bg: '#F3F4F6', color: '#374151', border: '#E5E7EB', label: 'Pending Review' }
     };
     const s = statusMap[status];
     return (
-      <span className={`inline-flex items-center border rounded font-medium ${s.bg} ${sizeClasses} ${className}`}>
-        {label || s.label}
-      </span>
+      <Chip
+        size={muiSize}
+        label={label || s.label}
+        className={className}
+        sx={{
+          fontWeight: 700,
+          fontSize: size === 'sm' ? '0.7rem' : '0.75rem',
+          bgcolor: s.bg,
+          color: s.color,
+          border: `1px solid ${s.border}`,
+          height: size === 'sm' ? 22 : 26,
+          '& .MuiChip-label': { px: 1 },
+        }}
+      />
     );
   }
 
   return (
-    <span className={`inline-flex items-center rounded bg-stone-200 text-stone-800 ${sizeClasses} ${className}`}>
-      {label}
-    </span>
+    <Chip
+      size={muiSize}
+      label={label}
+      className={className}
+      sx={{
+        fontWeight: 600,
+        fontSize: size === 'sm' ? '0.7rem' : '0.75rem',
+        bgcolor: '#E7E5E4',
+        color: '#292524',
+        height: size === 'sm' ? 22 : 26,
+        '& .MuiChip-label': { px: 1 },
+      }}
+    />
   );
 };

@@ -7,21 +7,20 @@ import { PropertyGridSkeleton } from '../components/common/Skeleton';
 import { translations } from '../i18n/translations';
 import { CATEGORIES_DATA } from '../data/categories';
 import { LOCATIONS_DATA } from '../data/locations';
-import {
-  SlidersHorizontal,
-  Search,
-  LayoutGrid,
-  List,
-  RotateCcw,
-  X,
-  ChevronDown,
-  Building2,
-  UserCheck,
-  ShieldAlert,
-  ArrowUpDown,
-  Sparkles,
-  RefreshCw
-} from 'lucide-react';
+import { Select, MenuItem, FormControl } from '@mui/material';
+import TuneIcon from '@mui/icons-material/Tune';
+import SearchIcon from '@mui/icons-material/Search';
+import GridViewIcon from '@mui/icons-material/GridView';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import CloseIcon from '@mui/icons-material/Close';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import ShieldIcon from '@mui/icons-material/Shield';
+import SwapVertIcon from '@mui/icons-material/SwapVert';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 interface PropertiesPageProps {
   properties: Property[];
@@ -194,7 +193,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
           Keywords / Area / Project
         </label>
         <div className="relative">
-          <Search className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
+          <SearchIcon sx={{ fontSize: 16, color: 'text.secondary', position: 'absolute', left: 12, top: 10 }} />
           <input
             type="text"
             value={filters.searchQuery}
@@ -255,7 +254,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
             />
             <div className="flex items-center justify-between w-full">
               <span className="font-bold text-[#013E18] flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5 text-[#C99325]" />
+                <ApartmentIcon sx={{ fontSize: 16, color: '#C99325' }} />
                 Grounds & Gates Direct
               </span>
               <span className="text-[10px] bg-[#013E18] text-white px-1.5 py-0.5 rounded font-bold">14</span>
@@ -272,7 +271,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
             />
             <div className="flex items-center justify-between w-full">
               <span className="font-medium text-stone-700 flex items-center gap-1">
-                <UserCheck className="w-3.5 h-3.5 text-stone-500" />
+                <VerifiedUserIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                 Third-Party Sellers
               </span>
               <span className="text-[10px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded font-bold">18</span>
@@ -286,18 +285,30 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
         <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">
           {t.filters.propertyCategory}
         </label>
-        <select
-          value={filters.category}
-          onChange={(e) => handleFilterChange('category', e.target.value)}
-          className="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-[#18241B] focus:border-[#013E18] outline-hidden"
-        >
-          <option value="all">All Categories</option>
-          {CATEGORIES_DATA.map(c => (
-            <option key={c.id} value={c.id}>
-              {lang === 'ta' ? c.tamilName : c.name}
-            </option>
-          ))}
-        </select>
+        <FormControl fullWidth size="small">
+          <Select
+            value={filters.category}
+            onChange={(e) => handleFilterChange('category', e.target.value)}
+            sx={{
+              height: 38,
+              borderRadius: '12px',
+              bgcolor: '#ffffff',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: '#18241B',
+              '& fieldset': { borderColor: '#e7e5e4' },
+              '&:hover fieldset': { borderColor: '#013E18' },
+              '&.Mui-focused fieldset': { borderColor: '#013E18' },
+            }}
+          >
+            <MenuItem value="all" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>All Categories</MenuItem>
+            {CATEGORIES_DATA.map(c => (
+              <MenuItem key={c.id} value={c.id} sx={{ fontSize: '0.8rem' }}>
+                {lang === 'ta' ? c.tamilName : c.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </div>
 
       {/* District / Hub */}
@@ -305,18 +316,30 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
         <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">
           {t.filters.locationDistrict}
         </label>
-        <select
-          value={filters.district}
-          onChange={(e) => handleFilterChange('district', e.target.value)}
-          className="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-[#18241B] focus:border-[#013E18] outline-hidden"
-        >
-          <option value="All">All Tamil Nadu</option>
-          {LOCATIONS_DATA.map(loc => (
-            <option key={loc.id} value={loc.name}>
-              {loc.name} ({loc.tamilName})
-            </option>
-          ))}
-        </select>
+        <FormControl fullWidth size="small">
+          <Select
+            value={filters.district}
+            onChange={(e) => handleFilterChange('district', e.target.value)}
+            sx={{
+              height: 38,
+              borderRadius: '12px',
+              bgcolor: '#ffffff',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: '#18241B',
+              '& fieldset': { borderColor: '#e7e5e4' },
+              '&:hover fieldset': { borderColor: '#013E18' },
+              '&.Mui-focused fieldset': { borderColor: '#013E18' },
+            }}
+          >
+            <MenuItem value="All" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>All Tamil Nadu</MenuItem>
+            {LOCATIONS_DATA.map(loc => (
+              <MenuItem key={loc.id} value={loc.name} sx={{ fontSize: '0.8rem' }}>
+                {loc.name} ({loc.tamilName})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </div>
 
       {/* Budget Range */}
@@ -399,19 +422,31 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
         <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">
           {t.filters.facing}
         </label>
-        <select
-          value={filters.facing}
-          onChange={(e) => handleFilterChange('facing', e.target.value)}
-          className="w-full px-3 py-2 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-[#18241B] focus:border-[#013E18] outline-hidden"
-        >
-          <option value="all">Any Facing Direction</option>
-          <option value="North">North</option>
-          <option value="East">East</option>
-          <option value="South">South</option>
-          <option value="West">West</option>
-          <option value="North-East">North-East</option>
-          <option value="South-East">South-East</option>
-        </select>
+        <FormControl fullWidth size="small">
+          <Select
+            value={filters.facing}
+            onChange={(e) => handleFilterChange('facing', e.target.value)}
+            sx={{
+              height: 38,
+              borderRadius: '12px',
+              bgcolor: '#ffffff',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: '#18241B',
+              '& fieldset': { borderColor: '#e7e5e4' },
+              '&:hover fieldset': { borderColor: '#013E18' },
+              '&.Mui-focused fieldset': { borderColor: '#013E18' },
+            }}
+          >
+            <MenuItem value="all" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>Any Facing Direction</MenuItem>
+            <MenuItem value="North" sx={{ fontSize: '0.8rem' }}>North</MenuItem>
+            <MenuItem value="East" sx={{ fontSize: '0.8rem' }}>East</MenuItem>
+            <MenuItem value="South" sx={{ fontSize: '0.8rem' }}>South</MenuItem>
+            <MenuItem value="West" sx={{ fontSize: '0.8rem' }}>West</MenuItem>
+            <MenuItem value="North-East" sx={{ fontSize: '0.8rem' }}>North-East</MenuItem>
+            <MenuItem value="South-East" sx={{ fontSize: '0.8rem' }}>South-East</MenuItem>
+          </Select>
+        </FormControl>
       </div>
 
       {/* Reset Action */}
@@ -421,7 +456,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
           onClick={handleResetFilters}
           className="w-full py-2.5 rounded-xl border border-stone-300 hover:bg-stone-100 font-bold text-xs text-stone-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
         >
-          <RotateCcw className="w-3.5 h-3.5 text-stone-500" />
+          <RestartAltIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
           <span>{t.filters.reset}</span>
         </button>
       </div>
@@ -452,26 +487,36 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
               onClick={() => setMobileFilterOpen(true)}
               className="lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-stone-300 text-xs font-bold text-stone-700 shadow-xs cursor-pointer"
             >
-              <SlidersHorizontal className="w-4 h-4 text-[#C99325]" />
+              <TuneIcon sx={{ fontSize: 16, color: '#C99325' }} />
               <span>Filters ({activeChips.length})</span>
             </button>
 
             {/* Sort Selector */}
-            <div className="flex items-center gap-1.5 bg-white border border-stone-200 px-3 py-2 rounded-xl shadow-xs text-xs">
-              <ArrowUpDown className="w-3.5 h-3.5 text-stone-400" />
-              <select
+            <FormControl size="small">
+              <Select
                 value={filters.sortBy}
                 onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="bg-transparent font-semibold text-[#18241B] outline-hidden cursor-pointer"
+                startAdornment={<SwapVertIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 0.5 }} />}
+                sx={{
+                  height: 38,
+                  borderRadius: '12px',
+                  bgcolor: '#ffffff',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: '#18241B',
+                  '& fieldset': { borderColor: '#e7e5e4' },
+                  '&:hover fieldset': { borderColor: '#013E18' },
+                  '&.Mui-focused fieldset': { borderColor: '#013E18' },
+                }}
               >
-                <option value="relevance">{t.filters.relevance}</option>
-                <option value="newest">{t.filters.newest}</option>
-                <option value="price-low">{t.filters.priceLowHigh}</option>
-                <option value="price-high">{t.filters.priceHighLow}</option>
-                <option value="area-low">{t.filters.areaLowHigh}</option>
-                <option value="area-high">{t.filters.areaHighLow}</option>
-              </select>
-            </div>
+                <MenuItem value="relevance" sx={{ fontSize: '0.8rem' }}>{t.filters.relevance}</MenuItem>
+                <MenuItem value="newest" sx={{ fontSize: '0.8rem' }}>{t.filters.newest}</MenuItem>
+                <MenuItem value="price-low" sx={{ fontSize: '0.8rem' }}>{t.filters.priceLowHigh}</MenuItem>
+                <MenuItem value="price-high" sx={{ fontSize: '0.8rem' }}>{t.filters.priceHighLow}</MenuItem>
+                <MenuItem value="area-low" sx={{ fontSize: '0.8rem' }}>{t.filters.areaLowHigh}</MenuItem>
+                <MenuItem value="area-high" sx={{ fontSize: '0.8rem' }}>{t.filters.areaHighLow}</MenuItem>
+              </Select>
+            </FormControl>
 
             {/* Grid / List Layout Switcher & Shimmer Demo */}
             <div className="flex items-center gap-2">
@@ -480,7 +525,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                 className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-[11px] font-bold text-stone-600 hover:text-[#013E18] transition-all shadow-xs cursor-pointer"
                 title="Preview smooth skeleton loading transition"
               >
-                <Sparkles className="w-3.5 h-3.5 text-[#C99325]" />
+                <AutoAwesomeIcon sx={{ fontSize: 16, color: '#C99325' }} />
                 <span>Simulate Transition</span>
               </button>
 
@@ -499,7 +544,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                   title="Grid View"
                   aria-label="Switch to grid view"
                 >
-                  <LayoutGrid className="w-4 h-4" />
+                  <GridViewIcon sx={{ fontSize: 18 }} />
                 </button>
                 <button
                   onClick={() => {
@@ -515,7 +560,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                   title="List View"
                   aria-label="Switch to list view"
                 >
-                  <List className="w-4 h-4" />
+                  <ViewListIcon sx={{ fontSize: 18 }} />
                 </button>
               </div>
             </div>
@@ -538,7 +583,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                   className="hover:text-rose-600 transition-colors cursor-pointer"
                   aria-label={`Remove filter ${chip.label}`}
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <CloseIcon sx={{ fontSize: 14 }} />
                 </button>
               </span>
             ))}
@@ -559,7 +604,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
             <div className="sticky top-24 bg-white p-6 rounded-2xl border border-stone-200/90 shadow-sm space-y-6">
               <div className="flex items-center justify-between pb-3 border-b border-stone-100">
                 <div className="flex items-center gap-2 font-bold text-sm text-[#18241B]">
-                  <SlidersHorizontal className="w-4 h-4 text-[#C99325]" />
+                  <TuneIcon sx={{ fontSize: 16, color: '#C99325' }} />
                   <span>{t.filters.title}</span>
                 </div>
                 {activeChips.length > 0 && (
@@ -583,7 +628,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
             ) : displayedProperties.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border border-stone-200/80 shadow-xs flex flex-col items-center">
                 <div className="w-16 h-16 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center mb-4">
-                  <Search className="w-8 h-8" />
+                  <SearchIcon sx={{ fontSize: 32 }} />
                 </div>
                 <h3 className="text-xl font-bold text-[#18241B]">{t.filters.noResults}</h3>
                 <p className="text-xs text-stone-500 mt-2 max-w-sm">
@@ -660,7 +705,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
               >
                 <div className="p-5 border-b border-stone-100 flex items-center justify-between bg-[#013E18] text-white">
                   <div className="flex items-center gap-2 font-bold text-sm">
-                    <SlidersHorizontal className="w-4 h-4 text-[#C99325]" />
+                    <TuneIcon sx={{ fontSize: 16, color: '#C99325' }} />
                     <span>Filter Properties</span>
                   </div>
                   <button
@@ -668,7 +713,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                     className="p-1 rounded-lg hover:bg-white/10 cursor-pointer"
                     aria-label="Close filters"
                   >
-                    <X className="w-5 h-5" />
+                    <CloseIcon sx={{ fontSize: 20 }} />
                   </button>
                 </div>
 

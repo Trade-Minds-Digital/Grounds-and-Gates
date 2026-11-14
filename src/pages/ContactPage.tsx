@@ -1,17 +1,28 @@
 import React, { useState } from 'react';
 import { LanguageCode } from '../types/property';
 import {
-  MapPin,
-  Phone,
-  Mail,
-  Clock,
-  Send,
-  CheckCircle2,
-  ChevronDown,
-  Building2,
-  ShieldCheck,
-  HelpCircle
-} from 'lucide-react';
+  Container,
+  Box,
+  Typography,
+  Button,
+  TextField,
+  MenuItem,
+  Paper,
+  Chip,
+  Alert,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+} from '@mui/material';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from '@mui/icons-material/Email';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import SendIcon from '@mui/icons-material/Send';
+import BusinessIcon from '@mui/icons-material/Business';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlineOutlined';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 interface ContactPageProps {
   lang: LanguageCode;
@@ -19,7 +30,7 @@ interface ContactPageProps {
   onShowToast?: (message: string, type: 'success' | 'info' | 'error') => void;
 }
 
-export const ContactPage: React.FC<ContactPageProps> = ({ lang, onNavigate, onShowToast }) => {
+export const ContactPage: React.FC<ContactPageProps> = ({ lang: _lang, onNavigate: _onNavigate, onShowToast }) => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -30,7 +41,6 @@ export const ContactPage: React.FC<ContactPageProps> = ({ lang, onNavigate, onSh
   });
 
   const [submitted, setSubmitted] = useState(false);
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,317 +83,284 @@ export const ContactPage: React.FC<ContactPageProps> = ({ lang, onNavigate, onSh
   ];
 
   return (
-    <div className="min-h-screen bg-[#F5F2E9] pb-24">
+    <Box sx={{ minHeight: '100vh', bgcolor: '#F5F2E9', pb: 12 }}>
       {/* 1. Header Banner */}
-      <section className="bg-[#013E18] text-[#F5F2E9] py-16 sm:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C99325]/20 text-[#C99325] text-xs font-bold uppercase tracking-widest mb-3 border border-[#C99325]/30">
-            Official Contact & Direct Desks
-          </span>
-          <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            Connect with Grounds and Gates
-          </h1>
-          <p className="text-xs sm:text-sm text-stone-300 max-w-xl mx-auto mt-3 font-medium">
-            Reach our headquarters desk in Coimbatore, regional coordination offices, or submit your direct property enquiry.
-          </p>
-        </div>
-      </section>
+      <Box sx={{ bgcolor: '#013E18', color: '#F5F2E9', py: { xs: 8, sm: 10 }, textAlign: 'center' }}>
+        <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1280px !important', px: { xs: 2, sm: 3, md: 4 } }}>
+          <Chip
+            size="small"
+            label="Corporate Desk & Site Concierge"
+            sx={{
+              bgcolor: 'rgba(201, 147, 37, 0.2)',
+              color: '#E0AA3E',
+              fontWeight: 800,
+              fontSize: '0.65rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              mb: 2,
+              border: '1px solid rgba(201, 147, 37, 0.3)',
+            }}
+          />
+          <Typography variant="h3" sx={{ fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', mb: 1.5 }}>
+            Connect with Grounds & Gates
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(245, 242, 233, 0.8)', maxWidth: 650, mx: 'auto', fontSize: '0.95rem' }}>
+            Direct assistance for site visits, legal title verifications, developer tie-ups, and land acquisitions across Tamil Nadu.
+          </Typography>
+        </Container>
+      </Box>
 
-      {/* 2. Main Grid: Info Cards + Contact Form */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* 2. Main Content Grid */}
+      <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1280px !important', px: { xs: 2, sm: 3, md: 4 }, mt: -4 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '5fr 7fr' }, gap: 4 }}>
           
-          {/* Left Info Columns (5 cols) */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Headquarters Card */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/90 shadow-xl space-y-6">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#C99325]">
-                  Central Corporate Office
-                </span>
-                <h3 className="text-xl font-bold text-[#18241B] mt-0.5">
-                  Coimbatore Headquarters
-                </h3>
-              </div>
+          {/* Left: Contact Info Cards */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Paper elevation={2} sx={{ p: 4, borderRadius: '24px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)' }}>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 3 }}>
+                <BusinessIcon sx={{ fontSize: 26, color: '#013E18' }} />
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#18241B' }}>
+                  Headquarters & Central Desk
+                </Typography>
+              </Box>
 
-              <div className="space-y-4 text-xs text-stone-600">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#013E18]/10 text-[#013E18] flex items-center justify-center shrink-0 mt-0.5">
-                    <MapPin className="w-4 h-4 text-[#013E18]" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-stone-900">Grounds & Gates Towers</div>
-                    <div className="text-stone-500 mt-0.5">Avinashi Road, Near Hope College, Coimbatore, Tamil Nadu 641014</div>
-                  </div>
-                </div>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, color: '#536458', fontSize: '0.85rem' }}>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                  <LocationOnIcon sx={{ fontSize: 20, color: '#C99325', flexShrink: 0, mt: 0.3 }} />
+                  <Typography variant="body2" sx={{ color: '#18241B' }}>
+                    <strong>Grounds & Gates Towers</strong><br />
+                    Avinashi Road, Peelamedu, Coimbatore, Tamil Nadu 641014
+                  </Typography>
+                </Box>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#013E18]/10 text-[#013E18] flex items-center justify-center shrink-0">
-                    <Phone className="w-4 h-4 text-[#013E18]" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-stone-900">+91 422 298 7000 (Central Desk)</div>
-                    <div className="text-[11px] text-stone-400">Direct Land Consultation</div>
-                  </div>
-                </div>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <PhoneIcon sx={{ fontSize: 20, color: '#C99325', flexShrink: 0 }} />
+                  <Typography variant="body2" sx={{ color: '#18241B' }}>
+                    +91 422 298 7000 / +91 98422 71000
+                  </Typography>
+                </Box>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#013E18]/10 text-[#013E18] flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4 text-[#013E18]" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-stone-900">direct@groundsandgates.com</div>
-                    <div className="text-[11px] text-stone-400">Official Inquiries & Title Desk</div>
-                  </div>
-                </div>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <EmailIcon sx={{ fontSize: 20, color: '#C99325', flexShrink: 0 }} />
+                  <Typography variant="body2" sx={{ color: '#18241B' }}>
+                    direct@groundsandgates.com
+                  </Typography>
+                </Box>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#013E18]/10 text-[#013E18] flex items-center justify-center shrink-0">
-                    <Clock className="w-4 h-4 text-[#013E18]" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-stone-900">Mon – Sat: 9:00 AM – 7:30 PM</div>
-                    <div className="text-[11px] text-stone-400">Sunday by site appointment</div>
-                  </div>
-                </div>
-              </div>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <AccessTimeIcon sx={{ fontSize: 20, color: '#C99325', flexShrink: 0 }} />
+                  <Typography variant="body2" sx={{ color: '#18241B' }}>
+                    Monday - Saturday: 9:00 AM – 7:30 PM (IST)
+                  </Typography>
+                </Box>
+              </Box>
 
-              {/* Chennai Regional Node */}
-              <div className="p-4 rounded-2xl bg-[#F5F2E9] border border-stone-200/80">
-                <div className="text-[11px] font-bold text-[#013E18] flex items-center gap-1.5 mb-1">
-                  <Building2 className="w-3.5 h-3.5 text-[#C99325]" />
-                  <span>Chennai Regional Corridor Desk</span>
-                </div>
-                <div className="text-[11px] text-stone-600">
-                  OMR Tech Corridor, Perungudi, Chennai 600096 • Tel: +91 44 2490 8000
-                </div>
-              </div>
-            </div>
+              <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid #ECE7DA', display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <VerifiedUserIcon sx={{ fontSize: 20, color: '#013E18' }} />
+                <Typography variant="caption" sx={{ color: '#536458', fontWeight: 600 }}>
+                  Official RERA & DTCP verification desk available for buyers.
+                </Typography>
+              </Box>
+            </Paper>
 
-            {/* Trust Banner */}
-            <div className="bg-[#013E18] text-[#F5F2E9] rounded-3xl p-6 border border-[#C99325]/40 shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <ShieldCheck className="w-5 h-5 text-[#C99325]" />
-                <h4 className="text-sm font-bold text-white">Title Verification Commitment</h4>
-              </div>
-              <p className="text-xs text-stone-300 leading-relaxed">
-                Need verification on an existing Tamil Nadu land parcel? Bring your parent documents to our legal desk for an independent title review.
-              </p>
-            </div>
-          </div>
+            <Paper elevation={1} sx={{ p: 3, borderRadius: '20px', bgcolor: '#FAF8F2', border: '1px solid #ECE7DA' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#013E18', mb: 1 }}>
+                Regional Presence:
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#536458', fontSize: '0.8rem', lineHeight: 1.6 }}>
+                Grounds & Gates maintains active site offices and verified channel coordination desks in <strong>Coimbatore, Chennai (OMR & ECR), Madurai, Tiruppur, Erode, and Salem</strong>.
+              </Typography>
+            </Paper>
+          </Box>
 
-          {/* Right Contact Form (7 cols) */}
-          <div className="lg:col-span-7">
-            <div className="bg-white rounded-3xl p-6 sm:p-10 border border-stone-200/90 shadow-xl">
-              <div className="pb-6 border-b border-stone-100 mb-6">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-[#C99325]">
-                  Direct Inquiry Desk
-                </span>
-                <h3 className="text-2xl font-bold text-[#18241B] mt-0.5">
-                  Send a Message or Request Site Tour
-                </h3>
-                <p className="text-xs text-stone-500 mt-1">
-                  Fill in your requirements below. Our district coordinator will reach out via call or WhatsApp within 2 hours.
-                </p>
-              </div>
+          {/* Right: Direct Inquiry Form */}
+          <Paper elevation={2} sx={{ p: { xs: 3, sm: 5 }, borderRadius: '24px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)' }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#18241B', mb: 0.5 }}>
+              Send a Direct Message
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#536458', mb: 3 }}>
+              Fill in your requirement and our regional coordinator will connect within 2 hours.
+            </Typography>
 
-              {submitted ? (
-                <div className="p-8 text-center bg-[#F5F2E9] rounded-2xl border border-stone-200 space-y-4">
-                  <div className="w-14 h-14 rounded-full bg-[#013E18] text-[#C99325] flex items-center justify-center mx-auto shadow-md">
-                    <CheckCircle2 className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-[#013E18]">Inquiry Received Successfully!</h4>
-                    <p className="text-xs text-stone-600 max-w-md mx-auto mt-1 leading-relaxed">
-                      Thank you, <strong>{formData.name}</strong>. Your message regarding <strong>{formData.district}</strong> properties has been logged in our demo desk coordinator queue.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSubmitted(false);
-                      setFormData({
-                        name: '',
-                        phone: '',
-                        email: '',
-                        district: 'Coimbatore',
-                        inquiryType: 'buying',
-                        message: ''
-                      });
-                    }}
-                    className="px-6 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] font-bold text-xs hover:bg-[#00280f] transition-all cursor-pointer"
+            {submitted ? (
+              <Alert severity="success" sx={{ borderRadius: '16px', py: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                  Enquiry Submitted Successfully!
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                  Thank you, <strong>{formData.name}</strong>. Our senior property advisor will reach out to you at <strong>{formData.phone}</strong> shortly.
+                </Typography>
+              </Alert>
+            ) : (
+              <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                  <TextField
+                    label="Full Name *"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g. Senthil Kumar"
+                    fullWidth
+                    size="small"
+                  />
+                  <TextField
+                    label="Phone Number *"
+                    required
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+91 98422 00000"
+                    fullWidth
+                    size="small"
+                  />
+                </Box>
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                  <TextField
+                    label="Email Address"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="senthil@example.com"
+                    fullWidth
+                    size="small"
+                  />
+                  <TextField
+                    select
+                    label="Target District / Region"
+                    value={formData.district}
+                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                    fullWidth
+                    size="small"
                   >
-                    Send Another Message
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g. Senthil Kumar"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-xs font-semibold text-[#18241B] focus:border-[#013E18] focus:bg-white outline-hidden"
+                    <MenuItem value="Coimbatore">Coimbatore (கோயம்புத்தூர்)</MenuItem>
+                    <MenuItem value="Chennai">Chennai (சென்னை)</MenuItem>
+                    <MenuItem value="Madurai">Madurai (மதுரை)</MenuItem>
+                    <MenuItem value="Tiruppur">Tiruppur (திருப்பூர்)</MenuItem>
+                    <MenuItem value="Erode">Erode (ஈரோடு)</MenuItem>
+                    <MenuItem value="Salem">Salem (சேலம்)</MenuItem>
+                    <MenuItem value="Trichy">Trichy (திருச்சிராப்பள்ளி)</MenuItem>
+                    <MenuItem value="Pollachi">Pollachi (பொள்ளாச்சி)</MenuItem>
+                    <MenuItem value="Ooty">Ooty / Nilgiris (ஊட்டி)</MenuItem>
+                    <MenuItem value="Hosur">Hosur (ஓசூர்)</MenuItem>
+                  </TextField>
+                </Box>
+
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#18241B', mb: 1, display: 'block' }}>
+                    Inquiry Category:
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: 1 }}>
+                    {[
+                      { id: 'buying', label: 'Buying Property' },
+                      { id: 'selling', label: 'Listing / Selling' },
+                      { id: 'title-check', label: 'Legal Audit' },
+                      { id: 'partner', label: 'Channel Partner' },
+                    ].map(type => (
+                      <Chip
+                        key={type.id}
+                        label={type.label}
+                        clickable
+                        onClick={() => setFormData({ ...formData, inquiryType: type.id })}
+                        sx={{
+                          bgcolor: formData.inquiryType === type.id ? '#013E18' : '#FAF8F2',
+                          color: formData.inquiryType === type.id ? '#F5F2E9' : '#18241B',
+                          fontWeight: 700,
+                          fontSize: '0.72rem',
+                          border: '1px solid',
+                          borderColor: formData.inquiryType === type.id ? '#013E18' : '#ECE7DA',
+                          py: 2,
+                          '&:hover': {
+                            bgcolor: formData.inquiryType === type.id ? '#00280F' : '#EFEAE0',
+                          },
+                        }}
                       />
-                    </div>
+                    ))}
+                  </Box>
+                </Box>
 
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="+91 98422 00000"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-xs font-semibold text-[#18241B] focus:border-[#013E18] focus:bg-white outline-hidden"
-                      />
-                    </div>
-                  </div>
+                <TextField
+                  label="Message / Requirement Details"
+                  multiline
+                  rows={3}
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  placeholder="Share your budget, preferred locality, facing, or specific survey queries..."
+                  fullWidth
+                  size="small"
+                />
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="senthil@example.com"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-xs font-semibold text-[#18241B] focus:border-[#013E18] focus:bg-white outline-hidden"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Target District / Region
-                      </label>
-                      <select
-                        value={formData.district}
-                        onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-xs font-semibold text-[#18241B] focus:border-[#013E18] focus:bg-white outline-hidden"
-                      >
-                        <option value="Coimbatore">Coimbatore (கோயம்புத்தூர்)</option>
-                        <option value="Chennai">Chennai (சென்னை)</option>
-                        <option value="Madurai">Madurai (மதுரை)</option>
-                        <option value="Tiruppur">Tiruppur (திருப்பூர்)</option>
-                        <option value="Erode">Erode (ஈரோடு)</option>
-                        <option value="Salem">Salem (சேலம்)</option>
-                        <option value="Trichy">Trichy (திருச்சிராப்பள்ளி)</option>
-                        <option value="Pollachi">Pollachi (பொள்ளாச்சி)</option>
-                        <option value="Ooty">Ooty / Nilgiris (ஊட்டி)</option>
-                        <option value="Hosur">Hosur (ஓசூர்)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                      Inquiry Category
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {[
-                        { id: 'buying', label: 'Buying a Property' },
-                        { id: 'selling', label: 'Listing / Selling' },
-                        { id: 'title-check', label: 'Legal Audit' },
-                        { id: 'partner', label: 'Channel Partner' },
-                      ].map(type => (
-                        <button
-                          key={type.id}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, inquiryType: type.id })}
-                          className={`p-2 rounded-xl text-center text-xs font-bold transition-all cursor-pointer border ${
-                            formData.inquiryType === type.id
-                              ? 'bg-[#013E18] text-white border-[#013E18]'
-                              : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
-                          }`}
-                        >
-                          {type.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                      Message / Requirement Details
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      placeholder="Share your budget, preferred locality, facing, or specific survey queries..."
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-xs font-medium text-[#18241B] focus:border-[#013E18] focus:bg-white outline-hidden"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-3.5 px-6 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
-                  >
-                    <Send className="w-4 h-4 text-[#C99325]" />
-                    <span>Submit Direct Inquiry (Demo)</span>
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-
-        </div>
-      </section>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  endIcon={<SendIcon sx={{ fontSize: 18, color: '#C99325' }} />}
+                  sx={{ py: 1.5, borderRadius: '14px', fontWeight: 800, mt: 1 }}
+                >
+                  Submit Direct Inquiry (Demo)
+                </Button>
+              </Box>
+            )}
+          </Paper>
+        </Box>
+      </Container>
 
       {/* 3. Frequently Asked Questions (Accordion) */}
-      <section className="py-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#C99325] uppercase tracking-wider mb-1">
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Buyer & Owner FAQ</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#18241B]">
+      <Container maxWidth="md" disableGutters sx={{ mt: 12, px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ textAlign: 'center', mb: 5 }}>
+          <Chip
+            size="small"
+            icon={<HelpOutlineIcon sx={{ fontSize: 14, color: '#C99325' }} />}
+            label="Buyer & Owner FAQ"
+            sx={{
+              bgcolor: 'rgba(201, 147, 37, 0.15)',
+              color: '#8B6413',
+              fontWeight: 800,
+              fontSize: '0.65rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              mb: 1.5,
+            }}
+          />
+          <Typography variant="h4" sx={{ fontWeight: 900, color: '#18241B', letterSpacing: '-0.02em' }}>
             Frequently Asked Questions
-          </h2>
-          <p className="text-xs text-stone-500 mt-1">
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#536458', mt: 0.5 }}>
             Clear answers regarding titles, cent measurements, visits, and direct listing policies.
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
-        <div className="space-y-3">
-          {faqs.map((faq, index) => {
-            const isOpen = openFaq === index;
-            return (
-              <div
-                key={index}
-                className="bg-white rounded-2xl border border-stone-200/90 shadow-2xs overflow-hidden transition-all"
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {faqs.map((faq, index) => (
+            <Accordion
+              key={index}
+              elevation={0}
+              sx={{
+                borderRadius: '16px !important',
+                border: '1px solid rgba(24, 36, 27, 0.08)',
+                bgcolor: '#FFFFFF',
+                overflow: 'hidden',
+                '&::before': { display: 'none' },
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<KeyboardArrowDownIcon sx={{ fontSize: 18, color: '#C99325' }} />}
+                sx={{ px: 3, py: 1 }}
               >
-                <button
-                  type="button"
-                  onClick={() => setOpenFaq(isOpen ? null : index)}
-                  className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-[#18241B] hover:text-[#013E18] transition-colors cursor-pointer"
-                >
-                  <span>{faq.q}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 text-[#C99325] transition-transform duration-300 shrink-0 ${
-                      isOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-                {isOpen && (
-                  <div className="px-5 pb-5 pt-1 text-xs text-stone-600 leading-relaxed border-t border-stone-100 animate-in fade-in">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-    </div>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.9rem' }}>
+                  {faq.q}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ px: 3, pb: 3, pt: 0 }}>
+                <Typography variant="body2" sx={{ color: '#536458', lineHeight: 1.7, fontSize: '0.85rem' }}>
+                  {faq.a}
+                </Typography>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </Box>
+      </Container>
+    </Box>
   );
 };

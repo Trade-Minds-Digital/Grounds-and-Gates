@@ -5,22 +5,11 @@ import { LOCATIONS_DATA } from '../data/locations';
 import { translations } from '../i18n/translations';
 import { formatPriceINR } from '../utils/propertyUtils';
 import { Badge } from '../components/common/Badge';
-import {
-  CheckCircle2,
-  ChevronRight,
-  ArrowLeft,
-  Upload,
-  Plus,
-  Trash2,
-  MapPin,
-  Building2,
-  DollarSign,
-  User,
-  ShieldCheck,
-  Sparkles,
-  Camera,
-  Check
-} from 'lucide-react';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CheckIcon from '@mui/icons-material/Check';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 interface PostPropertyPageProps {
   lang: LanguageCode;
@@ -195,7 +184,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
       <div className="bg-[#FAF8F2] min-h-[75vh] flex items-center justify-center p-6">
         <div className="max-w-xl w-full bg-white rounded-3xl p-8 sm:p-10 text-center border border-stone-200 shadow-xl animate-in zoom-in-95 duration-200">
           <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-10 h-10" />
+            <CheckCircleIcon sx={{ fontSize: 40 }} />
           </div>
 
           <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded">
@@ -244,7 +233,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-8">
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#C99325] uppercase tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
+            <AutoAwesomeIcon sx={{ fontSize: 14 }} />
             <span>Zero Listing Fee for Owners</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#18241B] tracking-tight">
@@ -273,7 +262,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                         : 'bg-stone-100 text-stone-400'
                     }`}
                   >
-                    {isDone ? <Check className="w-4 h-4" /> : s.num}
+                    {isDone ? <CheckIcon sx={{ fontSize: 16 }} /> : s.num}
                   </div>
                   <span
                     className={`text-xs font-semibold hidden md:inline ${
@@ -282,7 +271,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                   >
                     {s.label}
                   </span>
-                  {s.num < 7 && <ChevronRight className="w-3.5 h-3.5 text-stone-300 hidden sm:inline" />}
+                  {s.num < 7 && <ChevronRightIcon sx={{ fontSize: 16, color: 'text.secondary', display: { xs: 'none', sm: 'inline' } }} />}
                 </div>
               );
             })}
@@ -618,7 +607,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                       <img src={url} alt="" className="w-full h-full object-cover" />
                       {isSelected && (
                         <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#013E18] text-white flex items-center justify-center shadow-md">
-                          <Check className="w-3.5 h-3.5" />
+                          <CheckIcon sx={{ fontSize: 14 }} />
                         </div>
                       )}
                     </div>
@@ -733,7 +722,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
               </div>
 
               <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
-                <ShieldCheck className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                <VerifiedUserIcon sx={{ fontSize: 20, color: '#b45309', flexShrink: 0, mt: '2px' }} />
                 <p>
                   <strong>Listing Notice:</strong> Clicking "Submit Demo Listing" adds this record to the active marketplace dataset in memory and links it to your Seller Dashboard.
                 </p>
@@ -760,7 +749,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                 className="px-6 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <span>{t.postProperty.next}</span>
-                <ChevronRight className="w-4 h-4 text-[#C99325]" />
+                <ChevronRightIcon sx={{ fontSize: 16, color: '#C99325' }} />
               </button>
             ) : (
               <button
@@ -768,7 +757,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                 onClick={handleFinalSubmit}
                 className="px-8 py-3 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-extrabold text-xs sm:text-sm shadow-xl transition-all cursor-pointer flex items-center gap-2"
               >
-                <Check className="w-4 h-4 text-[#C99325]" />
+                <CheckIcon sx={{ fontSize: 16, color: '#C99325' }} />
                 <span>{t.postProperty.submit}</span>
               </button>
             )}

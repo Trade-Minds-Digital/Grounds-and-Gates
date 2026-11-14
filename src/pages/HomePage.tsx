@@ -9,23 +9,22 @@ import { PropertyGridSkeleton } from '../components/common/Skeleton';
 import { ArchitecturalDivider } from '../components/common/ArchitecturalDivider';
 import { InteractiveDiscoveryMap } from '../components/map/InteractiveDiscoveryMap';
 import { EmiCalculator } from '../components/calculator/EmiCalculator';
-import {
-  Search,
-  MapPin,
-  ChevronDown,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  TrendingUp,
-  Compass,
-  FileText,
-  Users,
-  PlusCircle,
-  Star,
-  Quote,
-  CheckCircle2,
-  Building2
-} from 'lucide-react';
+import { Select, MenuItem, FormControl, TextField, InputAdornment, Button } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import ExploreIcon from '@mui/icons-material/Explore';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PeopleIcon from '@mui/icons-material/People';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import StarIcon from '@mui/icons-material/Star';
+import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import BusinessIcon from '@mui/icons-material/Business';
 
 interface HomePageProps {
   properties: Property[];
@@ -182,7 +181,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               >
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#C99325] flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3" />
+                    <AutoAwesomeIcon sx={{ fontSize: 13 }} />
                     Flagship Residence
                   </span>
                   <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 rounded-full">
@@ -194,12 +193,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/15 text-xs">
                   <span className="text-stone-300 flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-[#C99325]" />
+                    <LocationOnIcon sx={{ fontSize: 14, color: '#C99325' }} />
                     Coimbatore
                   </span>
                   <span className="font-black text-white flex items-center gap-1">
                     ₹2.45 Cr
-                    <ArrowRight className="w-3.5 h-3.5 text-[#C99325] group-hover:translate-x-1 transition-transform" />
+                    <ArrowForwardIcon sx={{ fontSize: 14, color: '#C99325' }} />
                   </span>
                 </div>
               </button>
@@ -243,7 +242,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
               <div className="flex items-center gap-4 text-xs text-stone-600 font-semibold">
                 <span className="hidden sm:inline-flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#013E18]" />
+                  <VerifiedUserIcon sx={{ fontSize: 16, color: '#013E18' }} />
                   <span>Direct & Verified Inventory</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-[11px] bg-[#FAF8F2] px-2.5 py-1 rounded-full border border-stone-200">
@@ -260,16 +259,33 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <label className="block text-[10px] font-extrabold uppercase tracking-wider text-stone-400 mb-1.5">
                   Locality, Project or Landmark
                 </label>
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-[#C99325] absolute left-3.5 top-3.5" />
-                  <input
-                    type="text"
-                    value={heroSearchText}
-                    onChange={(e) => setHeroSearchText(e.target.value)}
-                    placeholder="Saravanampatti, OMR, Vadavalli..."
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#FAF8F2] text-xs sm:text-sm font-semibold text-[#18241B] focus:border-[#013E18] focus:bg-white focus:ring-2 focus:ring-[#013E18]/15 outline-hidden transition-all h-[44px]"
-                  />
-                </div>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Saravanampatti, OMR, Vadavalli..."
+                  value={heroSearchText}
+                  onChange={(e) => setHeroSearchText(e.target.value)}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LocationOnIcon sx={{ fontSize: 18, color: '#C99325' }} />
+                        </InputAdornment>
+                      ),
+                      sx: {
+                        height: 44,
+                        borderRadius: '12px',
+                        bgcolor: '#FAF8F2',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#18241B',
+                        '& fieldset': { borderColor: '#e7e5e4' },
+                        '&:hover fieldset': { borderColor: '#013E18' },
+                        '&.Mui-focused fieldset': { borderColor: '#013E18', borderWidth: 2 },
+                      }
+                    }
+                  }}
+                />
               </div>
 
               {/* District Hub */}
@@ -277,18 +293,42 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <label className="block text-[10px] font-extrabold uppercase tracking-wider text-stone-400 mb-1.5">
                   District Hub
                 </label>
-                <select
-                  value={heroLocation}
-                  onChange={(e) => setHeroLocation(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-[#FAF8F2] text-xs sm:text-sm font-semibold text-[#18241B] focus:border-[#013E18] focus:bg-white outline-hidden transition-all h-[44px] cursor-pointer"
-                >
-                  <option value="All">All Tamil Nadu</option>
-                  {LOCATIONS_DATA.map(loc => (
-                    <option key={loc.id} value={loc.name}>
-                      {loc.name}
-                    </option>
-                  ))}
-                </select>
+                <FormControl fullWidth size="small">
+                  <Select
+                    value={heroLocation}
+                    onChange={(e) => setHeroLocation(e.target.value)}
+                    displayEmpty
+                    sx={{
+                      height: 44,
+                      borderRadius: '12px',
+                      bgcolor: '#FAF8F2',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      color: '#18241B',
+                      '& fieldset': { borderColor: '#e7e5e4' },
+                      '&:hover fieldset': { borderColor: '#013E18' },
+                      '&.Mui-focused fieldset': { borderColor: '#013E18', borderWidth: 2 },
+                    }}
+                    MenuProps={{
+                      slotProps: {
+                        paper: {
+                          sx: {
+                            borderRadius: '16px',
+                            boxShadow: '0 12px 36px rgba(0,0,0,0.12)',
+                            maxHeight: 280,
+                          }
+                        }
+                      }
+                    }}
+                  >
+                    <MenuItem value="All" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>All Tamil Nadu</MenuItem>
+                    {LOCATIONS_DATA.map(loc => (
+                      <MenuItem key={loc.id} value={loc.name} sx={{ fontSize: '0.85rem' }}>
+                        {loc.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </div>
 
               {/* Category */}
@@ -296,18 +336,42 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <label className="block text-[10px] font-extrabold uppercase tracking-wider text-stone-400 mb-1.5">
                   Category
                 </label>
-                <select
-                  value={heroCategory}
-                  onChange={(e) => setHeroCategory(e.target.value as any)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-[#FAF8F2] text-xs sm:text-sm font-semibold text-[#18241B] focus:border-[#013E18] focus:bg-white outline-hidden transition-all h-[44px] cursor-pointer"
-                >
-                  <option value="all">All Categories</option>
-                  {CATEGORIES_DATA.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {lang === 'ta' ? cat.tamilName : cat.name}
-                    </option>
-                  ))}
-                </select>
+                <FormControl fullWidth size="small">
+                  <Select
+                    value={heroCategory}
+                    onChange={(e) => setHeroCategory(e.target.value as any)}
+                    displayEmpty
+                    sx={{
+                      height: 44,
+                      borderRadius: '12px',
+                      bgcolor: '#FAF8F2',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      color: '#18241B',
+                      '& fieldset': { borderColor: '#e7e5e4' },
+                      '&:hover fieldset': { borderColor: '#013E18' },
+                      '&.Mui-focused fieldset': { borderColor: '#013E18', borderWidth: 2 },
+                    }}
+                    MenuProps={{
+                      slotProps: {
+                        paper: {
+                          sx: {
+                            borderRadius: '16px',
+                            boxShadow: '0 12px 36px rgba(0,0,0,0.12)',
+                            maxHeight: 280,
+                          }
+                        }
+                      }
+                    }}
+                  >
+                    <MenuItem value="all" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>All Categories</MenuItem>
+                    {CATEGORIES_DATA.map(cat => (
+                      <MenuItem key={cat.id} value={cat.id} sx={{ fontSize: '0.85rem' }}>
+                        {lang === 'ta' ? cat.tamilName : cat.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </div>
 
               {/* Budget Selector */}
@@ -315,28 +379,69 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <label className="block text-[10px] font-extrabold uppercase tracking-wider text-stone-400 mb-1.5">
                   Max Budget
                 </label>
-                <select
-                  value={heroBudgetMax}
-                  onChange={(e) => setHeroBudgetMax(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-[#FAF8F2] text-xs sm:text-sm font-semibold text-[#18241B] focus:border-[#013E18] focus:bg-white outline-hidden transition-all h-[44px] cursor-pointer"
-                >
-                  <option value="all">{t.hero.budgetPlaceholder}</option>
-                  <option value="3500000">Up to ₹35 Lakhs</option>
-                  <option value="7500000">Up to ₹75 Lakhs</option>
-                  <option value="15000000">Up to ₹1.5 Crore</option>
-                  <option value="50000000">Up to ₹5 Crore</option>
-                </select>
+                <FormControl fullWidth size="small">
+                  <Select
+                    value={heroBudgetMax}
+                    onChange={(e) => setHeroBudgetMax(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                    displayEmpty
+                    sx={{
+                      height: 44,
+                      borderRadius: '12px',
+                      bgcolor: '#FAF8F2',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      color: '#18241B',
+                      '& fieldset': { borderColor: '#e7e5e4' },
+                      '&:hover fieldset': { borderColor: '#013E18' },
+                      '&.Mui-focused fieldset': { borderColor: '#013E18', borderWidth: 2 },
+                    }}
+                    MenuProps={{
+                      slotProps: {
+                        paper: {
+                          sx: {
+                            borderRadius: '16px',
+                            boxShadow: '0 12px 36px rgba(0,0,0,0.12)',
+                            maxHeight: 280,
+                          }
+                        }
+                      }
+                    }}
+                  >
+                    <MenuItem value="all" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>{t.hero.budgetPlaceholder}</MenuItem>
+                    <MenuItem value={3500000} sx={{ fontSize: '0.85rem' }}>Up to ₹35 Lakhs</MenuItem>
+                    <MenuItem value={7500000} sx={{ fontSize: '0.85rem' }}>Up to ₹75 Lakhs</MenuItem>
+                    <MenuItem value={15000000} sx={{ fontSize: '0.85rem' }}>Up to ₹1.5 Crore</MenuItem>
+                    <MenuItem value={50000000} sx={{ fontSize: '0.85rem' }}>Up to ₹5 Crore</MenuItem>
+                  </Select>
+                </FormControl>
               </div>
 
               {/* Luxury Gate Gold Search Button */}
               <div className="lg:col-span-2">
-                <button
+                <Button
                   type="submit"
-                  className="w-full h-[44px] px-5 rounded-xl bg-[#C99325] hover:bg-[#b8831b] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer"
+                  variant="contained"
+                  startIcon={<SearchIcon sx={{ fontSize: 18, color: '#ffffff' }} />}
+                  sx={{
+                    width: '100%',
+                    height: 44,
+                    borderRadius: '12px',
+                    bgcolor: '#C99325',
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: '0.875rem',
+                    textTransform: 'none',
+                    boxShadow: '0 8px 20px rgba(201, 147, 37, 0.35)',
+                    '&:hover': {
+                      bgcolor: '#b8831b',
+                      boxShadow: '0 10px 24px rgba(201, 147, 37, 0.45)',
+                      transform: 'translateY(-1px)',
+                    },
+                    transition: 'all 0.2s',
+                  }}
                 >
-                  <Search className="w-4 h-4 text-white" />
-                  <span>Explore</span>
-                </button>
+                  Explore
+                </Button>
               </div>
             </form>
 
@@ -367,7 +472,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 className="font-extrabold text-[#013E18] hover:text-[#C99325] transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <span>{t.hero.postFreeCta}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#C99325]" />
+                <ArrowForwardIcon sx={{ fontSize: 16, color: '#C99325' }} />
               </button>
             </div>
           </motion.div>
@@ -397,7 +502,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             >
               <span className="uppercase tracking-[0.2em] text-[10px]">Scroll to Explore</span>
               <span className="w-7 h-7 rounded-full border border-white/25 flex items-center justify-center group-hover:border-[#C99325] transition-colors">
-                <ChevronDown className="w-3.5 h-3.5 animate-bounce text-[#C99325]" />
+                <KeyboardArrowDownIcon sx={{ fontSize: 16, color: '#C99325' }} />
               </span>
             </a>
           </div>
@@ -432,7 +537,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               {/* Overlapping Editorial Verification Panel */}
               <div className="sm:absolute sm:-bottom-6 sm:right-6 mt-4 sm:mt-0 bg-[#013E18] text-[#F5F2E9] p-5 sm:p-6 rounded-2xl shadow-2xl border border-[#C99325]/40 max-w-xs">
                 <div className="flex items-center gap-2 text-[#C99325] text-[10px] font-black uppercase tracking-[0.18em] mb-1.5">
-                  <ShieldCheck className="w-4 h-4" />
+                  <VerifiedUserIcon sx={{ fontSize: 16 }} />
                   <span>Legal & Title Assurance</span>
                 </div>
                 <div className="text-sm sm:text-base font-extrabold leading-snug">
@@ -538,7 +643,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                       {category.typicalUnits}
                     </span>
                     <span className="w-8 h-8 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-[#C99325] transition-colors">
-                      <ArrowRight className="w-4 h-4 -rotate-45 group-hover:rotate-0 transition-transform duration-300" />
+                      <ArrowForwardIcon sx={{ fontSize: 16, transform: 'rotate(-45deg)', transition: 'transform 0.3s' }} />
                     </span>
                   </div>
 
@@ -568,7 +673,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
             <div>
               <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#C99325] uppercase tracking-[0.2em] mb-2">
-                <Sparkles className="w-3.5 h-3.5" />
+                <AutoAwesomeIcon sx={{ fontSize: 16 }} />
                 <span>Hand-Picked Tamil Nadu Portfolio</span>
               </div>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-[#18241B] tracking-tight">
@@ -666,7 +771,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer group"
             >
               <span>Browse Full Collection ({properties.length} Properties)</span>
-              <ArrowRight className="w-4 h-4 text-[#C99325] transition-transform group-hover:translate-x-1" />
+              <ArrowForwardIcon sx={{ fontSize: 16, color: '#C99325' }} />
             </button>
           </div>
 
@@ -737,7 +842,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   className="px-6 py-3.5 rounded-xl bg-[#C99325] text-white hover:bg-[#b8831b] font-bold text-sm shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center gap-2 group"
                 >
                   <span>Inspect Residence</span>
-                  <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
+                  <ArrowForwardIcon sx={{ fontSize: 16, color: '#ffffff' }} />
                 </button>
               </div>
             </div>
@@ -755,7 +860,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs font-bold">
                   <span className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#C99325]" />
+                    <LocationOnIcon sx={{ fontSize: 14, color: '#C99325' }} />
                     Avinashi Road, Coimbatore
                   </span>
                   <span className="px-3 py-1 rounded-full bg-[#013E18]/90 text-[#e0aa3e] text-[10px] border border-[#C99325]/30 backdrop-blur-md">
@@ -954,17 +1059,17 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {[
-                { icon: FileText, title: t.whyUs.item1Title, desc: t.whyUs.item1Desc },
-                { icon: ShieldCheck, title: t.whyUs.item2Title, desc: t.whyUs.item2Desc },
-                { icon: TrendingUp, title: t.whyUs.item3Title, desc: t.whyUs.item3Desc },
-                { icon: Compass, title: t.whyUs.item4Title, desc: t.whyUs.item4Desc },
-                { icon: Users, title: t.whyUs.item5Title, desc: t.whyUs.item5Desc },
+                { icon: DescriptionIcon, title: t.whyUs.item1Title, desc: t.whyUs.item1Desc },
+                { icon: VerifiedUserIcon, title: t.whyUs.item2Title, desc: t.whyUs.item2Desc },
+                { icon: TrendingUpIcon, title: t.whyUs.item3Title, desc: t.whyUs.item3Desc },
+                { icon: ExploreIcon, title: t.whyUs.item4Title, desc: t.whyUs.item4Desc },
+                { icon: PeopleIcon, title: t.whyUs.item5Title, desc: t.whyUs.item5Desc },
               ].map((item, idx) => {
                 const Icon = item.icon;
                 return (
                   <div key={idx} className="bg-white p-6 rounded-2xl border border-stone-200/70 shadow-xs hover:border-[#C99325]/50 transition-all">
                     <div className="w-10 h-10 rounded-xl bg-[#013E18] text-[#C99325] flex items-center justify-center mb-4">
-                      <Icon className="w-5 h-5" />
+                      <Icon sx={{ fontSize: 20 }} />
                     </div>
                     <h3 className="font-bold text-sm text-[#18241B]">{item.title}</h3>
                     <p className="text-xs text-stone-600 mt-2 leading-relaxed">{item.desc}</p>
@@ -1032,11 +1137,11 @@ export const HomePage: React.FC<HomePageProps> = ({
               }
             ].map((item, i) => (
               <div key={i} className="bg-[#FAF8F2] p-7 rounded-3xl border border-stone-200/70 flex flex-col justify-between relative">
-                <Quote className="w-8 h-8 text-[#C99325]/25 absolute top-6 right-6" />
+                <FormatQuoteIcon sx={{ fontSize: 32, color: 'rgba(201, 147, 37, 0.25)', position: 'absolute', top: 24, right: 24 }} />
                 <div>
                   <div className="flex items-center gap-1 mb-4">
                     {Array.from({ length: item.rating }).map((_, r) => (
-                      <Star key={r} className="w-3.5 h-3.5 fill-[#C99325] text-[#C99325]" />
+                      <StarIcon key={r} sx={{ fontSize: 14, color: '#C99325' }} />
                     ))}
                   </div>
                   <p className="text-sm text-stone-700 leading-relaxed font-medium">
@@ -1080,13 +1185,13 @@ export const HomePage: React.FC<HomePageProps> = ({
               className="px-7 py-4 rounded-2xl bg-[#C99325] hover:bg-[#b8831b] text-white font-extrabold text-sm shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center gap-2"
             >
               <span>{t.cta.exploreBtn}</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowForwardIcon sx={{ fontSize: 16 }} />
             </button>
             <button
               onClick={() => onNavigate('post-property')}
               className="px-7 py-4 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md text-[#F5F2E9] border border-white/30 font-extrabold text-sm transition-all cursor-pointer flex items-center gap-2"
             >
-              <PlusCircle className="w-4 h-4 text-[#C99325]" />
+              <AddCircleIcon sx={{ fontSize: 16, color: '#C99325' }} />
               <span>{t.cta.postBtn}</span>
             </button>
           </div>

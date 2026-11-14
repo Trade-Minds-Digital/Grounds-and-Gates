@@ -2,16 +2,23 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Property, LanguageCode } from '../../types/property';
 import { formatPriceINR } from '../../utils/propertyUtils';
 import {
-  Sparkles,
-  MessageSquare,
-  X,
-  Send,
-  MapPin,
-  ArrowRight,
-  Bot,
-  User,
-  RotateCcw
-} from 'lucide-react';
+  Fab,
+  Paper,
+  Box,
+  Typography,
+  TextField,
+  IconButton,
+  Chip,
+  Avatar,
+  Tooltip,
+  InputAdornment,
+} from '@mui/material';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CloseIcon from '@mui/icons-material/Close';
+import SendIcon from '@mui/icons-material/Send';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 interface AiPropertyAssistantProps {
   properties: Property[];
@@ -32,7 +39,7 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
   properties,
   lang,
   onSelectProperty,
-  onNavigate
+  onNavigate: _onNavigate,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState('');
@@ -55,22 +62,10 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
   }, [messages, isTyping]);
 
   const quickPrompts = [
-    {
-      label: 'Villa plots in Coimbatore < ₹50L',
-      query: 'villa plot in coimbatore under 50 lakhs'
-    },
-    {
-      label: 'ECR Beachside Villas in Chennai',
-      query: 'beachside villa in ecr chennai'
-    },
-    {
-      label: 'Agricultural Land in Pollachi',
-      query: 'agricultural coconut grove in pollachi'
-    },
-    {
-      label: '2BHK / 3BHK IT Corridor Flats',
-      query: 'apartments in it corridor'
-    }
+    { label: 'Villa plots in Coimbatore < ₹50L', query: 'villa plot in coimbatore under 50 lakhs' },
+    { label: 'ECR Beachside Villas in Chennai', query: 'beachside villa in ecr chennai' },
+    { label: 'Agricultural Land in Pollachi', query: 'agricultural coconut grove in pollachi' },
+    { label: '2BHK / 3BHK IT Corridor Flats', query: 'apartments in it corridor' },
   ];
 
   const handleSendMessage = (textToSend?: string) => {
@@ -88,16 +83,13 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
     if (!textToSend) setInputText('');
     setIsTyping(true);
 
-    // Simulated Smart Local Matching against 32 properties
     setTimeout(() => {
       const lower = text.toLowerCase();
       let matched: Property[] = [];
 
-      // Check District Matches
       const districts = ['coimbatore', 'chennai', 'madurai', 'tiruppur', 'erode', 'salem', 'trichy', 'pollachi', 'ooty', 'hosur'];
       const matchedDistrict = districts.find(d => lower.includes(d));
 
-      // Check Category Matches
       const isVillaPlot = lower.includes('villa plot') || (lower.includes('villa') && lower.includes('plot'));
       const isPlot = !isVillaPlot && (lower.includes('plot') || lower.includes('land') || lower.includes('மனை'));
       const isVilla = !isVillaPlot && (lower.includes('villa') || lower.includes('வில்லா'));
@@ -106,7 +98,6 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
       const isFlat = lower.includes('apartment') || lower.includes('flat') || lower.includes('bhk');
       const isCommercial = lower.includes('commercial') || lower.includes('showroom') || lower.includes('office');
 
-      // Price filter heuristics
       const under50L = lower.includes('50 lakh') || lower.includes('50l') || lower.includes('under 50') || lower.includes('50 lakhs');
       const under1Cr = lower.includes('1 cr') || lower.includes('crore') || lower.includes('1cr');
 
@@ -129,7 +120,6 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
         return score;
       });
 
-      // Flexible word matching fallback if strict heuristics yield 0
       if (matched.length === 0) {
         const stopWords = ['the', 'and', 'for', 'with', 'in', 'under', 'lakhs', 'lakh', 'crores', 'crore'];
         const words = lower.split(/\s+/).filter(w => w.length > 2 && !stopWords.includes(w));
@@ -171,194 +161,315 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
 
   return (
     <>
-      {/* Floating Trigger Button */}
-      <div className="fixed bottom-20 right-4 sm:right-6 z-40">
-        <button
+      {/* Floating Trigger FAB */}
+      <Box sx={{ position: 'fixed', bottom: { xs: 80, sm: 84 }, right: { xs: 16, sm: 24 }, zIndex: 1200 }}>
+        <Fab
+          variant="extended"
           onClick={() => setIsOpen(!isOpen)}
-          className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-[#013E18] text-[#F5F2E9] shadow-2xl border-2 border-[#C99325] hover:bg-[#00280f] hover:scale-105 transition-all duration-300 cursor-pointer"
           aria-label="Open AI Property Assistant"
+          sx={{
+            bgcolor: '#013E18',
+            color: '#F5F2E9',
+            border: '2px solid #C99325',
+            boxShadow: '0 8px 30px rgba(1, 62, 24, 0.35)',
+            px: 2.5,
+            py: 1.5,
+            height: 48,
+            '&:hover': {
+              bgcolor: '#00280F',
+              transform: 'scale(1.05)',
+            },
+            transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+          }}
         >
-          <div className="relative">
-            <Bot className="w-5 h-5 text-[#C99325]" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#C99325] animate-ping" />
-          </div>
-          <span className="text-xs font-black tracking-wide hidden sm:inline">
+          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', mr: 1 }}>
+            <SmartToyIcon sx={{ fontSize: 20, color: '#C99325' }} />
+            <Box
+              sx={{
+                position: 'absolute',
+                top: -2,
+                right: -2,
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: '#C99325',
+              }}
+              className="animate-ping"
+            />
+          </Box>
+          <Typography variant="button" sx={{ fontSize: '0.75rem', fontWeight: 800, display: { xs: 'none', sm: 'inline' } }}>
             Smart Match AI (Demo)
-          </span>
-        </button>
-      </div>
+          </Typography>
+        </Fab>
+      </Box>
 
       {/* Expandable Chat Drawer */}
       {isOpen && (
-        <div className="fixed bottom-24 right-4 sm:right-6 z-50 w-[360px] sm:w-[420px] max-w-[calc(100vw-32px)] h-[540px] max-h-[80vh] bg-white rounded-3xl shadow-2xl border border-stone-200/90 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4">
-          
+        <Paper
+          elevation={8}
+          sx={{
+            position: 'fixed',
+            bottom: { xs: 96, sm: 104 },
+            right: { xs: 16, sm: 24 },
+            zIndex: 1300,
+            width: { xs: 'calc(100vw - 32px)', sm: 420 },
+            height: 540,
+            maxHeight: '80vh',
+            borderRadius: '24px',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            bgcolor: '#FFFFFF',
+            border: '1px solid rgba(24, 36, 27, 0.1)',
+          }}
+        >
           {/* Header */}
-          <div className="px-5 py-4 bg-[#013E18] text-[#F5F2E9] flex items-center justify-between border-b border-[#C99325]/30 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#C99325]/20 text-[#C99325] flex items-center justify-center shrink-0 border border-[#C99325]/40">
-                <Sparkles className="w-4 h-4 text-[#C99325]" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-black text-white">
+          <Box
+            sx={{
+              px: 2.5,
+              py: 2,
+              bgcolor: '#013E18',
+              color: '#F5F2E9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderBottom: '1px solid rgba(201, 147, 37, 0.3)',
+            }}
+          >
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(201, 147, 37, 0.2)',
+                  width: 36,
+                  height: 36,
+                  border: '1px solid rgba(201, 147, 37, 0.4)',
+                }}
+              >
+                <AutoAwesomeIcon sx={{ fontSize: 18, color: '#C99325' }} />
+              </Avatar>
+              <Box>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.85rem' }}>
                     Grounds & Gates Smart Match
-                  </h3>
-                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-[#C99325] text-white">
-                    Demo
-                  </span>
-                </div>
-                <p className="text-[10px] text-stone-300">
+                  </Typography>
+                  <Chip
+                    label="DEMO"
+                    size="small"
+                    sx={{
+                      bgcolor: '#C99325',
+                      color: '#FFFFFF',
+                      fontWeight: 800,
+                      fontSize: '0.55rem',
+                      height: 18,
+                    }}
+                  />
+                </Box>
+                <Typography variant="caption" sx={{ color: 'rgba(245, 242, 233, 0.75)', fontSize: '0.65rem' }}>
                   Natural language property discovery assistant
-                </p>
-              </div>
-            </div>
+                </Typography>
+              </Box>
+            </Box>
 
-            <div className="flex items-center gap-1">
-              <button
-                onClick={handleResetChat}
-                className="p-1.5 rounded-lg text-stone-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                title="Reset conversation"
-                aria-label="Reset conversation"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-stone-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                title="Close chat"
-                aria-label="Close chat"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <Tooltip title="Reset conversation">
+                <IconButton
+                  size="small"
+                  onClick={handleResetChat}
+                  sx={{ color: 'rgba(255, 255, 255, 0.8)', '&:hover': { color: '#FFFFFF', bgcolor: 'rgba(255, 255, 255, 0.1)' } }}
+                >
+                  <RestartAltIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Close chat">
+                <IconButton
+                  size="small"
+                  onClick={() => setIsOpen(false)}
+                  sx={{ color: 'rgba(255, 255, 255, 0.8)', '&:hover': { color: '#FFFFFF', bgcolor: 'rgba(255, 255, 255, 0.1)' } }}
+                >
+                  <CloseIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
 
           {/* Chat Messages Body */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-stone-50 text-xs">
+          <Box sx={{ flex: 1, overflowY: 'auto', p: 2, bgcolor: '#FAF8F2', display: 'flex', flexDirection: 'column', gap: 2 }}>
             {messages.map((msg) => (
-              <div
+              <Box
                 key={msg.id}
-                className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                sx={{
+                  display: 'flex',
+                  gap: 1.5,
+                  justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                }}
               >
                 {msg.sender === 'assistant' && (
-                  <div className="w-6 h-6 rounded-full bg-[#013E18] text-[#C99325] flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot className="w-3.5 h-3.5" />
-                  </div>
+                  <Avatar sx={{ width: 28, height: 28, bgcolor: '#013E18', color: '#C99325', flexShrink: 0, mt: 0.5 }}>
+                    <SmartToyIcon sx={{ fontSize: 16 }} />
+                  </Avatar>
                 )}
 
-                <div
-                  className={`max-w-[85%] rounded-2xl p-3.5 shadow-2xs ${
-                    msg.sender === 'user'
-                      ? 'bg-[#013E18] text-white rounded-br-none'
-                      : 'bg-white text-stone-800 border border-stone-200/80 rounded-bl-none'
-                  }`}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    maxWidth: '85%',
+                    p: 1.8,
+                    borderRadius: '16px',
+                    bgcolor: msg.sender === 'user' ? '#013E18' : '#FFFFFF',
+                    color: msg.sender === 'user' ? '#F5F2E9' : '#18241B',
+                    border: msg.sender === 'user' ? 'none' : '1px solid #ECE7DA',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    borderBottomRightRadius: msg.sender === 'user' ? 2 : '16px',
+                    borderBottomLeftRadius: msg.sender === 'assistant' ? 2 : '16px',
+                  }}
                 >
-                  <p className="leading-relaxed">{msg.text}</p>
+                  <Typography variant="body2" sx={{ fontSize: '0.8rem', lineHeight: 1.5 }}>
+                    {msg.text}
+                  </Typography>
 
-                  {/* Embedded Matching Property Cards */}
+                  {/* Embedded Matching Properties */}
                   {msg.matchedProperties && msg.matchedProperties.length > 0 && (
-                    <div className="mt-3 space-y-2 pt-2 border-t border-stone-100">
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, mt: 1.5, pt: 1.5, borderTop: '1px solid #F0ECE1' }}>
                       {msg.matchedProperties.map(prop => (
-                        <div
+                        <Box
                           key={prop.id}
                           onClick={() => {
                             onSelectProperty(prop.id);
                             setIsOpen(false);
                           }}
-                          className="group p-2 rounded-xl border border-stone-200 bg-stone-50/80 hover:bg-white hover:border-[#013E18]/40 hover:shadow-xs transition-all cursor-pointer flex gap-2.5 items-center"
+                          sx={{
+                            p: 1,
+                            borderRadius: '12px',
+                            border: '1px solid #ECE7DA',
+                            bgcolor: '#FAF8F2',
+                            display: 'flex',
+                            gap: 1.2,
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              bgcolor: '#FFFFFF',
+                              borderColor: '#013E18',
+                              transform: 'translateX(2px)',
+                            },
+                          }}
                         >
-                          <img
+                          <Box
+                            component="img"
                             src={prop.images[0]}
                             alt={prop.title}
-                            className="w-14 h-14 rounded-lg object-cover shrink-0"
+                            sx={{ width: 50, height: 50, borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }}
                           />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-[9px] font-bold text-[#C99325] uppercase tracking-wider block truncate">
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="caption" sx={{ color: '#C99325', fontWeight: 800, fontSize: '0.6rem', textTransform: 'uppercase', display: 'block' }} noWrap>
                               {prop.category.replace('-', ' ')}
-                            </span>
-                            <div className="font-bold text-[#18241B] truncate text-[11px] group-hover:text-[#013E18]">
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: '#18241B', fontSize: '0.75rem' }} noWrap>
                               {prop.title}
-                            </div>
-                            <div className="flex items-center justify-between text-[10px] mt-0.5">
-                              <span className="font-extrabold text-[#013E18]">
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography variant="caption" sx={{ fontWeight: 800, color: '#013E18', fontSize: '0.7rem' }}>
                                 {formatPriceINR(prop.price)}
-                              </span>
-                              <span className="text-stone-400 truncate">
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#8C9A90', fontSize: '0.65rem' }} noWrap>
                                 {prop.location}
-                              </span>
-                            </div>
-                          </div>
-                          <ArrowRight className="w-3.5 h-3.5 text-[#C99325] shrink-0" />
-                        </div>
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <ArrowForwardIcon sx={{ fontSize: 14, color: '#C99325', flexShrink: 0 }} />
+                        </Box>
                       ))}
-                    </div>
+                    </Box>
                   )}
 
-                  <span className="text-[9px] opacity-60 block text-right mt-1.5">
+                  <Typography variant="caption" sx={{ color: msg.sender === 'user' ? 'rgba(245, 242, 233, 0.6)' : '#8C9A90', display: 'block', textAlign: 'right', mt: 0.8, fontSize: '0.6rem' }}>
                     {msg.timestamp}
-                  </span>
-                </div>
-              </div>
+                  </Typography>
+                </Paper>
+              </Box>
             ))}
 
             {isTyping && (
-              <div className="flex gap-2.5 items-center text-stone-400">
-                <div className="w-6 h-6 rounded-full bg-[#013E18] text-[#C99325] flex items-center justify-center shrink-0">
-                  <Bot className="w-3.5 h-3.5" />
-                </div>
-                <div className="bg-white border border-stone-200 rounded-2xl px-3 py-2 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C99325] animate-bounce" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#013E18] animate-bounce [animation-delay:0.2s]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C99325] animate-bounce [animation-delay:0.4s]" />
-                </div>
-              </div>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Avatar sx={{ width: 28, height: 28, bgcolor: '#013E18', color: '#C99325' }}>
+                  <SmartToyIcon sx={{ fontSize: 16 }} />
+                </Avatar>
+                <Paper elevation={0} sx={{ p: 1.2, borderRadius: '12px', bgcolor: '#FFFFFF', border: '1px solid #ECE7DA' }}>
+                  <Box sx={{ display: 'flex', gap: 0.6 }}>
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#C99325' }} className="animate-bounce" />
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#013E18' }} className="animate-bounce" style={{ animationDelay: '0.2s' }} />
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#C99325' }} className="animate-bounce" style={{ animationDelay: '0.4s' }} />
+                  </Box>
+                </Paper>
+              </Box>
             )}
 
             <div ref={messagesEndRef} />
-          </div>
+          </Box>
 
           {/* Quick Prompts Bar */}
-          <div className="px-3 py-2 bg-white border-t border-stone-100 flex items-center gap-1.5 overflow-x-auto shrink-0">
-            <span className="text-[10px] text-stone-400 font-semibold uppercase shrink-0">
-              Suggestions:
-            </span>
+          <Box sx={{ px: 2, py: 1, bgcolor: '#FFFFFF', borderTop: '1px solid #ECE7DA', display: 'flex', gap: 1, overflowX: 'auto', flexShrink: 0 }}>
             {quickPrompts.map((qp, idx) => (
-              <button
+              <Chip
                 key={idx}
+                label={qp.label}
+                size="small"
+                clickable
                 onClick={() => handleSendMessage(qp.query)}
-                className="px-2.5 py-1 rounded-full bg-stone-100 hover:bg-[#F5F2E9] hover:text-[#013E18] text-stone-600 font-medium text-[10px] whitespace-nowrap transition-colors border border-stone-200/60 cursor-pointer"
-              >
-                {qp.label}
-              </button>
+                sx={{
+                  bgcolor: '#FAF8F2',
+                  border: '1px solid #ECE7DA',
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  color: '#18241B',
+                  '&:hover': { bgcolor: '#EFEAE0', color: '#013E18' },
+                  whiteSpace: 'nowrap',
+                }}
+              />
             ))}
-          </div>
+          </Box>
 
           {/* Input Form */}
-          <form
+          <Box
+            component="form"
             onSubmit={(e) => {
               e.preventDefault();
               handleSendMessage();
             }}
-            className="p-3 bg-white border-t border-stone-200/80 flex items-center gap-2 shrink-0"
+            sx={{ p: 1.5, bgcolor: '#FFFFFF', borderTop: '1px solid #ECE7DA', display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}
           >
-            <input
-              type="text"
+            <TextField
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={lang === 'ta' ? 'எ.கா: கோவையில் 50 லட்சத்திற்குள் மனை...' : 'e.g., Plots in Coimbatore under 50 Lakhs...'}
-              className="flex-1 px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-xs text-stone-800 focus:border-[#013E18] focus:bg-white outline-hidden"
+              fullWidth
+              size="small"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', bgcolor: '#FAF8F2' } }}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        type="submit"
+                        disabled={!inputText.trim()}
+                        size="small"
+                        sx={{
+                          bgcolor: '#013E18',
+                          color: '#F5F2E9',
+                          '&:hover': { bgcolor: '#00280F' },
+                          '&.Mui-disabled': { bgcolor: '#E5E0D5', color: '#A09886' },
+                        }}
+                      >
+                        <SendIcon sx={{ fontSize: 15, color: '#C99325' }} />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
-            <button
-              type="submit"
-              disabled={!inputText.trim()}
-              className="p-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] disabled:opacity-40 hover:bg-[#00280f] transition-all cursor-pointer shrink-0"
-              aria-label="Send message"
-            >
-              <Send className="w-4 h-4 text-[#C99325]" />
-            </button>
-          </form>
-
-        </div>
+          </Box>
+        </Paper>
       )}
     </>
   );

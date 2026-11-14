@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { LOCATIONS_DATA } from '../../data/locations';
 import { Property, LanguageCode } from '../../types/property';
 import { formatPriceINR } from '../../utils/propertyUtils';
-import { MapPin, Navigation, ArrowRight, Building2, CheckCircle2 } from 'lucide-react';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import NavigationIcon from '@mui/icons-material/Navigation';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import BusinessIcon from '@mui/icons-material/Business';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface InteractiveDiscoveryMapProps {
   properties: Property[];
@@ -62,7 +66,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-8 border-b border-stone-100">
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#C99325] uppercase tracking-wider mb-1.5">
-            <Navigation className="w-3.5 h-3.5" />
+            <NavigationIcon sx={{ fontSize: 14 }} />
             <span>{lang === 'ta' ? 'ஊடாடும் வரைபட வழிகாட்டி' : 'Interactive Regional Discovery'}</span>
           </div>
           <h3 className="text-2xl sm:text-3xl font-extrabold text-[#18241B] tracking-tight">
@@ -77,7 +81,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
 
         {/* Selected Hub Summary Pill */}
         <div className="flex items-center gap-2 bg-[#F5F2E9] px-4 py-2 rounded-2xl border border-stone-200/80">
-          <MapPin className="w-4 h-4 text-[#C99325]" />
+          <LocationOnIcon sx={{ fontSize: 18, color: '#C99325' }} />
           <span className="text-xs font-bold text-[#18241B]">
             {selectedDistrict} ({districtProperties.length} {lang === 'ta' ? 'சொத்துக்கள்' : 'Properties'})
           </span>
@@ -298,7 +302,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
                 className="text-xs font-bold text-[#013E18] hover:text-[#C99325] hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>View All ({districtProperties.length})</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowForwardIcon sx={{ fontSize: 14 }} />
               </button>
             </div>
 
@@ -324,7 +328,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
                         {property.title}
                       </h5>
                       <p className="text-[11px] text-stone-500 mt-0.5 flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-[#C99325] shrink-0" />
+                        <LocationOnIcon sx={{ fontSize: 14, color: '#C99325', flexShrink: 0 }} />
                         <span className="truncate">{property.location}</span>
                       </p>
                     </div>
@@ -355,7 +359,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
             className="w-full py-3 px-4 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
           >
             <span>Explore All {districtProperties.length} Properties in {selectedDistrict}</span>
-            <ArrowRight className="w-4 h-4 text-[#C99325]" />
+            <ArrowForwardIcon sx={{ fontSize: 16, color: '#C99325' }} />
           </button>
         </div>
 

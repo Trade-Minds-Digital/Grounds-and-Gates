@@ -2,16 +2,26 @@ import React, { useState } from 'react';
 import { LanguageCode, UserRole } from '../types/property';
 import { translations } from '../i18n/translations';
 import { Logo } from '../components/common/Logo';
+import { api } from '../services/api';
 import {
-  X,
-  User,
-  Building,
-  KeyRound,
-  ShieldCheck,
-  CheckCircle,
-  Sparkles,
-  ArrowRight
-} from 'lucide-react';
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  IconButton,
+  Chip,
+  Tabs,
+  Tab,
+  InputAdornment,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import PersonIcon from '@mui/icons-material/Person';
+import BusinessIcon from '@mui/icons-material/Business';
+import EmailIcon from '@mui/icons-material/Email';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -26,21 +36,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   lang,
   initialMode = 'login',
-  onLoginSuccess
+  onLoginSuccess,
 }) => {
   const t = translations[lang];
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [role, setRole] = useState<UserRole>('buyer');
   const [fullName, setFullName] = useState('Mohanraj S.');
   const [email, setEmail] = useState('mohanrajs0410@gmail.com');
-  const [phone, setPhone] = useState('+91 98422 71000');
   const [password, setPassword] = useState('demo123456');
 
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLoginSuccess(role, fullName);
+    try {
+      if (mode === 'register') {
+        const res = await api.register({
+          fullName,
+          email,
+          password: password || 'Buyer@123',
+          role
+        });
+        const name = res.user?.fullName || fullName;
+        onLoginSuccess(role, name);
+      } else {
+        const res = await api.login({
+          email,
+          password: password || 'Buyer@123'
+        });
+        const name = res.user?.fullName || fullName;
+        const resRole = (res.user?.role as UserRole) || role;
+        onLoginSuccess(resRole, name);
+      }
+    } catch {
+      // Offline fallback
+      onLoginSuccess(role, fullName);
+    }
     onClose();
   };
 
@@ -48,149 +77,237 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setRole('buyer');
     setFullName('Mohanraj S. (Buyer)');
     setEmail('mohanrajs0410@gmail.com');
-    setPhone('+91 98422 71000');
   };
 
   const fillAsSeller = () => {
     setRole('owner');
     setFullName('Senthil Nathan (Owner)');
     setEmail('senthil.nathan@example.com');
-    setPhone('+91 98422 15300');
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-stone-200 overflow-hidden animate-in zoom-in-95 duration-200">
-        
-        {/* Header */}
-        <div className="bg-[#013E18] text-white p-6 text-center relative">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: '24px',
+            overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+          },
+        },
+      }}
+    >
+      {/* Header */}
+      <DialogTitle
+        sx={{
+          bgcolor: '#013E18',
+          color: '#F5F2E9',
+          p: 3.5,
+          textAlign: 'center',
+          position: 'relative',
+        }}
+      >
+        <IconButton
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            color: 'rgba(255, 255, 255, 0.8)',
+            '&:hover': { color: '#FFFFFF', bgcolor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 20 }} />
+        </IconButton>
 
-          <Logo variant="light" size="sm" showTagline={false} className="justify-center mb-2" />
-          <h2 className="text-xl font-bold">
-            {mode === 'login' ? t.auth.loginTitle : t.auth.registerTitle}
-          </h2>
-          <p className="text-xs text-stone-200 mt-1 max-w-xs mx-auto">
-            {mode === 'login' ? t.auth.loginSub : t.auth.registerSub}
-          </p>
-        </div>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1.5 }}>
+          <Logo variant="light" size="sm" showTagline={false} />
+        </Box>
 
-        {/* Quick Demo Pre-Fill Helpers */}
-        <div className="p-3 bg-[#FAF8F2] border-b border-stone-200 flex items-center justify-center gap-2 text-xs">
-          <span className="text-[11px] font-bold text-stone-500 uppercase">One-Click Demo:</span>
-          <button
-            type="button"
-            onClick={fillAsBuyer}
-            className="px-2.5 py-1 rounded-lg bg-white border border-stone-300 hover:border-[#013E18] font-bold text-[11px] text-[#013E18] transition-colors cursor-pointer"
-          >
-            {t.auth.quickFillBuyer}
-          </button>
-          <button
-            type="button"
-            onClick={fillAsSeller}
-            className="px-2.5 py-1 rounded-lg bg-white border border-stone-300 hover:border-[#C99325] font-bold text-[11px] text-[#C99325] transition-colors cursor-pointer"
-          >
-            {t.auth.quickFillSeller}
-          </button>
-        </div>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: '#FFFFFF' }}>
+          {mode === 'login' ? t.auth.loginTitle : t.auth.registerTitle}
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'rgba(245, 242, 233, 0.8)', mt: 0.5, display: 'block' }}>
+          {mode === 'login' ? t.auth.loginSub : t.auth.registerSub}
+        </Typography>
+      </DialogTitle>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          
-          {/* Role Selection when Registering */}
-          {mode === 'register' && (
-            <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                Select Your Role
-              </label>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setRole('buyer')}
-                  className={`p-2.5 rounded-xl border font-bold text-left cursor-pointer transition-all ${
-                    role === 'buyer'
-                      ? 'bg-[#013E18] text-white border-[#013E18]'
-                      : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
-                  }`}
-                >
-                  <User className="w-4 h-4 mb-1" />
-                  <div>Property Buyer</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('owner')}
-                  className={`p-2.5 rounded-xl border font-bold text-left cursor-pointer transition-all ${
-                    role === 'owner'
-                      ? 'bg-[#C99325] text-white border-[#C99325]'
-                      : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
-                  }`}
-                >
-                  <Building className="w-4 h-4 mb-1" />
-                  <div>Property Owner</div>
-                </button>
-              </div>
-            </div>
-          )}
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: '#ECE7DA', bgcolor: '#FAF8F2' }}>
+        <Tabs
+          value={mode}
+          onChange={(_, val) => setMode(val)}
+          variant="fullWidth"
+          indicatorColor="secondary"
+        >
+          <Tab value="login" label={t.auth.loginTitle} />
+          <Tab value="register" label={t.auth.registerTitle} />
+        </Tabs>
+      </Box>
 
-          {mode === 'register' && (
-            <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">{t.auth.fullName}</label>
-              <input
-                type="text"
-                required
+      {/* Quick Demo Pre-Fill Helpers */}
+      <Box sx={{ p: 1.5, bgcolor: '#FAF8F2', borderBottom: '1px solid #ECE7DA', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+        <Typography variant="caption" sx={{ fontWeight: 800, color: '#536458', textTransform: 'uppercase', fontSize: '0.65rem' }}>
+          Quick Demo:
+        </Typography>
+        <Chip
+          label={t.auth.quickFillBuyer}
+          size="small"
+          clickable
+          onClick={fillAsBuyer}
+          sx={{
+            bgcolor: '#FFFFFF',
+            border: '1px solid #013E18',
+            color: '#013E18',
+            fontWeight: 700,
+            fontSize: '0.7rem',
+            height: 24,
+            '&:hover': { bgcolor: 'rgba(1, 62, 24, 0.08)' },
+          }}
+        />
+        <Chip
+          label={t.auth.quickFillSeller}
+          size="small"
+          clickable
+          onClick={fillAsSeller}
+          sx={{
+            bgcolor: '#FFFFFF',
+            border: '1px solid #C99325',
+            color: '#8B6413',
+            fontWeight: 700,
+            fontSize: '0.7rem',
+            height: 24,
+            '&:hover': { bgcolor: 'rgba(201, 147, 37, 0.12)' },
+          }}
+        />
+      </Box>
+
+      {/* Form Content */}
+      <DialogContent sx={{ p: 3.5 }}>
+        <form onSubmit={handleSubmit}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            {/* Role Selection when Registering */}
+            {mode === 'register' && (
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#18241B', mb: 1, display: 'block' }}>
+                  Select Your Account Role
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                  <Button
+                    type="button"
+                    variant={role === 'buyer' ? 'contained' : 'outlined'}
+                    color="primary"
+                    onClick={() => setRole('buyer')}
+                    startIcon={<PersonIcon sx={{ fontSize: 18 }} />}
+                    sx={{ justifyContent: 'flex-start', py: 1.2, textTransform: 'none' }}
+                  >
+                    Buyer
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={role === 'owner' ? 'contained' : 'outlined'}
+                    color="secondary"
+                    onClick={() => setRole('owner')}
+                    startIcon={<BusinessIcon sx={{ fontSize: 18 }} />}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      py: 1.2,
+                      textTransform: 'none',
+                      ...(role === 'owner' ? { bgcolor: '#C99325', color: '#FFFFFF' } : {}),
+                    }}
+                  >
+                    Owner / Seller
+                  </Button>
+                </Box>
+              </Box>
+            )}
+
+            {mode === 'register' && (
+              <TextField
+                label={t.auth.fullName}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:border-[#013E18] outline-hidden"
+                required
+                fullWidth
+                size="small"
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
               />
-            </div>
-          )}
+            )}
 
-          <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">{t.auth.email}</label>
-            <input
+            <TextField
+              label={t.auth.email}
               type="email"
-              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:border-[#013E18] outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">{t.auth.password}</label>
-            <input
-              type="password"
               required
+              fullWidth
+              size="small"
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+
+            <TextField
+              label={t.auth.password}
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:border-[#013E18] outline-hidden"
+              required
+              fullWidth
+              size="small"
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlinedIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
-          </div>
 
-          <button
-            type="submit"
-            className="w-full py-3 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer mt-2"
-          >
-            {mode === 'login' ? t.auth.loginBtn : t.auth.registerBtn}
-          </button>
-
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-              className="text-xs font-bold text-[#013E18] hover:text-[#C99325] transition-colors cursor-pointer"
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              size="large"
+              sx={{ py: 1.4, borderRadius: '14px', fontWeight: 800, mt: 1 }}
             >
-              {mode === 'login' ? t.auth.switchToRegister : t.auth.switchToLogin}
-            </button>
-          </div>
-        </form>
+              {mode === 'login' ? t.auth.loginBtn : t.auth.registerBtn}
+            </Button>
 
-      </div>
-    </div>
+            <Box sx={{ textAlign: 'center', pt: 1 }}>
+              <Button
+                variant="text"
+                color="primary"
+                onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                sx={{ fontSize: '0.8rem', fontWeight: 700 }}
+              >
+                {mode === 'login' ? t.auth.switchToRegister : t.auth.switchToLogin}
+              </Button>
+            </Box>
+          </Box>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -1,25 +1,28 @@
 import React from 'react';
 import { LanguageCode } from '../types/property';
 import {
-  ShieldCheck,
-  Compass,
-  Building2,
-  Users,
-  Award,
-  CheckCircle2,
-  ArrowRight,
-  MapPin,
-  TrendingUp,
-  FileCheck2,
-  Scale
-} from 'lucide-react';
+  Container,
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Card,
+  CardMedia,
+  CardContent,
+  Chip,
+} from '@mui/material';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import ExploreIcon from '@mui/icons-material/Explore';
+import BusinessIcon from '@mui/icons-material/Business';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import BalanceIcon from '@mui/icons-material/Balance';
 
 interface AboutPageProps {
   lang: LanguageCode;
   onNavigate: (view: string, params?: any) => void;
 }
 
-export const AboutPage: React.FC<AboutPageProps> = ({ lang, onNavigate }) => {
+export const AboutPage: React.FC<AboutPageProps> = ({ lang: _lang, onNavigate }) => {
   const leadership = [
     {
       name: 'K. Sundararajan',
@@ -51,202 +54,227 @@ export const AboutPage: React.FC<AboutPageProps> = ({ lang, onNavigate }) => {
     {
       title: 'Verified Land Titles & Approvals',
       desc: 'Every listing undergoes rigorous parent document validation, DTCP/CMDA order checks, and patta verification before publishing.',
-      icon: ShieldCheck
+      icon: VerifiedUserIcon
     },
     {
       title: 'True Ground Dimensions',
       desc: 'Transparent reporting of exact cent measurements, square-foot equivalents, approach road widths, and frontage distances.',
-      icon: Compass
+      icon: ExploreIcon
     },
     {
       title: 'Direct Corporate & Verified Sellers',
       desc: 'Clear separation between Grounds & Gates company-developed inventory and certified third-party owners, builders, and brokers.',
-      icon: Building2
+      icon: BusinessIcon
     },
     {
       title: 'Zero Hidden Costs or Surprises',
       desc: 'Honest price disclosures, breakdown of registration expenses, and direct communication without unnecessary intermediaries.',
-      icon: Scale
+      icon: BalanceIcon
     }
   ];
 
   return (
-    <div className="min-h-screen bg-[#F5F2E9] pb-24">
+    <Box sx={{ minHeight: '100vh', bgcolor: '#F5F2E9', pb: 12 }}>
       {/* 1. Hero Banner */}
-      <section className="relative bg-[#013E18] text-[#F5F2E9] py-20 sm:py-28 overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#C99325_1px,transparent_1px)] [background-size:24px_24px]" />
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C99325]/20 text-[#C99325] text-xs font-bold uppercase tracking-widest mb-4 border border-[#C99325]/30">
-            About Grounds and Gates
-          </span>
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-tight">
-            Property Decisions Simplified.
-          </h1>
-          <p className="text-sm sm:text-lg text-stone-300 max-w-2xl mx-auto mt-4 leading-relaxed font-medium">
-            Founded with a singular mission: to eliminate the opacity, ambiguous measurements, and misleading listings that plague traditional real estate discovery across Tamil Nadu.
-          </p>
-        </div>
-      </section>
+      <Box sx={{ bgcolor: '#013E18', color: '#F5F2E9', py: { xs: 8, sm: 12 }, textAlign: 'center' }}>
+        <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1280px !important', px: { xs: 2, sm: 3, md: 4 } }}>
+          <Chip
+            size="small"
+            label="Real Estate Standard for Tamil Nadu"
+            sx={{
+              bgcolor: 'rgba(201, 147, 37, 0.2)',
+              color: '#E0AA3E',
+              fontWeight: 800,
+              fontSize: '0.65rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              mb: 2.5,
+              border: '1px solid rgba(201, 147, 37, 0.3)',
+            }}
+          />
+          <Typography variant="h3" sx={{ fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', mb: 2 }}>
+            Grounds and Gates
+          </Typography>
+          <Typography variant="h6" sx={{ color: 'rgba(245, 242, 233, 0.85)', maxWidth: 750, mx: 'auto', fontWeight: 500, fontSize: { xs: '1rem', sm: '1.2rem' }, lineHeight: 1.6 }}>
+            Establishing architectural distinction, clear land titles, and verified property ownership across Tamil Nadu’s prime residential and agricultural corridors.
+          </Typography>
+        </Container>
+      </Box>
 
-      {/* 2. Brand Story Section */}
-      <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-3xl p-8 sm:p-14 border border-stone-200/90 shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          <div className="lg:col-span-7 space-y-6">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-[#C99325]">
-              Our Foundation & Philosophy
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-[#18241B] tracking-tight leading-snug">
-              Bridging the Gap Between Land Dreams and Legal Certainty.
-            </h2>
-            <div className="space-y-4 text-xs sm:text-sm text-stone-600 leading-relaxed">
-              <p>
-                Real estate in Tamil Nadu is deeply personal. Whether securing a 5-cent villa plot in Coimbatore’s growth corridor, an ancestral coconut grove in Pollachi, or an apartment along Chennai’s OMR, property represents generational security and emotional pride.
-              </p>
-              <p>
-                Yet for decades, buyers have battled inaccurate dimension claims, unverified approvals, hidden markups, and pushy middlemen. <strong>Grounds and Gates</strong> was conceived as a premium technology and legal solution: where every boundary is measured in true ground cents, every approval number is verified, and direct dialogue is respected.
-              </p>
-            </div>
-
-            <div className="pt-4 grid grid-cols-3 gap-4 border-t border-stone-100">
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-[#013E18]">10+</div>
-                <div className="text-[11px] text-stone-500 font-semibold mt-0.5">Tamil Nadu Hubs</div>
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-[#013E18]">100%</div>
-                <div className="text-[11px] text-stone-500 font-semibold mt-0.5">Title Transparency</div>
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-[#C99325]">0%</div>
-                <div className="text-[11px] text-stone-500 font-semibold mt-0.5">Brokerage on Direct</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-5 relative">
-            <div className="aspect-4/3 rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
-              <img
-                src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80"
-                alt="Grounds and Gates Architecture"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="absolute -bottom-6 -left-6 bg-[#013E18] text-[#F5F2E9] p-4 sm:p-5 rounded-2xl shadow-xl border border-[#C99325]/40 max-w-xs">
-              <div className="flex items-center gap-2 mb-1">
-                <CheckCircle2 className="w-4 h-4 text-[#C99325]" />
-                <span className="text-xs font-bold text-white">Direct & Trusted</span>
-              </div>
-              <p className="text-[11px] text-stone-300 leading-tight">
-                Designed to combine the accessibility of modern marketplaces with the legal rigor of corporate land desks.
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* 3. The 4 Pillars */}
-      <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-[#C99325]">
-            Our Operating Principles
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#18241B] tracking-tight mt-1">
-            Built on Four Non-Negotiable Standards
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {pillars.map((pillar, i) => {
+      {/* 2. Four Pillars of Trust */}
+      <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1280px !important', px: { xs: 2, sm: 3, md: 4 }, mt: -5 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
+            gap: 3,
+          }}
+        >
+          {pillars.map((pillar, index) => {
             const Icon = pillar.icon;
             return (
-              <div
-                key={i}
-                className="bg-white rounded-2xl p-6 border border-stone-200/80 shadow-xs hover:shadow-lg hover:border-[#013E18]/30 transition-all flex flex-col justify-between"
+              <Paper
+                key={index}
+                elevation={2}
+                sx={{
+                  p: 3.5,
+                  borderRadius: '24px',
+                  bgcolor: '#FFFFFF',
+                  border: '1px solid rgba(24, 36, 27, 0.08)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.5,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-3px)',
+                    boxShadow: '0 12px 30px rgba(0,0,0,0.08)',
+                  },
+                }}
               >
-                <div>
-                  <div className="w-12 h-12 rounded-xl bg-[#013E18]/10 text-[#013E18] flex items-center justify-center mb-5">
-                    <Icon className="w-6 h-6 text-[#013E18]" />
-                  </div>
-                  <h3 className="text-base font-bold text-[#18241B] mb-2">
-                    {pillar.title}
-                  </h3>
-                  <p className="text-xs text-stone-600 leading-relaxed">
-                    {pillar.desc}
-                  </p>
-                </div>
-              </div>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '14px',
+                    bgcolor: 'rgba(1, 62, 24, 0.08)',
+                    color: '#013E18',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Icon sx={{ fontSize: 26, color: '#013E18' }} />
+                </Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#18241B' }}>
+                  {pillar.title}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#536458', lineHeight: 1.6, fontSize: '0.85rem' }}>
+                  {pillar.desc}
+                </Typography>
+              </Paper>
             );
           })}
-        </div>
-      </section>
+        </Box>
+      </Container>
 
-      {/* 4. Leadership & Advisory Board */}
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-[#C99325]">
-            Leadership
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#18241B] tracking-tight mt-1">
-            Steered by Regional Land & Legal Experts
-          </h2>
-          <p className="text-xs text-stone-500 mt-1">
-            Combining decades of field land acquisition, urban master planning, and real estate jurisprudence.
-          </p>
-        </div>
+      {/* 3. Leadership Team Grid */}
+      <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1280px !important', px: { xs: 2, sm: 3, md: 4 }, mt: 10 }}>
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Chip
+            size="small"
+            label="Stewards of Excellence"
+            sx={{
+              bgcolor: 'rgba(201, 147, 37, 0.15)',
+              color: '#8B6413',
+              fontWeight: 800,
+              fontSize: '0.65rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              mb: 1.5,
+            }}
+          />
+          <Typography variant="h4" sx={{ fontWeight: 900, color: '#18241B', letterSpacing: '-0.02em' }}>
+            Executive Leadership
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#536458', mt: 0.5 }}>
+            Experienced advocates, urban planners, and real estate professionals.
+          </Typography>
+        </Box>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {leadership.map((person, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-2xl overflow-hidden border border-stone-200/80 shadow-xs hover:shadow-lg transition-all"
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
+            gap: 3.5,
+          }}
+        >
+          {leadership.map((leader, index) => (
+            <Card
+              key={index}
+              elevation={1}
+              sx={{
+                borderRadius: '24px',
+                overflow: 'hidden',
+                bgcolor: '#FFFFFF',
+                border: '1px solid rgba(24, 36, 27, 0.08)',
+              }}
             >
-              <div className="h-56 bg-stone-100 overflow-hidden">
-                <img
-                  src={person.image}
-                  alt={person.name}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-              <div className="p-5">
-                <h4 className="text-base font-bold text-[#18241B]">{person.name}</h4>
-                <div className="text-xs font-bold text-[#C99325] mt-0.5">{person.role}</div>
-                <p className="text-xs text-stone-500 mt-2.5 leading-relaxed">
-                  {person.bio}
-                </p>
-              </div>
-            </div>
+              <CardMedia
+                component="img"
+                height="220"
+                image={leader.image}
+                alt={leader.name}
+                sx={{ objectFit: 'cover' }}
+              />
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#18241B' }}>
+                  {leader.name}
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#C99325', textTransform: 'uppercase', display: 'block', mb: 1.5 }}>
+                  {leader.role}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#536458', fontSize: '0.8rem', lineHeight: 1.6 }}>
+                  {leader.bio}
+                </Typography>
+              </CardContent>
+            </Card>
           ))}
-        </div>
-      </section>
+        </Box>
+      </Container>
 
-      {/* 5. CTA Strip */}
-      <section className="pt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-[#013E18] text-[#F5F2E9] rounded-3xl p-8 sm:p-12 text-center border-2 border-[#C99325]/40 shadow-2xl relative overflow-hidden">
-          <h2 className="text-2xl sm:text-3xl font-black text-white">
-            Ready to Discover Your Next Tamil Nadu Property?
-          </h2>
-          <p className="text-xs sm:text-sm text-stone-300 max-w-xl mx-auto mt-2">
-            Explore 30+ verified plots, individual houses, farmlands, and luxury villas across key growth hubs.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <button
+      {/* 4. Bottom CTA Strip */}
+      <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1280px !important', px: { xs: 2, sm: 3, md: 4 }, mt: 10 }}>
+        <Paper
+          elevation={2}
+          sx={{
+            p: { xs: 4, sm: 6 },
+            borderRadius: '28px',
+            bgcolor: '#013E18',
+            color: '#F5F2E9',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+            border: '1px solid rgba(201, 147, 37, 0.3)',
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
+            Ready to Discover Verified Real Estate?
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(245, 242, 233, 0.8)', maxWidth: 580, fontSize: '0.95rem' }}>
+            Explore 32 premier residential plots, luxury villas, agricultural farms, and commercial buildings across Tamil Nadu.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+            <Button
+              variant="contained"
+              color="secondary"
+              size="large"
+              endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
               onClick={() => onNavigate('properties')}
-              className="px-6 py-3 rounded-xl bg-[#C99325] text-white hover:bg-[#d99f2b] font-bold text-xs sm:text-sm transition-all shadow-md cursor-pointer"
+              sx={{ px: 4, py: 1.4, borderRadius: '14px', fontWeight: 800 }}
             >
-              Explore All Properties
-            </button>
-            <button
+              Browse Tamil Nadu Properties
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
               onClick={() => onNavigate('contact')}
-              className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm transition-all border border-white/20 cursor-pointer"
+              sx={{
+                px: 3.5,
+                py: 1.4,
+                borderRadius: '14px',
+                fontWeight: 700,
+                color: '#F5F2E9',
+                borderColor: 'rgba(255, 255, 255, 0.4)',
+                '&:hover': { borderColor: '#FFFFFF', bgcolor: 'rgba(255, 255, 255, 0.08)' },
+              }}
             >
-              Contact Our Desk
-            </button>
-          </div>
-        </div>
-      </section>
-    </div>
+              Contact Desk
+            </Button>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
   );
 };

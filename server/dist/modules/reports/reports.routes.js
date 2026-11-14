@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { getReportsSummary, exportCsvReport } from './reports.controller.js';
+import { authenticate } from '../../middleware/auth.middleware.js';
+import { requireRole } from '../../middleware/rbac.middleware.js';
+const router = Router();
+router.use(authenticate);
+router.use(requireRole('super-admin', 'admin', 'sales-manager'));
+router.get('/summary', getReportsSummary);
+router.get('/export', exportCsvReport);
+export default router;

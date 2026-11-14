@@ -4,7 +4,18 @@ import { translations } from '../../i18n/translations';
 import { LanguageCode } from '../../types/property';
 import { LOCATIONS_DATA } from '../../data/locations';
 import { CATEGORIES_DATA } from '../../data/categories';
-import { Phone, Mail, MapPin, ShieldCheck, Heart, ArrowUpRight } from 'lucide-react';
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Link,
+  Chip,
+} from '@mui/material';
+import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from '@mui/icons-material/Email';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 
 interface FooterProps {
   lang: LanguageCode;
@@ -20,208 +31,229 @@ export const Footer: React.FC<FooterProps> = ({
   const t = translations[lang];
 
   return (
-    <footer className="bg-[#18241B] text-[#F5F2E9] pt-16 pb-12 border-t-4 border-[#C99325]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Main Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-white/10">
-          
-          {/* Brand Col (Span 2) */}
-          <div className="lg:col-span-2 flex flex-col gap-4">
+    <Box
+      component="footer"
+      sx={{
+        bgcolor: '#18241B',
+        color: '#F5F2E9',
+        pt: 10,
+        pb: 8,
+        borderTop: '4px solid #C99325',
+      }}
+    >
+      <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1280px !important', px: { xs: 2, sm: 3, md: 4 } }}>
+        {/* Main Grid */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: '4fr 2fr 3fr 3fr' },
+            gap: { xs: 5, lg: 6 },
+            pb: 6,
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          }}
+        >
+          {/* Brand Col */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             <Logo variant="light" size="lg" />
-            
-            <p className="text-stone-300 text-xs sm:text-sm leading-relaxed max-w-md mt-2">
-              {t.footer.about}
-            </p>
 
-            <div className="flex flex-col gap-2 mt-2 text-xs text-stone-300">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#C99325] shrink-0" />
+            <Typography variant="body2" sx={{ color: 'rgba(245, 242, 233, 0.8)', fontSize: '0.85rem', lineHeight: 1.7, maxWidth: 380 }}>
+              {t.footer.about}
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, color: 'rgba(245, 242, 233, 0.75)', fontSize: '0.8rem' }}>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                <LocationOnIcon sx={{ fontSize: 16, color: '#C99325', flexShrink: 0, mt: 0.3 }} />
                 <span>Grounds & Gates Towers, Avinashi Road, Coimbatore, Tamil Nadu 641014</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-[#C99325] shrink-0" />
-                <a href="tel:+914222987000" className="hover:text-white transition-colors">
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <PhoneIcon sx={{ fontSize: 16, color: '#C99325', flexShrink: 0 }} />
+                <Link href="tel:+914222987000" underline="hover" sx={{ color: 'inherit', '&:hover': { color: '#FFFFFF' } }}>
                   +91 422 298 7000 (Direct Desk)
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-[#C99325] shrink-0" />
-                <a href="mailto:direct@groundsandgates.com" className="hover:text-white transition-colors">
+                </Link>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <EmailIcon sx={{ fontSize: 16, color: '#C99325', flexShrink: 0 }} />
+                <Link href="mailto:direct@groundsandgates.com" underline="hover" sx={{ color: 'inherit', '&:hover': { color: '#FFFFFF' } }}>
                   direct@groundsandgates.com
-                </a>
-              </div>
-            </div>
+                </Link>
+              </Box>
+            </Box>
 
             {/* Language Switcher in Footer */}
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-xs text-stone-400 font-semibold">{t.nav.language}:</span>
-              <button
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', pt: 1 }}>
+              <Typography variant="caption" sx={{ color: 'rgba(245, 242, 233, 0.6)', fontWeight: 700 }}>
+                {t.nav.language}:
+              </Typography>
+              <Button
+                size="small"
                 onClick={() => onLanguageChange('en')}
-                className={`px-2.5 py-1 text-xs rounded font-bold cursor-pointer transition-colors ${
-                  lang === 'en' ? 'bg-[#C99325] text-white' : 'bg-white/10 text-stone-300 hover:text-white'
-                }`}
+                sx={{
+                  bgcolor: lang === 'en' ? '#C99325' : 'rgba(255, 255, 255, 0.08)',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.7rem',
+                  py: 0.4,
+                  px: 1.5,
+                  borderRadius: '8px',
+                  '&:hover': {
+                    bgcolor: lang === 'en' ? '#B5821F' : 'rgba(255, 255, 255, 0.15)',
+                  },
+                }}
               >
                 English
-              </button>
-              <button
+              </Button>
+              <Button
+                size="small"
                 onClick={() => onLanguageChange('ta')}
-                className={`px-2.5 py-1 text-xs rounded font-bold cursor-pointer transition-colors ${
-                  lang === 'ta' ? 'bg-[#C99325] text-white' : 'bg-white/10 text-stone-300 hover:text-white'
-                }`}
+                sx={{
+                  bgcolor: lang === 'ta' ? '#C99325' : 'rgba(255, 255, 255, 0.08)',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.7rem',
+                  py: 0.4,
+                  px: 1.5,
+                  borderRadius: '8px',
+                  '&:hover': {
+                    bgcolor: lang === 'ta' ? '#B5821F' : 'rgba(255, 255, 255, 0.15)',
+                  },
+                }}
               >
                 தமிழ்
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Box>
+          </Box>
 
           {/* Quick Links */}
-          <div>
-            <h4 className="text-sm font-bold tracking-wider uppercase text-[#C99325] mb-4">
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#C99325', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 2.5, fontSize: '0.8rem' }}>
               {t.footer.quickLinks}
-            </h4>
-            <ul className="space-y-2 text-xs font-medium text-stone-300">
-              <li>
-                <button
-                  onClick={() => onNavigate('home')}
-                  className="hover:text-white hover:underline transition-colors cursor-pointer"
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {[
+                { label: t.nav.home, onClick: () => onNavigate('home') },
+                { label: t.nav.buy, onClick: () => onNavigate('properties', { listingType: 'buy' }) },
+                { label: t.nav.rent, onClick: () => onNavigate('properties', { listingType: 'rent' }) },
+                { label: t.nav.compare, onClick: () => onNavigate('compare') },
+                { label: t.nav.saved, onClick: () => onNavigate('favorites') },
+                { label: t.nav.buyerDashboard, onClick: () => onNavigate('buyer-dashboard') },
+                { label: t.nav.sellerDashboard, onClick: () => onNavigate('seller-dashboard') },
+                { label: lang === 'ta' ? 'எங்களைப் பற்றி' : 'About Us', onClick: () => onNavigate('about') },
+                { label: lang === 'ta' ? 'தொடர்புக்கு' : 'Contact Us', onClick: () => onNavigate('contact') },
+                { label: lang === 'ta' ? 'நிர்வாக போர்டல் (Staff CRM)' : 'Staff Portal (CRM)', onClick: () => onNavigate('admin-login') },
+              ].map((item, idx) => (
+                <Button
+                  key={idx}
+                  variant="text"
+                  onClick={item.onClick}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'rgba(245, 242, 233, 0.8)',
+                    fontSize: '0.8rem',
+                    p: 0,
+                    minWidth: 0,
+                    fontWeight: 500,
+                    '&:hover': { color: '#FFFFFF', background: 'none', textDecoration: 'underline' },
+                  }}
                 >
-                  {t.nav.home}
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('properties', { listingType: 'buy' })}
-                  className="hover:text-white hover:underline transition-colors cursor-pointer"
-                >
-                  {t.nav.buy}
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('properties', { listingType: 'rent' })}
-                  className="hover:text-white hover:underline transition-colors cursor-pointer"
-                >
-                  {t.nav.rent}
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('post-property')}
-                  className="hover:text-[#C99325] hover:underline transition-colors font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  <span>{t.nav.postProperty}</span>
-                  <span className="text-[10px] bg-[#C99325] text-white px-1.5 py-0.2 rounded font-semibold">Free</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('compare')}
-                  className="hover:text-white hover:underline transition-colors cursor-pointer"
-                >
-                  {t.nav.compare}
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('favorites')}
-                  className="hover:text-white hover:underline transition-colors cursor-pointer"
-                >
-                  {t.nav.saved}
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('buyer-dashboard')}
-                  className="hover:text-white hover:underline transition-colors cursor-pointer"
-                >
-                  {t.nav.buyerDashboard}
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('seller-dashboard')}
-                  className="hover:text-white hover:underline transition-colors cursor-pointer"
-                >
-                  {t.nav.sellerDashboard}
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('about')}
-                  className="hover:text-white hover:underline transition-colors cursor-pointer"
-                >
-                  {lang === 'ta' ? 'எங்களைப் பற்றி (About Us)' : 'About Grounds & Gates'}
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('contact')}
-                  className="hover:text-white hover:underline transition-colors cursor-pointer"
-                >
-                  {lang === 'ta' ? 'தொடர்புக்கு (Contact Us)' : 'Contact Corporate Desk'}
-                </button>
-              </li>
-            </ul>
-          </div>
+                  {item.label}
+                </Button>
+              ))}
+            </Box>
+          </Box>
 
           {/* Categories */}
-          <div>
-            <h4 className="text-sm font-bold tracking-wider uppercase text-[#C99325] mb-4">
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#C99325', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 2.5, fontSize: '0.8rem' }}>
               {t.footer.categories}
-            </h4>
-            <ul className="space-y-2 text-xs font-medium text-stone-300">
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {CATEGORIES_DATA.map(cat => (
-                <li key={cat.id}>
-                  <button
-                    onClick={() => onNavigate('properties', { category: cat.id })}
-                    className="hover:text-white hover:underline transition-colors text-left cursor-pointer"
-                  >
-                    {lang === 'ta' ? cat.tamilName : cat.name}
-                  </button>
-                </li>
+                <Button
+                  key={cat.id}
+                  variant="text"
+                  onClick={() => onNavigate('properties', { category: cat.id })}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'rgba(245, 242, 233, 0.8)',
+                    fontSize: '0.8rem',
+                    p: 0,
+                    minWidth: 0,
+                    fontWeight: 500,
+                    '&:hover': { color: '#FFFFFF', background: 'none', textDecoration: 'underline' },
+                  }}
+                >
+                  {lang === 'ta' ? cat.tamilName : cat.name}
+                </Button>
               ))}
-            </ul>
-          </div>
+            </Box>
+          </Box>
 
           {/* Regional Hubs */}
-          <div>
-            <h4 className="text-sm font-bold tracking-wider uppercase text-[#C99325] mb-4">
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#C99325', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 2.5, fontSize: '0.8rem' }}>
               {t.footer.regionalHubs}
-            </h4>
-            <ul className="space-y-2 text-xs font-medium text-stone-300">
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {LOCATIONS_DATA.slice(0, 7).map(loc => (
-                <li key={loc.id}>
-                  <button
-                    onClick={() => onNavigate('properties', { district: loc.name })}
-                    className="hover:text-white hover:underline transition-colors flex items-center justify-between w-full cursor-pointer"
-                  >
-                    <span>{loc.name}</span>
-                    <span className="text-[10px] text-stone-400">({loc.listingCount})</span>
-                  </button>
-                </li>
+                <Button
+                  key={loc.id}
+                  variant="text"
+                  onClick={() => onNavigate('properties', { district: loc.name })}
+                  sx={{
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    color: 'rgba(245, 242, 233, 0.8)',
+                    fontSize: '0.8rem',
+                    p: 0,
+                    minWidth: 0,
+                    fontWeight: 500,
+                    '&:hover': { color: '#FFFFFF', background: 'none' },
+                  }}
+                >
+                  <span>{loc.name}</span>
+                  <Chip
+                    label={loc.listingCount}
+                    size="small"
+                    sx={{
+                      height: 18,
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      bgcolor: 'rgba(255, 255, 255, 0.1)',
+                      color: '#E0AA3E',
+                    }}
+                  />
+                </Button>
               ))}
-            </ul>
-          </div>
-
-        </div>
+            </Box>
+          </Box>
+        </Box>
 
         {/* Demo Disclaimer & Copyright Notice */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-stone-400">
-          <div className="flex items-center gap-2 text-center md:text-left">
-            <ShieldCheck className="w-4 h-4 text-[#C99325] shrink-0" />
-            <p className="text-[11px] leading-relaxed max-w-3xl">
-              <strong className="text-stone-200">Presentation Disclaimer: </strong>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+            pt: 4,
+            color: 'rgba(245, 242, 233, 0.6)',
+            fontSize: '0.75rem',
+          }}
+        >
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            <VerifiedUserIcon sx={{ fontSize: 16, color: '#C99325', flexShrink: 0 }} />
+            <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'rgba(245, 242, 233, 0.65)' }}>
+              <strong style={{ color: '#F5F2E9' }}>Presentation Disclaimer: </strong>
               {t.footer.disclaimer}
-            </p>
-          </div>
+            </Typography>
+          </Box>
 
-          <div className="text-[11px] shrink-0">
+          <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'rgba(245, 242, 233, 0.65)', flexShrink: 0 }}>
             {t.footer.copyright}
-          </div>
-        </div>
-
-      </div>
-    </footer>
+          </Typography>
+        </Box>
+      </Container>
+    </Box>
   );
 };

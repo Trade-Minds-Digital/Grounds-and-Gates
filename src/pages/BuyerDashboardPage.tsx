@@ -3,18 +3,30 @@ import { Property, LanguageCode, EnquirySubmission } from '../types/property';
 import { translations } from '../i18n/translations';
 import { formatPriceINR } from '../utils/propertyUtils';
 import { PropertyCard } from '../components/property/PropertyCard';
+import { useDemoState } from '../context/DemoStateContext';
 import {
-  Heart,
-  Scale,
-  Calendar,
-  MessageSquare,
-  ShieldCheck,
-  CheckCircle2,
-  Sliders,
-  Settings,
-  ArrowRight,
-  Compass
-} from 'lucide-react';
+  Container,
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Card,
+  CardContent,
+  Chip,
+  Tabs,
+  Tab,
+  Alert,
+} from '@mui/material';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import BalanceIcon from '@mui/icons-material/Balance';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import ChatBubbleOutlinedIcon from '@mui/icons-material/ChatBubbleOutlined';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import TuneIcon from '@mui/icons-material/Tune';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ExploreIcon from '@mui/icons-material/Explore';
 
 interface BuyerDashboardPageProps {
   enquiries: EnquirySubmission[];
@@ -38,14 +50,15 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({
   onToggleCompare
 }) => {
   const t = translations[lang];
+  const { siteVisits, bookings } = useDemoState();
   const [activeTab, setActiveTab] = useState<'overview' | 'enquiries' | 'saved' | 'settings'>('overview');
   const [preferencesSaved, setPreferencesSaved] = useState(false);
 
   const navItems = [
-    { id: 'overview', label: t.buyerDashboard.overview, icon: Sliders },
-    { id: 'enquiries', label: `${t.buyerDashboard.myEnquiries} (${enquiries.length})`, icon: MessageSquare },
-    { id: 'saved', label: `${t.buyerDashboard.savedListings} (${savedProperties.length})`, icon: Heart },
-    { id: 'settings', label: 'Preferences', icon: Settings },
+    { id: 'overview', label: t.buyerDashboard.overview, icon: TuneIcon },
+    { id: 'enquiries', label: `${t.buyerDashboard.myEnquiries} (${enquiries.length})`, icon: ChatBubbleOutlinedIcon },
+    { id: 'saved', label: `${t.buyerDashboard.savedListings} (${savedProperties.length})`, icon: FavoriteIcon },
+    { id: 'settings', label: 'Preferences', icon: SettingsIcon },
   ];
 
   const handleSavePrefs = () => {
@@ -54,221 +67,353 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({
   };
 
   return (
-    <div className="bg-[#FAF8F2] min-h-screen py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <Box sx={{ bgcolor: '#FAF8F2', minHeight: '100vh', py: 6 }}>
+      <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1280px !important', px: { xs: 2, sm: 3, md: 4 } }}>
         
         {/* Executive Welcome Strip */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/90 shadow-xs mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#013E18] text-[#C99325] flex items-center justify-center font-black text-xl shadow-md shrink-0">
-                MS
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-[#18241B] tracking-tight">
-                    Welcome back, Mohanraj S.
-                  </h1>
-                  <span className="text-[10px] font-bold bg-[#013E18]/10 text-[#013E18] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    Verified Buyer Account
-                  </span>
-                </div>
-                <div className="text-xs text-stone-500 mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
-                  <span>mohanrajs0410@gmail.com</span>
-                  <span>·</span>
-                  <span>+91 98422 71000</span>
-                  <span>·</span>
-                  <span>Coimbatore & Chennai Corridors</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => onNavigate('properties')}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs shadow-sm transition-all cursor-pointer"
+        <Paper
+          elevation={1}
+          sx={{
+            p: { xs: 3, sm: 4 },
+            borderRadius: '24px',
+            bgcolor: '#FFFFFF',
+            border: '1px solid rgba(24, 36, 27, 0.08)',
+            mb: 4,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', md: 'center' },
+              gap: 2.5,
+            }}
+          >
+            <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'center' }}>
+              <Box
+                sx={{
+                  width: { xs: 54, sm: 64 },
+                  height: { xs: 54, sm: 64 },
+                  borderRadius: '18px',
+                  bgcolor: '#013E18',
+                  color: '#C99325',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 900,
+                  fontSize: '1.25rem',
+                  boxShadow: '0 4px 14px rgba(1, 62, 24, 0.25)',
+                  flexShrink: 0,
+                }}
               >
-                <Compass className="w-4 h-4 text-[#C99325]" />
-                <span>Explore Marketplace</span>
-              </button>
-            </div>
-          </div>
-        </div>
+                MS
+              </Box>
+              <Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: '#18241B' }}>
+                    Welcome back, Mohanraj S.
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label="Verified Buyer Account"
+                    sx={{
+                      bgcolor: 'rgba(1, 62, 24, 0.08)',
+                      color: '#013E18',
+                      fontWeight: 800,
+                      fontSize: '0.65rem',
+                      height: 22,
+                    }}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 0.5, color: '#536458', fontSize: '0.75rem' }}>
+                  <span>mohanrajs0410@gmail.com</span>
+                  <span>•</span>
+                  <span>+91 98422 71000</span>
+                  <span>•</span>
+                  <span>Coimbatore & Chennai Corridors</span>
+                </Box>
+              </Box>
+            </Box>
+
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<ExploreIcon sx={{ fontSize: 18, color: '#C99325' }} />}
+              onClick={() => onNavigate('properties')}
+              sx={{ borderRadius: '12px', fontWeight: 800, px: 2.5, py: 1 }}
+            >
+              Explore Marketplace
+            </Button>
+          </Box>
+        </Paper>
 
         {/* Sidebar + Workspace Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '3fr 9fr' }, gap: 4, alignItems: 'start' }}>
           
-          {/* Refined Desktop Sidebar / Mobile Nav Pills (3 cols) */}
-          <aside className="lg:col-span-3 lg:sticky lg:top-24 space-y-4">
-            <div className="bg-white rounded-3xl p-3 border border-stone-200/90 shadow-xs">
-              <div className="hidden lg:block px-3 py-2 text-[10px] font-extrabold uppercase tracking-[0.18em] text-stone-400">
+          {/* Sidebar */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Paper elevation={1} sx={{ p: 2, borderRadius: '20px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)' }}>
+              <Typography variant="caption" sx={{ px: 1.5, py: 1, color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem', display: 'block' }}>
                 Buyer Workspace
-              </div>
-              <nav className="flex lg:flex-col gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'row', lg: 'column' }, gap: 1, overflowX: 'auto', pb: { xs: 1, lg: 0 } }}>
                 {navItems.map(tab => {
                   const Icon = tab.icon;
                   const active = activeTab === tab.id;
                   return (
-                    <button
+                    <Button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as any)}
-                      className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer lg:w-full text-left ${
-                        active
-                          ? 'bg-[#013E18] text-white shadow-xs'
-                          : 'text-stone-600 hover:bg-[#FAF8F2] hover:text-[#013E18]'
-                      }`}
+                      startIcon={<Icon sx={{ fontSize: 18, color: active ? '#C99325' : 'text.secondary' }} />}
+                      sx={{
+                        justifyContent: 'flex-start',
+                        py: 1.2,
+                        px: 2,
+                        borderRadius: '12px',
+                        fontWeight: active ? 800 : 600,
+                        fontSize: '0.8rem',
+                        bgcolor: active ? '#013E18' : 'transparent',
+                        color: active ? '#FFFFFF' : '#536458',
+                        whiteSpace: 'nowrap',
+                        '&:hover': {
+                          bgcolor: active ? '#00280F' : '#FAF8F2',
+                          color: active ? '#FFFFFF' : '#013E18',
+                        },
+                      }}
                     >
-                      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-[#C99325]' : 'text-stone-400'}`} />
-                      <span>{tab.label}</span>
-                    </button>
+                      {tab.label}
+                    </Button>
                   );
                 })}
-              </nav>
+              </Box>
 
-              <div className="hidden lg:block mt-4 pt-4 border-t border-stone-100 px-3">
-                <button
+              <Box sx={{ display: { xs: 'none', lg: 'block' }, mt: 2, pt: 2, borderTop: '1px solid #ECE7DA', px: 1 }}>
+                <Box
+                  component="button"
                   onClick={() => onNavigate('compare')}
-                  className="w-full flex items-center justify-between text-xs font-bold text-[#013E18] hover:text-[#C99325] transition-colors cursor-pointer py-1"
+                  sx={{
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    p: 1,
+                    borderRadius: '10px',
+                    color: '#013E18',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    '&:hover': { bgcolor: '#FAF8F2' },
+                  }}
                 >
-                  <span className="flex items-center gap-2">
-                    <Scale className="w-4 h-4 text-[#C99325]" />
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <BalanceIcon sx={{ fontSize: 18, color: '#C99325' }} />
                     <span>Compare Tray</span>
-                  </span>
-                  <span className="bg-[#FAF8F2] px-2 py-0.5 rounded-full border border-stone-200 text-[11px]">
-                    {comparedProperties.length}/4
-                  </span>
-                </button>
-              </div>
-            </div>
+                  </Box>
+                  <Chip label={`${comparedProperties.length}/4`} size="small" sx={{ height: 20, fontSize: '0.65rem' }} />
+                </Box>
+              </Box>
+            </Paper>
 
-            <div className="hidden lg:flex bg-white p-4 rounded-2xl border border-stone-200/80 text-[11px] text-stone-600 items-start gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-[#013E18] shrink-0 mt-0.5" />
-              <span>{t.buyerDashboard.demoAnalyticsNote}</span>
-            </div>
-          </aside>
+            <Paper elevation={0} sx={{ p: 2, borderRadius: '16px', bgcolor: '#FFFFFF', border: '1px solid #ECE7DA', display: { xs: 'none', lg: 'flex' }, gap: 1.5, alignItems: 'flex-start' }}>
+              <VerifiedUserIcon sx={{ fontSize: 18, color: '#013E18', flexShrink: 0, mt: 0.3 }} />
+              <Typography variant="caption" sx={{ color: '#536458', fontSize: '0.72rem', lineHeight: 1.5 }}>
+                {t.buyerDashboard.demoAnalyticsNote}
+              </Typography>
+            </Paper>
+          </Box>
 
-          {/* Main Dashboard Workspace (9 cols) */}
-          <div className="lg:col-span-9 min-w-0">
-
+          {/* Main Dashboard Workspace */}
+          <Box sx={{ minWidth: 0 }}>
             {/* Tab 1: Overview */}
             {activeTab === 'overview' && (
-              <div className="space-y-8 animate-in fade-in duration-200">
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {/* KPI Metric Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-white p-5 rounded-2xl border border-stone-200/90 shadow-2xs border-t-2 border-t-[#013E18]">
-                    <div className="text-stone-400 text-[10px] font-extrabold uppercase tracking-wider">{t.buyerDashboard.statsSaved}</div>
-                    <div className="text-3xl font-black text-[#013E18] mt-1.5">{savedProperties.length}</div>
-                    <div className="text-[11px] text-stone-500 mt-1">Shortlisted estates</div>
-                  </div>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+                  <Card sx={{ p: 2.5, borderRadius: '18px', borderTop: '3px solid #013E18' }}>
+                    <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                      {t.buyerDashboard.statsSaved}
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 900, color: '#013E18', my: 0.5 }}>
+                      {savedProperties.length}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#536458' }}>
+                      Shortlisted estates
+                    </Typography>
+                  </Card>
 
-                  <div className="bg-white p-5 rounded-2xl border border-stone-200/90 shadow-2xs border-t-2 border-t-[#C99325]">
-                    <div className="text-stone-400 text-[10px] font-extrabold uppercase tracking-wider">{t.buyerDashboard.statsEnquiries}</div>
-                    <div className="text-3xl font-black text-[#C99325] mt-1.5">{enquiries.length}</div>
-                    <div className="text-[11px] text-stone-500 mt-1">Direct seller requests</div>
-                  </div>
+                  <Card sx={{ p: 2.5, borderRadius: '18px', borderTop: '3px solid #C99325' }}>
+                    <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                      {t.buyerDashboard.statsEnquiries}
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 900, color: '#C99325', my: 0.5 }}>
+                      {enquiries.length}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#536458' }}>
+                      Direct seller requests
+                    </Typography>
+                  </Card>
 
-                  <div className="bg-white p-5 rounded-2xl border border-stone-200/90 shadow-2xs border-t-2 border-t-[#013E18]">
-                    <div className="text-stone-400 text-[10px] font-extrabold uppercase tracking-wider">{t.buyerDashboard.statsVisits}</div>
-                    <div className="text-3xl font-black text-[#013E18] mt-1.5">{enquiries.filter(e => e.visitDate).length}</div>
-                    <div className="text-[11px] text-stone-500 mt-1">Walkthroughs booked</div>
-                  </div>
+                  <Card sx={{ p: 2.5, borderRadius: '18px', borderTop: '3px solid #013E18' }}>
+                    <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                      {t.buyerDashboard.statsVisits}
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 900, color: '#013E18', my: 0.5 }}>
+                      {siteVisits.length || enquiries.filter(e => e.visitDate).length}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#536458' }}>
+                      Walkthroughs booked
+                    </Typography>
+                  </Card>
 
-                  <div className="bg-white p-5 rounded-2xl border border-stone-200/90 shadow-2xs border-t-2 border-t-stone-300">
-                    <div className="text-stone-400 text-[10px] font-extrabold uppercase tracking-wider">{t.buyerDashboard.statsViewed}</div>
-                    <div className="text-3xl font-black text-stone-700 mt-1.5">14</div>
-                    <div className="text-[11px] text-stone-500 mt-1">Listings explored</div>
-                  </div>
-                </div>
+                  <Card sx={{ p: 2.5, borderRadius: '18px', borderTop: '3px solid #8C9A90' }}>
+                    <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                      {t.buyerDashboard.statsViewed}
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 900, color: '#536458', my: 0.5 }}>
+                      14
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#536458' }}>
+                      Listings explored
+                    </Typography>
+                  </Card>
+                </Box>
 
                 {/* Recent Enquiries Section */}
-                <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-xs">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-base font-extrabold text-[#18241B]">
+                <Paper elevation={1} sx={{ p: { xs: 3, sm: 4 }, borderRadius: '24px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#18241B' }}>
                       Recent Site Visits & Enquiries
-                    </h2>
-                    <button
+                    </Typography>
+                    <Button
+                      variant="text"
+                      size="small"
                       onClick={() => setActiveTab('enquiries')}
-                      className="text-xs font-bold text-[#013E18] hover:text-[#C99325] cursor-pointer flex items-center gap-1"
+                      endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
+                      sx={{ fontWeight: 700, color: '#013E18', fontSize: '0.75rem' }}
                     >
-                      <span>View All ({enquiries.length})</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                      View All ({enquiries.length})
+                    </Button>
+                  </Box>
 
                   {enquiries.length === 0 ? (
-                    <div className="p-8 text-center bg-[#FAF8F2] rounded-2xl border border-dashed border-stone-300">
-                      <Calendar className="w-8 h-8 text-[#C99325] mx-auto mb-2 opacity-80" />
-                      <div className="text-sm font-bold text-[#18241B]">No site visits requested yet</div>
-                      <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+                    <Box sx={{ p: 4, textAlign: 'center', bgcolor: '#FAF8F2', borderRadius: '16px', border: '1px dashed #ECE7DA' }}>
+                      <CalendarTodayIcon sx={{ fontSize: 32, color: '#C99325', mx: 'auto', mb: 1, opacity: 0.8 }} />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#18241B' }}>
+                        No site visits requested yet
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#536458', display: 'block', mt: 0.5, mb: 2 }}>
                         Explore verified listings and schedule a site inspection directly with our property desk.
-                      </p>
-                      <button
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
                         onClick={() => onNavigate('properties')}
-                        className="mt-4 px-4 py-2 rounded-xl bg-[#013E18] text-white text-xs font-bold cursor-pointer"
+                        sx={{ borderRadius: '10px', fontWeight: 800 }}
                       >
                         Browse Properties
-                      </button>
-                    </div>
+                      </Button>
+                    </Box>
                   ) : (
-                    <div className="space-y-3">
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       {enquiries.slice(0, 3).map(enq => (
-                        <div
+                        <Box
                           key={enq.id}
-                          className="p-4 rounded-2xl border border-stone-200/70 bg-[#FAF8F2] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                          sx={{
+                            p: 2.5,
+                            borderRadius: '16px',
+                            border: '1px solid #ECE7DA',
+                            bgcolor: '#FAF8F2',
+                            display: 'flex',
+                            flexDirection: { xs: 'column', sm: 'row' },
+                            justifyContent: 'space-between',
+                            alignItems: { sm: 'center' },
+                            gap: 2,
+                          }}
                         >
-                          <div>
-                            <div className="font-bold text-[#18241B]">{enq.propertyTitle}</div>
-                            <div className="text-[11px] text-stone-500 mt-0.5">
-                              {enq.propertyLocation} · {formatPriceINR(enq.propertyPrice)}
-                            </div>
+                          <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#18241B' }}>
+                              {enq.propertyTitle}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#536458', display: 'block', mt: 0.2 }}>
+                              {enq.propertyLocation} • {formatPriceINR(enq.propertyPrice)}
+                            </Typography>
                             {enq.visitDate && (
-                              <div className="text-[11px] text-[#013E18] font-bold mt-1 flex items-center gap-1">
-                                <Calendar className="w-3.5 h-3.5 text-[#C99325]" />
-                                <span>Visit scheduled for {enq.visitDate} ({enq.preferredTimeSlot})</span>
-                              </div>
+                              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.8, color: '#013E18' }}>
+                                <CalendarTodayIcon sx={{ fontSize: 14, color: '#C99325' }} />
+                                <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                                  Visit scheduled for {enq.visitDate} ({enq.preferredTimeSlot})
+                                </Typography>
+                              </Box>
                             )}
-                          </div>
+                          </Box>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800">
-                              {enq.status}
-                            </span>
-                            <button
+                          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexShrink: 0 }}>
+                            <Chip
+                              label={enq.status}
+                              size="small"
+                              sx={{
+                                bgcolor: '#ECFDF5',
+                                color: '#065F46',
+                                fontWeight: 700,
+                                fontSize: '0.65rem',
+                                height: 24,
+                              }}
+                            />
+                            <Button
+                              variant="outlined"
+                              size="small"
                               onClick={() => onSelectProperty(enq.propertyId)}
-                              className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 font-bold hover:border-[#013E18] transition-colors cursor-pointer"
+                              sx={{
+                                borderRadius: '10px',
+                                borderColor: '#ECE7DA',
+                                color: '#18241B',
+                                fontWeight: 700,
+                                fontSize: '0.75rem',
+                                py: 0.5,
+                              }}
                             >
                               View Listing
-                            </button>
-                          </div>
-                        </div>
+                            </Button>
+                          </Box>
+                        </Box>
                       ))}
-                    </div>
+                    </Box>
                   )}
-                </div>
+                </Paper>
 
-                {/* Saved Properties Preview */}
-                <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-xs">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-base font-extrabold text-[#18241B]">
+                {/* Saved Preview */}
+                <Paper elevation={1} sx={{ p: { xs: 3, sm: 4 }, borderRadius: '24px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#18241B' }}>
                       Shortlisted Properties ({savedProperties.length})
-                    </h2>
-                    <button
+                    </Typography>
+                    <Button
+                      variant="text"
+                      size="small"
                       onClick={() => onNavigate('favorites')}
-                      className="text-xs font-bold text-[#013E18] hover:text-[#C99325] cursor-pointer flex items-center gap-1"
+                      endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
+                      sx={{ fontWeight: 700, color: '#013E18', fontSize: '0.75rem' }}
                     >
-                      <span>Manage Saved</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                      Manage Saved
+                    </Button>
+                  </Box>
 
                   {savedProperties.length === 0 ? (
-                    <div className="p-8 text-center bg-[#FAF8F2] rounded-2xl border border-dashed border-stone-300">
-                      <Heart className="w-8 h-8 text-rose-400 mx-auto mb-2 opacity-80" />
-                      <div className="text-sm font-bold text-[#18241B]">Your shortlist is empty</div>
-                      <p className="text-xs text-stone-500 mt-1">Save plots or villas to compare and revisit later.</p>
-                    </div>
+                    <Box sx={{ p: 4, textAlign: 'center', bgcolor: '#FAF8F2', borderRadius: '16px', border: '1px dashed #ECE7DA' }}>
+                      <FavoriteIcon sx={{ fontSize: 32, color: '#FDA4AF', mx: 'auto', mb: 1, opacity: 0.8 }} />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#18241B' }}>
+                        Your shortlist is empty
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#536458' }}>
+                        Save plots or villas to compare and revisit later.
+                      </Typography>
+                    </Box>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, gap: 3 }}>
                       {savedProperties.slice(0, 3).map(prop => (
                         <PropertyCard
                           key={prop.id}
@@ -281,82 +426,104 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({
                           onSelect={onSelectProperty}
                         />
                       ))}
-                    </div>
+                    </Box>
                   )}
-                </div>
-              </div>
+                </Paper>
+              </Box>
             )}
 
             {/* Tab 2: Enquiries Detailed */}
             {activeTab === 'enquiries' && (
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/90 shadow-xs animate-in fade-in duration-200">
-                <h2 className="text-lg font-extrabold text-[#18241B] mb-5">
+              <Paper elevation={1} sx={{ p: { xs: 3, sm: 4 }, borderRadius: '24px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)' }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#18241B', mb: 3 }}>
                   All Submitted Inquiries & Site Visits
-                </h2>
+                </Typography>
 
                 {enquiries.length === 0 ? (
-                  <div className="p-12 text-center bg-[#FAF8F2] rounded-2xl border border-dashed border-stone-300">
-                    <Calendar className="w-10 h-10 text-[#C99325] mx-auto mb-3 opacity-80" />
-                    <div className="text-sm font-bold text-[#18241B]">No Active Enquiries Logged</div>
-                    <p className="text-xs text-stone-500 mt-1">Submit an enquiry or request a walkthrough on any property brochure.</p>
-                  </div>
+                  <Box sx={{ p: 6, textAlign: 'center', bgcolor: '#FAF8F2', borderRadius: '16px', border: '1px dashed #ECE7DA' }}>
+                    <CalendarTodayIcon sx={{ fontSize: 40, color: '#C99325', mx: 'auto', mb: 1.5, opacity: 0.8 }} />
+                    <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#18241B' }}>
+                      No Active Enquiries Logged
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#536458', mt: 0.5 }}>
+                      Submit an enquiry or request a walkthrough on any property brochure.
+                    </Typography>
+                  </Box>
                 ) : (
-                  <div className="space-y-4">
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                     {enquiries.map(enq => (
-                      <div
+                      <Box
                         key={enq.id}
-                        className="p-5 rounded-2xl border border-stone-200 bg-[#FAF8F2] text-xs space-y-2"
+                        sx={{
+                          p: 3,
+                          borderRadius: '16px',
+                          border: '1px solid #ECE7DA',
+                          bgcolor: '#FAF8F2',
+                        }}
                       >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div className="font-extrabold text-sm text-[#013E18]">{enq.propertyTitle}</div>
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 w-fit">
-                            Status: {enq.status}
-                          </span>
-                        </div>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#013E18' }}>
+                            {enq.propertyTitle}
+                          </Typography>
+                          <Chip
+                            label={`Status: ${enq.status}`}
+                            size="small"
+                            sx={{
+                              bgcolor: '#ECFDF5',
+                              color: '#065F46',
+                              fontWeight: 700,
+                              fontSize: '0.7rem',
+                            }}
+                          />
+                        </Box>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-stone-600 pt-2 border-t border-stone-200">
-                          <div>Location: <strong>{enq.propertyLocation}</strong></div>
-                          <div>Quoted Price: <strong>{formatPriceINR(enq.propertyPrice)}</strong></div>
-                          <div>Submitted: <strong>{new Date(enq.submittedAt).toLocaleDateString()}</strong></div>
-                        </div>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5, py: 1.5, borderTop: '1px solid #ECE7DA', color: '#536458', fontSize: '0.8rem' }}>
+                          <div>Location: <strong style={{ color: '#18241B' }}>{enq.propertyLocation}</strong></div>
+                          <div>Quoted Price: <strong style={{ color: '#18241B' }}>{formatPriceINR(enq.propertyPrice)}</strong></div>
+                          <div>Submitted: <strong style={{ color: '#18241B' }}>{new Date(enq.submittedAt).toLocaleDateString()}</strong></div>
+                        </Box>
 
                         {enq.visitDate && (
-                          <div className="bg-white p-2.5 rounded-xl border border-stone-200 font-semibold text-stone-700">
-                            Scheduled Visit: <strong>{enq.visitDate}</strong> ({enq.preferredTimeSlot})
-                          </div>
+                          <Box sx={{ mt: 1, p: 1.5, bgcolor: '#FFFFFF', borderRadius: '10px', border: '1px solid #ECE7DA', fontSize: '0.8rem', fontWeight: 600, color: '#18241B' }}>
+                            Scheduled Visit: <strong style={{ color: '#013E18' }}>{enq.visitDate}</strong> ({enq.preferredTimeSlot})
+                          </Box>
                         )}
 
                         {enq.message && (
-                          <div className="text-stone-500 italic">
+                          <Typography variant="caption" sx={{ color: '#8C9A90', fontStyle: 'italic', display: 'block', mt: 1 }}>
                             "{enq.message}"
-                          </div>
+                          </Typography>
                         )}
-                      </div>
+                      </Box>
                     ))}
-                  </div>
+                  </Box>
                 )}
-              </div>
+              </Paper>
             )}
 
             {/* Tab 3: Saved */}
             {activeTab === 'saved' && (
-              <div className="space-y-6 animate-in fade-in duration-200">
+              <Box>
                 {savedProperties.length === 0 ? (
-                  <div className="bg-white rounded-3xl p-12 text-center border border-stone-200/90 shadow-xs">
-                    <Heart className="w-10 h-10 text-rose-400 mx-auto mb-3" />
-                    <h2 className="text-lg font-extrabold text-[#18241B]">No Saved Properties Yet</h2>
-                    <p className="text-xs text-stone-500 mt-1 max-w-md mx-auto">
+                  <Paper elevation={1} sx={{ p: 6, textAlign: 'center', borderRadius: '24px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)' }}>
+                    <FavoriteIcon sx={{ fontSize: 40, color: '#FDA4AF', mx: 'auto', mb: 1.5 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#18241B' }}>
+                      No Saved Properties Yet
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#536458', mt: 0.5, mb: 3 }}>
                       Click the heart icon on any residence, plot, or agricultural tract to keep track of your shortlist.
-                    </p>
-                    <button
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      color="primary"
                       onClick={() => onNavigate('properties')}
-                      className="mt-5 px-6 py-2.5 rounded-xl bg-[#013E18] text-white font-bold text-xs cursor-pointer"
+                      sx={{ borderRadius: '12px', fontWeight: 800, px: 3 }}
                     >
                       Explore Properties
-                    </button>
-                  </div>
+                    </Button>
+                  </Paper>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, gap: 3.5 }}>
                     {savedProperties.map(prop => (
                       <PropertyCard
                         key={prop.id}
@@ -369,53 +536,59 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({
                         onSelect={onSelectProperty}
                       />
                     ))}
-                  </div>
+                  </Box>
                 )}
-              </div>
+              </Box>
             )}
 
             {/* Tab 4: Preferences */}
             {activeTab === 'settings' && (
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/90 shadow-xs space-y-5 text-xs animate-in fade-in duration-200">
-                <div>
-                  <h2 className="text-lg font-extrabold text-[#18241B]">Buyer Notifications & Search Preferences</h2>
-                  <p className="text-xs text-stone-500 mt-0.5">Manage how Grounds & Gates alerts you for new launches and price adjustments.</p>
-                </div>
+              <Paper elevation={1} sx={{ p: { xs: 3, sm: 4 }, borderRadius: '24px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)' }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#18241B' }}>
+                  Buyer Notifications & Search Preferences
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#536458', mt: 0.5, mb: 3 }}>
+                  Manage how Grounds & Gates alerts you for new launches and price adjustments.
+                </Typography>
                 
-                <div className="space-y-3 pt-2">
-                  <label className="flex items-center gap-3 p-3.5 rounded-xl bg-[#FAF8F2] border border-stone-200/70 font-semibold text-stone-700 cursor-pointer">
-                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#013E18]" />
-                    <span>Receive WhatsApp instant alerts when new DTCP plots in Coimbatore match my budget</span>
-                  </label>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
+                  <Box sx={{ p: 2, borderRadius: '14px', bgcolor: '#FAF8F2', border: '1px solid #ECE7DA', display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <input type="checkbox" defaultChecked style={{ accentColor: '#013E18', width: 18, height: 18 }} />
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#18241B', fontSize: '0.85rem' }}>
+                      Receive WhatsApp instant alerts when new DTCP plots in Coimbatore match my budget
+                    </Typography>
+                  </Box>
 
-                  <label className="flex items-center gap-3 p-3.5 rounded-xl bg-[#FAF8F2] border border-stone-200/70 font-semibold text-stone-700 cursor-pointer">
-                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#013E18]" />
-                    <span>Email me price reductions and legal status updates on saved properties</span>
-                  </label>
-                </div>
+                  <Box sx={{ p: 2, borderRadius: '14px', bgcolor: '#FAF8F2', border: '1px solid #ECE7DA', display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <input type="checkbox" defaultChecked style={{ accentColor: '#013E18', width: 18, height: 18 }} />
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#18241B', fontSize: '0.85rem' }}>
+                      Email me price reductions and legal status updates on saved properties
+                    </Typography>
+                  </Box>
+                </Box>
 
-                <div className="pt-2 flex items-center gap-3">
-                  <button
-                    type="button"
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
                     onClick={handleSavePrefs}
-                    className="px-6 py-2.5 rounded-xl bg-[#013E18] hover:bg-[#00280f] text-[#F5F2E9] font-bold cursor-pointer transition-all"
+                    sx={{ borderRadius: '12px', fontWeight: 800, px: 3, py: 1 }}
                   >
                     Save Preferences
-                  </button>
+                  </Button>
                   {preferencesSaved && (
-                    <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold text-xs animate-in fade-in">
-                      <CheckCircle2 className="w-4 h-4" />
+                    <Alert severity="success" sx={{ py: 0.5, px: 2, borderRadius: '10px' }}>
                       Preferences updated
-                    </span>
+                    </Alert>
                   )}
-                </div>
-              </div>
+                </Box>
+              </Paper>
             )}
 
-          </div>
-        </div>
+          </Box>
+        </Box>
 
-      </div>
-    </div>
+      </Container>
+    </Box>
   );
 };

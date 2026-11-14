@@ -4,18 +4,31 @@ import { translations } from '../i18n/translations';
 import { formatPriceINR, formatArea, findPropertyDifferences } from '../utils/propertyUtils';
 import { Badge } from '../components/common/Badge';
 import {
-  Scale,
-  Plus,
-  Trash2,
-  Check,
-  X,
-  ArrowRight,
-  Sparkles,
-  Building2,
-  MapPin,
-  ExternalLink,
-  SlidersHorizontal
-} from 'lucide-react';
+  Container,
+  Box,
+  Typography,
+  Button,
+  IconButton,
+  Chip,
+  Switch,
+  FormControlLabel,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+} from '@mui/material';
+import BalanceIcon from '@mui/icons-material/Balance';
+import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 interface ComparePageProps {
   comparedProperties: Property[];
@@ -49,309 +62,446 @@ export const ComparePage: React.FC<ComparePageProps> = ({
 
   if (comparedProperties.length === 0) {
     return (
-      <div className="bg-[#FAF8F2] min-h-[70vh] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-10 text-center border border-stone-200 shadow-sm">
-          <div className="w-16 h-16 rounded-full bg-[#013E18]/10 text-[#013E18] flex items-center justify-center mx-auto mb-4">
-            <Scale className="w-8 h-8 text-[#013E18]" />
-          </div>
-          <h2 className="text-xl font-bold text-[#18241B]">{t.compare.emptyTitle}</h2>
-          <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+      <Box sx={{ bgcolor: '#FAF8F2', minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
+        <Paper
+          elevation={1}
+          sx={{
+            maxWidth: 450,
+            width: '100%',
+            p: { xs: 4, sm: 5 },
+            textAlign: 'center',
+            borderRadius: '24px',
+            bgcolor: '#FFFFFF',
+            border: '1px solid rgba(24, 36, 27, 0.08)',
+          }}
+        >
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              bgcolor: 'rgba(1, 62, 24, 0.1)',
+              color: '#013E18',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2.5,
+            }}
+          >
+            <BalanceIcon sx={{ fontSize: 36, color: '#013E18' }} />
+          </Box>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: '#18241B', mb: 1 }}>
+            {t.compare.emptyTitle}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#536458', lineHeight: 1.6, mb: 3 }}>
             {t.compare.emptySubtitle}
-          </p>
+          </Typography>
 
-          <button
+          <Button
+            variant="contained"
+            color="primary"
             onClick={() => onNavigate('properties')}
-            className="mt-6 px-6 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] font-bold text-xs hover:bg-[#00280f] shadow-md transition-all cursor-pointer"
+            sx={{ borderRadius: '12px', fontWeight: 800, px: 3.5, py: 1.2 }}
           >
             {t.compare.browseCta}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Paper>
+      </Box>
     );
   }
 
   return (
-    <div className="bg-[#FAF8F2] min-h-screen py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+    <Box sx={{ bgcolor: '#FAF8F2', minHeight: '100vh', py: 6 }}>
+      <Container maxWidth="xl" disableGutters sx={{ maxWidth: '1280px !important', px: { xs: 2, sm: 3, md: 4 } }}>
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#C99325] uppercase tracking-wider mb-2">
-              <Scale className="w-3.5 h-3.5" />
-              <span>Side-by-Side Evaluation</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#18241B] tracking-tight">
-              {t.compare.title}
-            </h1>
-            <p className="text-xs sm:text-sm text-stone-500 mt-1 max-w-2xl">
-              {t.compare.subtitle}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Highlight Differences Toggle */}
-            <label className="flex items-center gap-2 text-xs font-bold text-stone-700 bg-white px-3 py-2 rounded-xl border border-stone-200 shadow-2xs cursor-pointer">
-              <input
-                type="checkbox"
-                checked={highlightDiffs}
-                onChange={(e) => setHighlightDiffs(e.target.checked)}
-                className="rounded text-[#013E18] focus:ring-[#013E18]"
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', md: 'flex-end' },
+            gap: 2,
+            mb: 5,
+          }}
+        >
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Chip
+                size="small"
+                icon={<BalanceIcon sx={{ fontSize: 14, color: '#C99325' }} />}
+                label="Side-by-Side Evaluation"
+                sx={{
+                  bgcolor: 'rgba(201, 147, 37, 0.12)',
+                  color: '#8B6413',
+                  fontWeight: 800,
+                  fontSize: '0.65rem',
+                  textTransform: 'uppercase',
+                  height: 22,
+                }}
               />
-              <span>{t.compare.highlightDifferences}</span>
-            </label>
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 900, color: '#18241B', letterSpacing: '-0.02em' }}>
+              {t.compare.title}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#536458', mt: 0.5, maxWidth: 600 }}>
+              {t.compare.subtitle}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            {/* Highlight Differences Toggle */}
+            <Paper
+              elevation={0}
+              sx={{
+                px: 2,
+                py: 0.5,
+                bgcolor: '#FFFFFF',
+                borderRadius: '12px',
+                border: '1px solid #ECE7DA',
+              }}
+            >
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={highlightDiffs}
+                    onChange={(e) => setHighlightDiffs(e.target.checked)}
+                    color="primary"
+                    size="small"
+                  />
+                }
+                label={
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#18241B' }}>
+                    {t.compare.highlightDifferences}
+                  </Typography>
+                }
+                sx={{ m: 0 }}
+              />
+            </Paper>
 
             {comparedProperties.length < 4 && (
-              <button
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddIcon sx={{ fontSize: 18, color: '#C99325' }} />}
                 onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs shadow-xs transition-all cursor-pointer"
+                sx={{ borderRadius: '12px', fontWeight: 800, fontSize: '0.75rem', py: 1, px: 2 }}
               >
-                <Plus className="w-4 h-4 text-[#C99325]" />
-                <span>{t.compare.addProperty} ({comparedProperties.length}/4)</span>
-              </button>
+                {t.compare.addProperty} ({comparedProperties.length}/4)
+              </Button>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* Comparison Matrix Table */}
-        <div className="bg-white rounded-3xl border border-stone-200/90 shadow-sm overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[760px]">
-            <thead>
-              <tr className="border-b border-stone-200 bg-stone-50/70">
-                <th className="p-4 sm:p-5 w-48 text-xs font-bold uppercase tracking-wider text-stone-400">
+        <TableContainer
+          component={Paper}
+          elevation={1}
+          sx={{
+            borderRadius: '24px',
+            border: '1px solid rgba(24, 36, 27, 0.08)',
+            overflowX: 'auto',
+            bgcolor: '#FFFFFF',
+          }}
+        >
+          <Table sx={{ minWidth: 760 }}>
+            <TableHead>
+              <TableRow sx={{ bgcolor: '#FAF8F2' }}>
+                <TableCell sx={{ width: 190, fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem', color: '#8C9A90', letterSpacing: '0.05em' }}>
                   Feature / Property
-                </th>
+                </TableCell>
                 {comparedProperties.map(prop => (
-                  <th key={prop.id} className="p-4 sm:p-5 w-72 align-top">
-                    <div className="relative group">
-                      <div className="relative h-40 rounded-xl overflow-hidden mb-3 bg-stone-100">
-                        <img
+                  <TableCell key={prop.id} sx={{ width: 280, verticalAlign: 'top', p: 2.5 }}>
+                    <Box sx={{ position: 'relative' }}>
+                      <Box sx={{ position: 'relative', height: 160, borderRadius: '12px', overflow: 'hidden', mb: 1.5, bgcolor: '#ECE7DA' }}>
+                        <Box
+                          component="img"
                           src={prop.images[0]}
                           alt={prop.title}
-                          className="w-full h-full object-cover"
+                          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
-                        <button
+                        <IconButton
+                          size="small"
                           onClick={() => onRemoveFromCompare(prop.id)}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-rose-600 transition-colors cursor-pointer"
+                          sx={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            bgcolor: 'rgba(0,0,0,0.6)',
+                            color: '#FFFFFF',
+                            p: 0.6,
+                            '&:hover': { bgcolor: '#E11D48' },
+                          }}
                           title={t.compare.remove}
                         >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                        <div className="absolute top-2 left-2">
+                          <CloseIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                        <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
                           <Badge type="demo" size="sm" />
-                        </div>
-                      </div>
+                        </Box>
+                      </Box>
 
-                      <h3
+                      <Typography
+                        variant="subtitle2"
                         onClick={() => onSelectProperty(prop.id)}
-                        className="text-xs font-bold text-[#18241B] hover:text-[#013E18] line-clamp-2 cursor-pointer transition-colors"
+                        sx={{
+                          fontWeight: 800,
+                          color: '#18241B',
+                          cursor: 'pointer',
+                          lineHeight: 1.3,
+                          '&:hover': { color: '#013E18' },
+                        }}
+                        noWrap
                       >
                         {lang === 'ta' && prop.tamilTitle ? prop.tamilTitle : prop.title}
-                      </h3>
+                      </Typography>
 
-                      <div className="text-sm font-black text-[#013E18] mt-1">
+                      <Typography variant="body2" sx={{ fontWeight: 900, color: '#013E18', mt: 0.5 }}>
                         {formatPriceINR(prop.price, prop.listingType, prop.priceUnit)}
-                      </div>
-                    </div>
-                  </th>
+                      </Typography>
+                    </Box>
+                  </TableCell>
                 ))}
-              </tr>
-            </thead>
+              </TableRow>
+            </TableHead>
 
-            <tbody className="divide-y divide-stone-100 text-xs">
-              
+            <TableBody>
               {/* Ownership Type */}
-              <tr className={highlightDiffs && diffFields.includes('ownershipType') ? 'bg-amber-50/50' : ''}>
-                <td className="p-4 font-bold text-stone-600">{t.compare.ownership}</td>
+              <TableRow sx={{ bgcolor: highlightDiffs && diffFields.includes('ownershipType') ? 'rgba(254, 243, 199, 0.4)' : 'transparent' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.ownership}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4">
+                  <TableCell key={prop.id}>
                     {prop.ownershipType === 'company' ? (
                       <Badge type="company" size="sm" />
                     ) : (
                       <Badge type="third-party" label={prop.seller.badgeTitle} size="sm" />
                     )}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Category */}
-              <tr className={highlightDiffs && diffFields.includes('category') ? 'bg-amber-50/50' : ''}>
-                <td className="p-4 font-bold text-stone-600">{t.compare.category}</td>
+              <TableRow sx={{ bgcolor: highlightDiffs && diffFields.includes('category') ? 'rgba(254, 243, 199, 0.4)' : 'transparent' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.category}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4 capitalize font-semibold text-stone-800">
+                  <TableCell key={prop.id} sx={{ textTransform: 'capitalize', fontWeight: 600, fontSize: '0.8rem' }}>
                     {prop.category.replace('-', ' ')}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Price */}
-              <tr className={highlightDiffs && diffFields.includes('price') ? 'bg-amber-50/50' : ''}>
-                <td className="p-4 font-bold text-stone-600">{t.compare.price}</td>
+              <TableRow sx={{ bgcolor: highlightDiffs && diffFields.includes('price') ? 'rgba(254, 243, 199, 0.4)' : 'transparent' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.price}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4 font-extrabold text-[#013E18]">
-                    {formatPriceINR(prop.price, prop.listingType, prop.priceUnit)}
-                    <span className="block text-[10px] font-normal text-stone-500">
+                  <TableCell key={prop.id}>
+                    <Typography variant="body2" sx={{ fontWeight: 900, color: '#013E18' }}>
+                      {formatPriceINR(prop.price, prop.listingType, prop.priceUnit)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#8C9A90', display: 'block' }}>
                       {prop.negotiable ? 'Negotiable' : 'Fixed Corporate Price'}
-                    </span>
-                  </td>
+                    </Typography>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Location */}
-              <tr>
-                <td className="p-4 font-bold text-stone-600">{t.compare.locality}</td>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.locality}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4 font-medium text-stone-800">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-[#C99325]" />
+                  <TableCell key={prop.id} sx={{ fontSize: '0.8rem', fontWeight: 500 }}>
+                    <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'center' }}>
+                      <LocationOnIcon sx={{ fontSize: 14, color: '#C99325' }} />
                       <span>{prop.location}, {prop.district}</span>
-                    </div>
-                  </td>
+                    </Box>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Plot Area */}
-              <tr className={highlightDiffs && diffFields.includes('plotArea') ? 'bg-amber-50/50' : ''}>
-                <td className="p-4 font-bold text-stone-600">{t.compare.plotArea}</td>
+              <TableRow sx={{ bgcolor: highlightDiffs && diffFields.includes('plotArea') ? 'rgba(254, 243, 199, 0.4)' : 'transparent' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.plotArea}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4 font-semibold text-stone-800">
+                  <TableCell key={prop.id} sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
                     {formatArea(prop.plotArea, prop.plotAreaUnit)}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Built-up Area */}
-              <tr>
-                <td className="p-4 font-bold text-stone-600">{t.compare.builtUpArea}</td>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.builtUpArea}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4 text-stone-700">
+                  <TableCell key={prop.id} sx={{ fontSize: '0.8rem', color: '#536458' }}>
                     {prop.builtUpArea ? `${prop.builtUpArea} sq.ft` : 'N/A (Plot)'}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Bedrooms & Bathrooms */}
-              <tr className={highlightDiffs && diffFields.includes('bedrooms') ? 'bg-amber-50/50' : ''}>
-                <td className="p-4 font-bold text-stone-600">{t.compare.bedrooms}</td>
+              <TableRow sx={{ bgcolor: highlightDiffs && diffFields.includes('bedrooms') ? 'rgba(254, 243, 199, 0.4)' : 'transparent' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.bedrooms}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4 text-stone-800 font-semibold">
+                  <TableCell key={prop.id} sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
                     {prop.bedrooms ? `${prop.bedrooms} BHK (${prop.bathrooms || 1} Baths)` : 'N/A (Plot)'}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Facing */}
-              <tr className={highlightDiffs && diffFields.includes('facing') ? 'bg-amber-50/50' : ''}>
-                <td className="p-4 font-bold text-stone-600">{t.compare.facing}</td>
+              <TableRow sx={{ bgcolor: highlightDiffs && diffFields.includes('facing') ? 'rgba(254, 243, 199, 0.4)' : 'transparent' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.facing}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4 text-stone-800 font-medium">
+                  <TableCell key={prop.id} sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
                     {prop.facing}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Road Width */}
-              <tr>
-                <td className="p-4 font-bold text-stone-600">{t.compare.roadWidth}</td>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.roadWidth}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4 text-stone-800 font-medium">
+                  <TableCell key={prop.id} sx={{ fontSize: '0.8rem', fontWeight: 500 }}>
                     {prop.roadWidthFeet || 30} Feet Blacktop
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Approval Authority */}
-              <tr>
-                <td className="p-4 font-bold text-stone-600">{t.compare.approval}</td>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.approval}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4">
-                    <span className="font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
-                      {prop.approvalAuthority || 'Clear Patta'}
-                    </span>
-                  </td>
+                  <TableCell key={prop.id}>
+                    <Chip
+                      size="small"
+                      label={prop.approvalAuthority || 'Clear Patta'}
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.7rem',
+                        bgcolor: '#ECFDF5',
+                        color: '#065F46',
+                        height: 24,
+                      }}
+                    />
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Amenities List */}
-              <tr>
-                <td className="p-4 font-bold text-stone-600">{t.compare.amenities}</td>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.amenities}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4 space-y-1">
-                    {prop.amenities.slice(0, 4).map((a, i) => (
-                      <div key={i} className="flex items-center gap-1.5 text-stone-700">
-                        <Check className="w-3 h-3 text-[#013E18] shrink-0" />
-                        <span className="text-[11px]">{a}</span>
-                      </div>
-                    ))}
-                  </td>
+                  <TableCell key={prop.id}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
+                      {prop.amenities.slice(0, 4).map((a, i) => (
+                        <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center', fontSize: '0.75rem', color: '#536458' }}>
+                          <CheckIcon sx={{ fontSize: 14, color: '#013E18', flexShrink: 0 }} />
+                          <span>{a}</span>
+                        </Box>
+                      ))}
+                    </Box>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
 
               {/* Action Buttons */}
-              <tr className="bg-stone-50/50">
-                <td className="p-4 font-bold text-stone-600">{t.compare.action}</td>
+              <TableRow sx={{ bgcolor: '#FAF8F2' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#536458', fontSize: '0.8rem' }}>{t.compare.action}</TableCell>
                 {comparedProperties.map(prop => (
-                  <td key={prop.id} className="p-4">
-                    <button
+                  <TableCell key={prop.id}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      endIcon={<ArrowForwardIcon sx={{ fontSize: 14, color: '#C99325' }} />}
                       onClick={() => onSelectProperty(prop.id)}
-                      className="w-full py-2 px-3 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      sx={{ borderRadius: '10px', fontWeight: 800, py: 0.8 }}
                     >
-                      <span>View Details</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#C99325]" />
-                    </button>
-                  </td>
+                      View Details
+                    </Button>
+                  </TableCell>
                 ))}
-              </tr>
-
-            </tbody>
-          </table>
-        </div>
-
-      </div>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Container>
 
       {/* Add Property Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-stone-200">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100 mb-4">
-              <h3 className="font-bold text-base text-[#18241B]">
-                Select Property to Compare
-              </h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="p-1 rounded-lg hover:bg-stone-100"
+      <Dialog
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '24px',
+              p: 2.5,
+              bgcolor: '#FFFFFF',
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, pb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#18241B' }}>
+            Select Property to Compare
+          </Typography>
+          <IconButton onClick={() => setShowAddModal(false)} size="small">
+            <CloseIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 1 }}>
+          <Box sx={{ maxHeight: 380, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {candidateProperties.map(prop => (
+              <Box
+                key={prop.id}
+                onClick={() => {
+                  onAddToCompare(prop.id);
+                  setShowAddModal(false);
+                }}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  p: 1.5,
+                  borderRadius: '14px',
+                  border: '1px solid #ECE7DA',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: '#013E18',
+                    bgcolor: '#FAF8F2',
+                  },
+                }}
               >
-                <X className="w-5 h-5 text-stone-500" />
-              </button>
-            </div>
-
-            <div className="max-h-80 overflow-y-auto space-y-2">
-              {candidateProperties.map(prop => (
-                <div
-                  key={prop.id}
-                  onClick={() => {
-                    onAddToCompare(prop.id);
-                    setShowAddModal(false);
-                  }}
-                  className="flex items-center justify-between p-3 rounded-xl border border-stone-200 hover:border-[#013E18] hover:bg-[#FAF8F2] cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <img src={prop.images[0]} alt="" className="w-12 h-10 rounded-lg object-cover" />
-                    <div>
-                      <div className="text-xs font-bold text-[#18241B] line-clamp-1">{prop.title}</div>
-                      <div className="text-[11px] text-stone-500">{prop.location}, {prop.district}</div>
-                    </div>
-                  </div>
-                  <div className="text-xs font-black text-[#013E18] shrink-0">
-                    {formatPriceINR(prop.price, prop.listingType, prop.priceUnit)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-    </div>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <Box
+                    component="img"
+                    src={prop.images[0]}
+                    alt=""
+                    sx={{ width: 50, height: 42, borderRadius: '8px', objectFit: 'cover' }}
+                  />
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#18241B', fontSize: '0.8rem' }} noWrap>
+                      {prop.title}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#8C9A90', fontSize: '0.7rem' }}>
+                      {prop.location}, {prop.district}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#013E18', fontSize: '0.8rem', flexShrink: 0 }}>
+                  {formatPriceINR(prop.price, prop.listingType, prop.priceUnit)}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </DialogContent>
+      </Dialog>
+    </Box>
   );
 };

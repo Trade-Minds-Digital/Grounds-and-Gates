@@ -3,18 +3,30 @@ import { Property, LanguageCode, EnquirySubmission } from '../../types/property'
 import { translations } from '../../i18n/translations';
 import { formatPriceINR } from '../../utils/propertyUtils';
 import {
-  X,
-  Calendar,
-  Clock,
-  Send,
-  Building2,
-  ShieldCheck,
-  CheckCircle2,
-  Phone,
-  Mail,
-  User,
-  MessageSquare
-} from 'lucide-react';
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  IconButton,
+  Chip,
+  Alert,
+  MenuItem,
+  InputAdornment,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import SendIcon from '@mui/icons-material/Send';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from '@mui/icons-material/Email';
+import PersonIcon from '@mui/icons-material/Person';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 
 interface EnquiryModalProps {
   property: Property;
@@ -29,7 +41,7 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
   isOpen,
   onClose,
   lang,
-  onSubmitEnquiry
+  onSubmitEnquiry,
 }) => {
   const t = translations[lang];
 
@@ -41,8 +53,6 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
   const [message, setMessage] = useState('Hello, I am interested in this property. Please arrange a site visit and share document copies.');
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,204 +84,292 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="relative bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-stone-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        
-        {/* Header */}
-        <div className="bg-[#013E18] text-[#F5F2E9] p-5 flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#C99325] text-white px-2 py-0.5 rounded">
-                {property.ownershipType === 'company' ? 'Grounds & Gates Direct' : 'Verified Seller'}
-              </span>
-              <span className="text-xs text-[#F5F2E9]/80 font-medium">Demo Listing Enquiry</span>
-            </div>
-            <h2 className="text-lg font-bold text-white line-clamp-1">{property.title}</h2>
-            <div className="text-sm font-extrabold text-[#C99325] mt-0.5">
-              {formatPriceINR(property.price, property.listingType, property.priceUnit)} • {property.location}, {property.district}
-            </div>
-          </div>
+    <Dialog
+      open={isOpen}
+      onClose={handleModalClose}
+      maxWidth="sm"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: '24px',
+            overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+          },
+        },
+      }}
+    >
+      {/* Header */}
+      <DialogTitle
+        sx={{
+          bgcolor: '#013E18',
+          color: '#F5F2E9',
+          p: 3,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+        }}
+      >
+        <Box sx={{ pr: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+            <Chip
+              size="small"
+              label={property.ownershipType === 'company' ? 'Grounds & Gates Direct' : 'Verified Seller'}
+              sx={{
+                bgcolor: '#C99325',
+                color: '#FFFFFF',
+                fontWeight: 800,
+                fontSize: '0.65rem',
+                textTransform: 'uppercase',
+                height: 22,
+              }}
+            />
+            <Typography variant="caption" sx={{ color: 'rgba(245, 242, 233, 0.8)', fontWeight: 600 }}>
+              Demo Listing Enquiry
+            </Typography>
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#FFFFFF', lineHeight: 1.3 }}>
+            {property.title}
+          </Typography>
+          <Typography variant="subtitle2" sx={{ color: '#E0AA3E', fontWeight: 800, mt: 0.5 }}>
+            {formatPriceINR(property.price, property.listingType, property.priceUnit)} • {property.location}, {property.district}
+          </Typography>
+        </Box>
 
-          <button
-            onClick={handleModalClose}
-            className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label="Close modal"
+        <IconButton
+          onClick={handleModalClose}
+          sx={{
+            color: 'rgba(255, 255, 255, 0.8)',
+            '&:hover': { color: '#FFFFFF', bgcolor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 20 }} />
+        </IconButton>
+      </DialogTitle>
+
+      {submitted ? (
+        <DialogContent sx={{ p: 4, textAlign: 'center' }}>
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              bgcolor: 'rgba(1, 62, 24, 0.1)',
+              color: '#013E18',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2.5,
+            }}
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            <CheckCircleIcon sx={{ fontSize: 40, color: '#013E18' }} />
+          </Box>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: '#18241B', mb: 1 }}>
+            {t.propertyDetails.enquirySuccess}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#536458', maxWidth: 360, mx: 'auto', mb: 3 }}>
+            {t.propertyDetails.enquirySuccessDesc}
+          </Typography>
 
-        {submitted ? (
-          <div className="p-8 text-center flex flex-col items-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-10 h-10" />
-            </div>
-            <h3 className="text-xl font-bold text-[#18241B]">{t.propertyDetails.enquirySuccess}</h3>
-            <p className="text-xs text-stone-600 max-w-xs mt-2 leading-relaxed">
-              {t.propertyDetails.enquirySuccessDesc}
-            </p>
+          <Box
+            sx={{
+              bgcolor: '#FAF8F2',
+              border: '1px solid #ECE7DA',
+              borderRadius: '16px',
+              p: 2.5,
+              textAlign: 'left',
+              mb: 3,
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#013E18', mb: 1 }}>
+              Enquiry Summary (Demo):
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#18241B', fontSize: '0.85rem' }}>
+              • Target Date: <strong>{visitDate}</strong> ({preferredSlot})
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#18241B', fontSize: '0.85rem' }}>
+              • Contact: <strong>{fullName}</strong> ({phone})
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#18241B', fontSize: '0.85rem' }}>
+              • Destination: <strong>{property.location}, {property.district}</strong>
+            </Typography>
+          </Box>
 
-            <div className="bg-[#F5F2E9] border border-stone-200 rounded-xl p-3 text-xs text-stone-700 w-full mt-5 text-left">
-              <div className="font-bold text-[#013E18] mb-1">Enquiry Summary (Demo):</div>
-              <div>• Target Date: <strong>{visitDate}</strong> ({preferredSlot})</div>
-              <div>• Contact: <strong>{fullName}</strong> ({phone})</div>
-              <div>• Destination: <strong>{property.location}, {property.district}</strong></div>
-            </div>
-
-            <button
-              onClick={handleModalClose}
-              className="mt-6 px-6 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] font-bold text-xs hover:bg-[#00280f] shadow-md transition-all cursor-pointer"
-            >
-              Done & Close
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
-            
-            {/* Seller Guarantee Note */}
-            <div className="p-3 rounded-xl bg-[#F5F2E9] border border-stone-200 text-xs text-stone-700 flex items-start gap-2.5">
-              <ShieldCheck className="w-5 h-5 text-[#013E18] shrink-0 mt-0.5" />
-              <p className="leading-relaxed">
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleModalClose}
+            sx={{ px: 4, py: 1.2, borderRadius: '12px', fontWeight: 800 }}
+          >
+            Done & Close
+          </Button>
+        </DialogContent>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <DialogContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              {/* Guarantee Note */}
+              <Alert
+                severity="info"
+                icon={<VerifiedUserIcon sx={{ fontSize: 20, color: '#013E18' }} />}
+                sx={{
+                  bgcolor: '#FAF8F2',
+                  border: '1px solid #ECE7DA',
+                  color: '#18241B',
+                  borderRadius: '14px',
+                  '& .MuiAlert-message': { fontSize: '0.8rem', lineHeight: 1.5 },
+                }}
+              >
                 {property.ownershipType === 'company'
                   ? t.propertyDetails.companyGuarantee
                   : t.propertyDetails.thirdPartyNotice}
-              </p>
-            </div>
+              </Alert>
 
-            {errorMsg && (
-              <div className="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200">
-                {errorMsg}
-              </div>
-            )}
+              {errorMsg && (
+                <Alert severity="error" sx={{ borderRadius: '12px' }}>
+                  {errorMsg}
+                </Alert>
+              )}
 
-            {/* Name & Phone */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  {t.propertyDetails.yourName} *
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Enter full name"
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-stone-300 focus:border-[#013E18] focus:ring-1 focus:ring-[#013E18] outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  {t.propertyDetails.yourPhone} *
-                </label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-stone-300 focus:border-[#013E18] focus:ring-1 focus:ring-[#013E18] outline-hidden"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">
-                {t.propertyDetails.yourEmail} *
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-stone-300 focus:border-[#013E18] focus:ring-1 focus:ring-[#013E18] outline-hidden"
+              {/* Name & Phone */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                <TextField
+                  label={`${t.propertyDetails.yourName} *`}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  fullWidth
+                  size="small"
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
-              </div>
-            </div>
-
-            {/* Visit Schedule Options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  {t.propertyDetails.selectDate}
-                </label>
-                <div className="relative">
-                  <Calendar className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
-                  <input
-                    type="date"
-                    value={visitDate}
-                    onChange={(e) => setVisitDate(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-stone-300 focus:border-[#013E18] focus:ring-1 focus:ring-[#013E18] outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  {t.propertyDetails.preferredSlot}
-                </label>
-                <div className="relative">
-                  <Clock className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
-                  <select
-                    value={preferredSlot}
-                    onChange={(e) => setPreferredSlot(e.target.value as any)}
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-stone-300 focus:border-[#013E18] focus:ring-1 focus:ring-[#013E18] outline-hidden bg-white"
-                  >
-                    <option value="morning">{t.propertyDetails.morning}</option>
-                    <option value="afternoon">{t.propertyDetails.afternoon}</option>
-                    <option value="evening">{t.propertyDetails.evening}</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Message */}
-            <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">
-                Enquiry Note / Questions
-              </label>
-              <div className="relative">
-                <MessageSquare className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
-                <textarea
-                  rows={2}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder={t.propertyDetails.messagePlaceholder}
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-stone-300 focus:border-[#013E18] focus:ring-1 focus:ring-[#013E18] outline-hidden resize-none"
+                <TextField
+                  label={`${t.propertyDetails.yourPhone} *`}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  fullWidth
+                  size="small"
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
-              </div>
-            </div>
+              </Box>
 
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-100">
-              <button
-                type="button"
-                onClick={handleModalClose}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-stone-600 hover:bg-stone-100 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs shadow-md transition-all cursor-pointer"
-              >
-                <Send className="w-3.5 h-3.5 text-[#C99325]" />
-                <span>{t.propertyDetails.submitEnquiry}</span>
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
+              {/* Email */}
+              <TextField
+                label={`${t.propertyDetails.yourEmail} *`}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                fullWidth
+                size="small"
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+
+              {/* Date & Slot */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                <TextField
+                  label={t.propertyDetails.selectDate}
+                  type="date"
+                  value={visitDate}
+                  onChange={(e) => setVisitDate(e.target.value)}
+                  fullWidth
+                  size="small"
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <CalendarTodayIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+
+                <TextField
+                  select
+                  label={t.propertyDetails.preferredSlot}
+                  value={preferredSlot}
+                  onChange={(e) => setPreferredSlot(e.target.value as any)}
+                  fullWidth
+                  size="small"
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <AccessTimeIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                >
+                  <MenuItem value="morning">{t.propertyDetails.morning}</MenuItem>
+                  <MenuItem value="afternoon">{t.propertyDetails.afternoon}</MenuItem>
+                  <MenuItem value="evening">{t.propertyDetails.evening}</MenuItem>
+                </TextField>
+              </Box>
+
+              {/* Message */}
+              <TextField
+                label="Enquiry Note / Questions"
+                multiline
+                rows={2}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={t.propertyDetails.messagePlaceholder}
+                fullWidth
+                size="small"
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1 }}>
+                        <ChatBubbleOutlineIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </Box>
+          </DialogContent>
+
+          <DialogActions sx={{ px: 3.5, pb: 3, pt: 1, borderTop: '1px solid #ECE7DA' }}>
+            <Button onClick={handleModalClose} sx={{ color: '#536458', fontWeight: 600 }}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              endIcon={<SendIcon sx={{ fontSize: 18, color: '#C99325' }} />}
+              sx={{ borderRadius: '12px', px: 3, py: 1, fontWeight: 800 }}
+            >
+              {t.propertyDetails.submitEnquiry}
+            </Button>
+          </DialogActions>
+        </form>
+      )}
+    </Dialog>
   );
 };

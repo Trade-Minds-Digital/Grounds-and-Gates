@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="gg-gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5B242"/>
+      <stop offset="100%" stop-color="#C99325"/>
+    </linearGradient>
+  </defs>
+  <!-- Architectural Forest Green Rounded Container -->
+  <rect width="128" height="128" rx="28" fill="#013E18"/>
+  <!-- Subtle Inset Gold Border -->
+  <rect x="2" y="2" width="124" height="124" rx="26" fill="none" stroke="#C99325" stroke-opacity="0.35" stroke-width="2"/>
+  <!-- Official Monogram Centered with 14px padding (100x100 within 128x128) -->
+  <g transform="translate(14, 14)">
+    <!-- Crisp White Outer Frame -->
+    <path d="M0 0H100V20.5H22.7V79.5H72.6V100H0V0Z" fill="#FFFFFF"/>
+    <!-- Heritage Gold Interlocking Piece -->
+    <path d="M38.7 40H100V100H79V60.5H38.7V40Z" fill="url(#gg-gold-grad)"/>
+  </g>
+</svg>

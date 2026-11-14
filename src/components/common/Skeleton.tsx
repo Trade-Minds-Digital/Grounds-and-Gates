@@ -1,37 +1,40 @@
 import React from 'react';
+import MuiSkeleton from '@mui/material/Skeleton';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
 
-export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface SkeletonProps {
   variant?: 'rectangular' | 'rounded' | 'circular' | 'text';
-  animation?: 'shimmer' | 'pulse' | 'none';
+  animation?: 'wave' | 'pulse' | false;
   className?: string;
+  width?: number | string;
+  height?: number | string;
+  sx?: any;
 }
 
 /**
- * Base Skeleton component with Grounds & Gates warm ivory shimmer styling.
+ * Base Skeleton component powered by MUI Skeleton with Grounds & Gates ivory warmth styling.
  */
 export const Skeleton: React.FC<SkeletonProps> = ({
-  variant = 'rectangular',
-  animation = 'shimmer',
+  variant = 'rounded',
+  animation = 'wave',
   className = '',
+  width,
+  height,
+  sx,
   ...props
 }) => {
-  const variantClass = {
-    rectangular: 'rounded-none',
-    rounded: 'rounded-xl',
-    circular: 'rounded-full',
-    text: 'rounded-sm h-4'
-  }[variant];
-
-  const animationClass = {
-    shimmer: 'animate-shimmer',
-    pulse: 'animate-pulse bg-stone-200/80',
-    none: 'bg-stone-200/60'
-  }[animation];
-
   return (
-    <div
-      aria-hidden="true"
-      className={`relative overflow-hidden ${variantClass} ${animationClass} ${className}`}
+    <MuiSkeleton
+      variant={variant}
+      animation={animation}
+      width={width}
+      height={height}
+      className={className}
+      sx={{
+        bgcolor: 'rgba(235, 230, 218, 0.65)',
+        ...sx,
+      }}
       {...props}
     />
   );
@@ -43,7 +46,7 @@ export interface PropertyCardSkeletonProps {
 }
 
 /**
- * Property Card Skeleton matching the exact layout and dimensions of PropertyCard.tsx.
+ * Property Card Skeleton matching the exact layout of PropertyCard.tsx using MUI.
  */
 export const PropertyCardSkeleton: React.FC<PropertyCardSkeletonProps> = ({
   layout = 'grid',
@@ -51,140 +54,144 @@ export const PropertyCardSkeleton: React.FC<PropertyCardSkeletonProps> = ({
 }) => {
   if (layout === 'list') {
     return (
-      <div
-        className={`bg-white rounded-2xl border border-stone-200/80 shadow-xs overflow-hidden flex flex-col md:flex-row ${className}`}
+      <Card
+        className={className}
+        sx={{
+          borderRadius: '20px',
+          bgcolor: '#FFFFFF',
+          border: '1px solid rgba(24, 36, 27, 0.08)',
+          boxShadow: '0 2px 10px rgba(24, 36, 27, 0.04)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+        }}
         aria-hidden="true"
       >
         {/* Left Thumbnail Placeholder */}
-        <div className="relative md:w-80 h-56 md:h-auto shrink-0 bg-stone-200/60 animate-shimmer overflow-hidden">
-          {/* Top Badges Placeholder */}
-          <div className="absolute top-3 left-3 flex gap-1.5 z-10">
-            <div className="w-20 h-5 rounded-full bg-stone-300/70" />
-            <div className="w-16 h-5 rounded-full bg-stone-300/70" />
-          </div>
-          {/* Top Right Actions */}
-          <div className="absolute top-3 right-3 flex gap-1.5 z-10">
-            <div className="w-8 h-8 rounded-full bg-stone-300/70" />
-            <div className="w-8 h-8 rounded-full bg-stone-300/70" />
-          </div>
-          {/* Bottom Ownership Badge */}
-          <div className="absolute bottom-3 left-3 z-10">
-            <div className="w-28 h-5 rounded-full bg-stone-300/70" />
-          </div>
-        </div>
+        <Box
+          sx={{
+            position: 'relative',
+            width: { xs: '100%', md: 320 },
+            height: { xs: 220, md: 'auto' },
+            flexShrink: 0,
+            bgcolor: 'rgba(235, 230, 218, 0.5)',
+          }}
+        >
+          <MuiSkeleton variant="rectangular" width="100%" height="100%" animation="wave" sx={{ bgcolor: 'rgba(235, 230, 218, 0.7)' }} />
+          <Box sx={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 1 }}>
+            <MuiSkeleton variant="rounded" width={80} height={24} sx={{ borderRadius: 1.5 }} />
+            <MuiSkeleton variant="rounded" width={60} height={24} sx={{ borderRadius: 1.5 }} />
+          </Box>
+          <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 1 }}>
+            <MuiSkeleton variant="circular" width={32} height={32} />
+            <MuiSkeleton variant="circular" width={32} height={32} />
+          </Box>
+        </Box>
 
         {/* Content Placeholder */}
-        <div className="p-5 flex-1 flex flex-col justify-between">
+        <Box sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-24 h-3.5 rounded bg-stone-200/80 animate-shimmer" />
-              <div className="w-20 h-3 rounded bg-stone-200/60 animate-shimmer" />
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <MuiSkeleton variant="rounded" width={100} height={16} />
+              <MuiSkeleton variant="rounded" width={70} height={14} />
+            </Box>
 
-            {/* Title */}
-            <div className="w-3/4 h-5 rounded-md bg-stone-200/90 animate-shimmer mb-2" />
+            <MuiSkeleton variant="rounded" width="80%" height={24} sx={{ mb: 1.5 }} />
 
-            {/* Location */}
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-3.5 h-3.5 rounded-full bg-stone-300/70" />
-              <div className="w-48 h-3.5 rounded bg-stone-200/70 animate-shimmer" />
-            </div>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <MuiSkeleton variant="circular" width={16} height={16} />
+              <MuiSkeleton variant="rounded" width={180} height={16} />
+            </Box>
 
-            {/* Description lines */}
-            <div className="space-y-1.5 my-3">
-              <div className="w-full h-3 rounded bg-stone-100 animate-shimmer" />
-              <div className="w-5/6 h-3 rounded bg-stone-100 animate-shimmer" />
-            </div>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8, my: 2 }}>
+              <MuiSkeleton variant="rounded" width="100%" height={12} />
+              <MuiSkeleton variant="rounded" width="85%" height={12} />
+            </Box>
 
-            {/* Specs Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-3 border-y border-stone-100">
-              <div className="h-4 rounded bg-stone-200/60 animate-shimmer" />
-              <div className="h-4 rounded bg-stone-200/60 animate-shimmer" />
-              <div className="h-4 rounded bg-stone-200/60 animate-shimmer" />
-              <div className="h-4 rounded bg-stone-200/60 animate-shimmer" />
-            </div>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: 1.5, py: 1.5, borderTop: '1px solid #F0ECE1', borderBottom: '1px solid #F0ECE1' }}>
+              <MuiSkeleton variant="rounded" height={20} />
+              <MuiSkeleton variant="rounded" height={20} />
+              <MuiSkeleton variant="rounded" height={20} />
+              <MuiSkeleton variant="rounded" height={20} />
+            </Box>
           </div>
 
-          {/* Bottom Price & Button */}
-          <div className="flex items-center justify-between pt-4 mt-2">
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, mt: 1 }}>
             <div>
-              <div className="w-28 h-6 rounded-md bg-stone-200/90 animate-shimmer mb-1" />
-              <div className="w-20 h-3 rounded bg-stone-200/60 animate-shimmer" />
+              <MuiSkeleton variant="rounded" width={110} height={24} sx={{ mb: 0.5 }} />
+              <MuiSkeleton variant="rounded" width={70} height={12} />
             </div>
-            <div className="w-28 h-9 rounded-xl bg-stone-200/90 animate-shimmer" />
-          </div>
-        </div>
-      </div>
+            <MuiSkeleton variant="rounded" width={110} height={36} sx={{ borderRadius: 2 }} />
+          </Box>
+        </Box>
+      </Card>
     );
   }
 
   // Grid Layout Skeleton
   return (
-    <div
-      className={`bg-white rounded-2xl border border-stone-200/90 shadow-xs overflow-hidden flex flex-col justify-between ${className}`}
+    <Card
+      className={className}
+      sx={{
+        borderRadius: '20px',
+        bgcolor: '#FFFFFF',
+        border: '1px solid rgba(24, 36, 27, 0.08)',
+        boxShadow: '0 2px 10px rgba(24, 36, 27, 0.04)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
       aria-hidden="true"
     >
-      {/* Image Area Skeleton */}
-      <div className="relative h-56 bg-stone-200/70 animate-shimmer overflow-hidden">
-        {/* Top Badges */}
-        <div className="absolute top-3 left-3 flex gap-1.5 z-10">
-          <div className="w-16 h-5 rounded-full bg-stone-300/80" />
-          <div className="w-16 h-5 rounded-full bg-stone-300/80" />
-        </div>
-        {/* Action icons */}
-        <div className="absolute top-3 right-3 flex gap-1.5 z-10">
-          <div className="w-8 h-8 rounded-full bg-stone-300/80" />
-          <div className="w-8 h-8 rounded-full bg-stone-300/80" />
-        </div>
-        {/* Bottom bar overlay */}
-        <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center z-10">
-          <div className="w-24 h-5 rounded-full bg-stone-300/80" />
-          <div className="w-12 h-4 rounded bg-stone-300/80" />
-        </div>
-      </div>
+      <Box sx={{ position: 'relative', height: 220, bgcolor: 'rgba(235, 230, 218, 0.5)' }}>
+        <MuiSkeleton variant="rectangular" width="100%" height="100%" animation="wave" sx={{ bgcolor: 'rgba(235, 230, 218, 0.7)' }} />
+        <Box sx={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 1 }}>
+          <MuiSkeleton variant="rounded" width={70} height={22} sx={{ borderRadius: 1.5 }} />
+          <MuiSkeleton variant="rounded" width={65} height={22} sx={{ borderRadius: 1.5 }} />
+        </Box>
+        <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 1 }}>
+          <MuiSkeleton variant="circular" width={32} height={32} />
+          <MuiSkeleton variant="circular" width={32} height={32} />
+        </Box>
+      </Box>
 
-      {/* Body Content */}
-      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+      <Box sx={{ p: 2.5, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
-          {/* Location & Tag line */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3.5 h-3.5 rounded-full bg-stone-200" />
-              <div className="w-32 h-3.5 rounded bg-stone-200/80 animate-shimmer" />
-            </div>
-            <div className="w-14 h-4 rounded bg-stone-200/60 animate-shimmer" />
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+              <MuiSkeleton variant="circular" width={14} height={14} />
+              <MuiSkeleton variant="rounded" width={120} height={14} />
+            </Box>
+            <MuiSkeleton variant="rounded" width={50} height={16} />
+          </Box>
 
-          {/* Title Line */}
-          <div className="w-4/5 h-5 rounded-md bg-stone-200/90 animate-shimmer mb-3" />
+          <MuiSkeleton variant="rounded" width="85%" height={22} sx={{ mb: 2 }} />
 
-          {/* 3-Column Key Specs Box */}
-          <div className="flex items-center justify-between py-2.5 px-3 bg-[#F5F2E9]/60 rounded-xl mb-3 border border-stone-200/50">
-            <div className="flex flex-col gap-1 w-1/4">
-              <div className="w-10 h-2.5 rounded bg-stone-200/60 animate-shimmer" />
-              <div className="w-14 h-3.5 rounded bg-stone-200/90 animate-shimmer" />
-            </div>
-            <div className="flex flex-col gap-1 w-1/4">
-              <div className="w-10 h-2.5 rounded bg-stone-200/60 animate-shimmer" />
-              <div className="w-14 h-3.5 rounded bg-stone-200/90 animate-shimmer" />
-            </div>
-            <div className="flex flex-col gap-1 w-1/4">
-              <div className="w-10 h-2.5 rounded bg-stone-200/60 animate-shimmer" />
-              <div className="w-14 h-3.5 rounded bg-stone-200/90 animate-shimmer" />
-            </div>
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1.5, bgcolor: '#FAF8F2', borderRadius: 2, mb: 2, border: '1px solid #ECE7DA' }}>
+            <Box>
+              <MuiSkeleton variant="rounded" width={40} height={10} sx={{ mb: 0.5 }} />
+              <MuiSkeleton variant="rounded" width={55} height={14} />
+            </Box>
+            <Box>
+              <MuiSkeleton variant="rounded" width={40} height={10} sx={{ mb: 0.5 }} />
+              <MuiSkeleton variant="rounded" width={55} height={14} />
+            </Box>
+            <Box>
+              <MuiSkeleton variant="rounded" width={40} height={10} sx={{ mb: 0.5 }} />
+              <MuiSkeleton variant="rounded" width={55} height={14} />
+            </Box>
+          </Box>
         </div>
 
-        {/* Price & CTA Button */}
-        <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1.5, borderTop: '1px solid #F0ECE1' }}>
           <div>
-            <div className="w-24 h-5 rounded bg-stone-200/90 animate-shimmer mb-1" />
-            <div className="w-16 h-2.5 rounded bg-stone-200/60 animate-shimmer" />
+            <MuiSkeleton variant="rounded" width={90} height={20} sx={{ mb: 0.5 }} />
+            <MuiSkeleton variant="rounded" width={60} height={12} />
           </div>
-          <div className="w-24 h-8 rounded-lg bg-stone-200/90 animate-shimmer" />
-        </div>
-      </div>
-    </div>
+          <MuiSkeleton variant="rounded" width={95} height={32} sx={{ borderRadius: 2 }} />
+        </Box>
+      </Box>
+    </Card>
   );
 };
 
@@ -194,9 +201,6 @@ export interface PropertyGridSkeletonProps {
   className?: string;
 }
 
-/**
- * Property Grid Skeleton component rendering a responsive collection of PropertyCardSkeletons.
- */
 export const PropertyGridSkeleton: React.FC<PropertyGridSkeletonProps> = ({
   count = 6,
   layout = 'grid',
@@ -223,155 +227,148 @@ export const PropertyGridSkeleton: React.FC<PropertyGridSkeletonProps> = ({
   );
 };
 
-/**
- * Property Details Skeleton for the full-page property view.
- */
 export const PropertyDetailsSkeleton: React.FC = () => {
   return (
-    <div
-      role="status"
-      aria-label="Loading property details"
-      aria-busy="true"
-      className="min-h-screen bg-[#F5F2E9] pb-24"
-    >
+    <Box role="status" aria-label="Loading property details" aria-busy="true" sx={{ minHeight: '100vh', bgcolor: '#F5F2E9', pb: 12 }}>
       {/* Top Breadcrumb & Actions Bar */}
-      <div className="bg-white border-b border-stone-200/80 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-20 h-4 rounded bg-stone-200/80 animate-shimmer" />
-            <div className="w-3 h-3 rounded bg-stone-200/60" />
-            <div className="w-32 h-4 rounded bg-stone-200/80 animate-shimmer" />
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-24 h-8 rounded-lg bg-stone-200/80 animate-shimmer" />
-            <div className="w-24 h-8 rounded-lg bg-stone-200/80 animate-shimmer" />
-          </div>
-        </div>
-      </div>
+      <Box sx={{ bgcolor: '#FFFFFF', borderBottom: '1px solid #ECE7DA', py: 2 }}>
+        <Box sx={{ maxWidth: 1280, mx: 'auto', px: { xs: 2, sm: 3, md: 4 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <MuiSkeleton variant="rounded" width={80} height={16} />
+            <MuiSkeleton variant="rounded" width={12} height={12} />
+            <MuiSkeleton variant="rounded" width={140} height={16} />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <MuiSkeleton variant="rounded" width={90} height={34} sx={{ borderRadius: 2 }} />
+            <MuiSkeleton variant="rounded" width={90} height={34} sx={{ borderRadius: 2 }} />
+          </Box>
+        </Box>
+      </Box>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        {/* Title & Price Header */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/80 shadow-xs mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-stone-100">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-28 h-6 rounded-full bg-stone-200/80 animate-shimmer" />
-                <div className="w-24 h-6 rounded-full bg-stone-200/80 animate-shimmer" />
-              </div>
-              <div className="w-96 max-w-full h-8 rounded-lg bg-stone-200/90 animate-shimmer" />
-              <div className="w-64 h-4 rounded bg-stone-200/70 animate-shimmer" />
-            </div>
-            <div className="space-y-2 md:text-right">
-              <div className="w-36 h-9 rounded-lg bg-stone-200/90 animate-shimmer md:ml-auto" />
-              <div className="w-24 h-3.5 rounded bg-stone-200/60 animate-shimmer md:ml-auto" />
-            </div>
-          </div>
+      <Box sx={{ maxWidth: 1280, mx: 'auto', px: { xs: 2, sm: 3, md: 4 }, pt: 4 }}>
+        {/* Header Card */}
+        <Card sx={{ bgcolor: '#FFFFFF', p: { xs: 3, sm: 4 }, borderRadius: '24px', mb: 4 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', pb: 3, borderBottom: '1px solid #F0ECE1', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+                <MuiSkeleton variant="rounded" width={110} height={26} sx={{ borderRadius: 1.5 }} />
+                <MuiSkeleton variant="rounded" width={90} height={26} sx={{ borderRadius: 1.5 }} />
+              </Box>
+              <MuiSkeleton variant="rounded" width="70%" height={32} sx={{ mb: 1.5 }} />
+              <MuiSkeleton variant="rounded" width="40%" height={16} />
+            </Box>
+            <Box sx={{ textAlign: { md: 'right' } }}>
+              <MuiSkeleton variant="rounded" width={140} height={36} sx={{ mb: 1, ml: { md: 'auto' } }} />
+              <MuiSkeleton variant="rounded" width={90} height={14} sx={{ ml: { md: 'auto' } }} />
+            </Box>
+          </Box>
 
-          {/* Photo Gallery Skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
-            <div className="md:col-span-2 h-72 sm:h-96 rounded-2xl bg-stone-200/80 animate-shimmer" />
-            <div className="grid grid-cols-2 md:grid-cols-1 gap-4 h-72 sm:h-96">
-              <div className="rounded-2xl bg-stone-200/80 animate-shimmer" />
-              <div className="rounded-2xl bg-stone-200/80 animate-shimmer" />
-            </div>
-          </div>
-        </div>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' }, gap: 2, pt: 3 }}>
+            <MuiSkeleton variant="rounded" height={360} sx={{ borderRadius: '16px' }} />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <MuiSkeleton variant="rounded" height={172} sx={{ borderRadius: '16px' }} />
+              <MuiSkeleton variant="rounded" height={172} sx={{ borderRadius: '16px' }} />
+            </Box>
+          </Box>
+        </Card>
 
-        {/* 2-Column Content + Sticky Sidebar */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Info Column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Key Specs Grid */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs">
-              <div className="w-36 h-6 rounded bg-stone-200/90 animate-shimmer mb-6" />
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        {/* Content & Sidebar */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 4 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <Card sx={{ p: 3, borderRadius: '20px' }}>
+              <MuiSkeleton variant="rounded" width={150} height={24} sx={{ mb: 3 }} />
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 2 }}>
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="p-3.5 rounded-xl bg-stone-50 border border-stone-100 flex flex-col gap-1.5">
-                    <div className="w-16 h-3 rounded bg-stone-200/60 animate-shimmer" />
-                    <div className="w-24 h-4 rounded bg-stone-200/90 animate-shimmer" />
-                  </div>
+                  <Box key={i} sx={{ p: 2, bgcolor: '#FAF8F2', borderRadius: 2, border: '1px solid #ECE7DA' }}>
+                    <MuiSkeleton variant="rounded" width={60} height={12} sx={{ mb: 1 }} />
+                    <MuiSkeleton variant="rounded" width={90} height={18} />
+                  </Box>
                 ))}
-              </div>
-            </div>
+              </Box>
+            </Card>
 
-            {/* Description Text */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs space-y-3">
-              <div className="w-40 h-6 rounded bg-stone-200/90 animate-shimmer mb-4" />
-              <div className="w-full h-3.5 rounded bg-stone-200/60 animate-shimmer" />
-              <div className="w-full h-3.5 rounded bg-stone-200/60 animate-shimmer" />
-              <div className="w-4/5 h-3.5 rounded bg-stone-200/60 animate-shimmer" />
-              <div className="w-3/5 h-3.5 rounded bg-stone-200/60 animate-shimmer" />
-            </div>
-          </div>
+            <Card sx={{ p: 3, borderRadius: '20px' }}>
+              <MuiSkeleton variant="rounded" width={160} height={24} sx={{ mb: 2 }} />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
+                <MuiSkeleton variant="rounded" width="100%" height={14} />
+                <MuiSkeleton variant="rounded" width="100%" height={14} />
+                <MuiSkeleton variant="rounded" width="80%" height={14} />
+                <MuiSkeleton variant="rounded" width="60%" height={14} />
+              </Box>
+            </Card>
+          </Box>
 
-          {/* Sticky Enquiry Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs space-y-4">
-              <div className="w-44 h-6 rounded bg-stone-200/90 animate-shimmer" />
-              <div className="w-full h-4 rounded bg-stone-200/60 animate-shimmer" />
-              <div className="space-y-3 pt-3">
-                <div className="w-full h-10 rounded-xl bg-stone-100 animate-shimmer" />
-                <div className="w-full h-10 rounded-xl bg-stone-100 animate-shimmer" />
-                <div className="w-full h-10 rounded-xl bg-stone-100 animate-shimmer" />
-                <div className="w-full h-12 rounded-xl bg-stone-200/90 animate-shimmer" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          <Card sx={{ p: 3, borderRadius: '20px', height: 'fit-content' }}>
+            <MuiSkeleton variant="rounded" width={160} height={24} sx={{ mb: 2 }} />
+            <MuiSkeleton variant="rounded" width="100%" height={16} sx={{ mb: 3 }} />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <MuiSkeleton variant="rounded" height={44} sx={{ borderRadius: 2 }} />
+              <MuiSkeleton variant="rounded" height={44} sx={{ borderRadius: 2 }} />
+              <MuiSkeleton variant="rounded" height={44} sx={{ borderRadius: 2 }} />
+              <MuiSkeleton variant="rounded" height={48} sx={{ borderRadius: 2, bgcolor: '#013E18', opacity: 0.2 }} />
+            </Box>
+          </Card>
+        </Box>
+      </Box>
       <span className="sr-only">Loading property details...</span>
-    </div>
+    </Box>
   );
 };
 
-/**
- * Full Page Transition Skeleton with Branded Loading Crest for smooth route transitions.
- */
 export const PageTransitionSkeleton: React.FC<{ title?: string }> = ({ title = 'Preparing Collection...' }) => {
   return (
-    <div
+    <Box
       role="status"
       aria-label={title}
       aria-busy="true"
-      className="min-h-[70vh] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
+      sx={{
+        minHeight: '65vh',
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
-      {/* Signature Branded Loading Indicator */}
-      <div className="flex flex-col items-center justify-center py-6 mb-10 animate-brand-pulse">
-        <svg
-          width="42"
-          height="42"
-          viewBox="0 0 100 100"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="mb-3"
+      <div className="relative flex items-center justify-center">
+        {/* Soft Golden Ambient Radial Aura */}
+        <div
+          className="animate-pulse"
+          style={{
+            position: 'absolute',
+            width: 140,
+            height: 140,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(201, 147, 37, 0.28) 0%, rgba(1, 62, 24, 0.08) 50%, transparent 72%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Monogram Icon Container with Continuous Luxury Animation */}
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            animation: 'pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }}
         >
-          <path d="M0 0H100V20.5H22.7V79.5H72.6V100H0V0Z" fill="#013E18" />
-          <path d="M38.7 40H100V100H79V60.5H38.7V40Z" fill="#C99325" />
-        </svg>
-        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#013E18]/75">
-          Grounds and Gates
-        </span>
-      </div>
-
-      {/* Top Banner Skeleton */}
-      <div className="mb-8 space-y-2">
-        <div className="w-32 h-4 rounded bg-stone-200/70 animate-shimmer" />
-        <div className="w-72 h-8 rounded-lg bg-stone-200/90 animate-shimmer" />
-        <div className="w-96 max-w-full h-4 rounded bg-stone-200/60 animate-shimmer" />
-      </div>
-
-      {/* Filter Bar Placeholder */}
-      <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs mb-8 flex flex-wrap gap-3 items-center justify-between">
-        <div className="w-64 h-9 rounded-xl bg-stone-100 animate-shimmer" />
-        <div className="flex gap-2">
-          <div className="w-28 h-9 rounded-xl bg-stone-100 animate-shimmer" />
-          <div className="w-28 h-9 rounded-xl bg-stone-100 animate-shimmer" />
-          <div className="w-10 h-9 rounded-xl bg-stone-100 animate-shimmer" />
+          <svg
+            width="64"
+            height="64"
+            viewBox="0 0 100 100"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+              filter: 'drop-shadow(0 6px 16px rgba(1, 62, 24, 0.18))',
+            }}
+          >
+            <path d="M0 0H100V20.5H22.7V79.5H72.6V100H0V0Z" fill="#013E18" />
+            <path d="M38.7 40H100V100H79V60.5H38.7V40Z" fill="#C99325" />
+          </svg>
         </div>
       </div>
-
-      {/* Grid of 6 Property Skeletons */}
-      <PropertyGridSkeleton count={6} layout="grid" />
-    </div>
+      <span className="sr-only">Loading Grounds and Gates...</span>
+    </Box>
   );
 };
