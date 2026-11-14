@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 const PropertySchema = new Schema({
     referenceId: { type: String, required: true, unique: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     title: { type: String, required: true, trim: true },
     tamilTitle: { type: String, trim: true },
     description: { type: String, required: true },

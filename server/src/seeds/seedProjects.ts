@@ -30,6 +30,7 @@ export const seedProjects = async () => {
         gallery: proj.images,
         description: proj.description,
         isActive: true,
+        isSample: true,
       },
       { upsert: true, new: true }
     );

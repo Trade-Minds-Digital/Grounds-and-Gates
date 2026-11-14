@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Property, LanguageCode, EnquirySubmission } from '../../types/property';
 import { translations } from '../../i18n/translations';
+import { useAppState } from '../../context/AppStateContext';
 import { formatPriceINR } from '../../utils/propertyUtils';
 import {
   Dialog,
@@ -44,6 +45,8 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
   onSubmitEnquiry,
 }) => {
   const t = translations[lang];
+  const { masters } = useAppState();
+  const timeSlots = masters['visit_time_slot'] || [];
 
   const [fullName, setFullName] = useState('Mohanraj S.');
   const [phone, setPhone] = useState('+91 98422 71000');
@@ -125,7 +128,7 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
               }}
             />
             <Typography variant="caption" sx={{ color: 'rgba(245, 242, 233, 0.8)', fontWeight: 600 }}>
-              Demo Listing Enquiry
+              Direct Property Enquiry
             </Typography>
           </Box>
           <Typography variant="h6" sx={{ fontWeight: 800, color: '#FFFFFF', lineHeight: 1.3 }}>
@@ -183,7 +186,7 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
             }}
           >
             <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#013E18', mb: 1 }}>
-              Enquiry Summary (Demo):
+              Enquiry Summary:
             </Typography>
             <Typography variant="body2" sx={{ color: '#18241B', fontSize: '0.85rem' }}>
               • Target Date: <strong>{visitDate}</strong> ({preferredSlot})
@@ -325,9 +328,19 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
                     },
                   }}
                 >
-                  <MenuItem value="morning">{t.propertyDetails.morning}</MenuItem>
-                  <MenuItem value="afternoon">{t.propertyDetails.afternoon}</MenuItem>
-                  <MenuItem value="evening">{t.propertyDetails.evening}</MenuItem>
+                  {timeSlots.length > 0 ? (
+                    timeSlots.map(slot => (
+                      <MenuItem key={slot.code} value={slot.code}>
+                        {lang === 'ta' ? (slot.nameTa || slot.name) : slot.name} {slot.metadata?.timeWindow ? `(${slot.metadata.timeWindow})` : ''}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    [
+                      <MenuItem key="morning" value="morning">{t.propertyDetails.morning}</MenuItem>,
+                      <MenuItem key="afternoon" value="afternoon">{t.propertyDetails.afternoon}</MenuItem>,
+                      <MenuItem key="evening" value="evening">{t.propertyDetails.evening}</MenuItem>,
+                    ]
+                  )}
                 </TextField>
               </Box>
 

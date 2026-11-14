@@ -4,9 +4,13 @@ import { Developer } from '../../models/Developer.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
 import { slugify } from '../../utils/slug.js';
 
-export const getProjects = async (_req: Request, res: Response): Promise<void> => {
+export const getProjects = async (req: Request, res: Response): Promise<void> => {
   try {
-    const projects = await Project.find({ isActive: true }).populate('developer');
+    const filter: any = { isActive: true };
+    if (req.query.includeSample !== 'true') {
+      filter.isSample = { $ne: true };
+    }
+    const projects = await Project.find(filter).populate('developer');
     successResponse(res, projects);
   } catch (err: any) {
     errorResponse(res, err.message, 500);

@@ -11,6 +11,7 @@ export const seedNotifications = async () => {
             read: n.read,
             timestamp: n.timestamp,
             actionView: n.actionView,
+            isSample: true,
         }, { upsert: true, new: true });
     }
     console.log(`✅ Seeded ${INITIAL_DEMO_NOTIFICATIONS.length} Notifications.`);

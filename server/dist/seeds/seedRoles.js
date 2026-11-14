@@ -2,7 +2,7 @@ import { Role } from '../models/Role.js';
 import { Permission } from '../models/Permission.js';
 export const seedRolesAndPermissions = async () => {
     console.log('🌱 Seeding Roles & Permissions...');
-    const modules = ['properties', 'projects', 'developers', 'leads', 'customers', 'employees', 'bookings', 'site-visits', 'analytics', 'settings'];
+    const modules = ['properties', 'projects', 'developers', 'leads', 'customers', 'employees', 'bookings', 'site-visits', 'analytics', 'settings', 'masters', 'content'];
     const actions = [
         'view', 'create', 'edit', 'delete', 'approve', 'reject', 'publish', 'assign', 'export',
     ];

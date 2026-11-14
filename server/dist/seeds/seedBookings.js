@@ -32,6 +32,7 @@ export const seedBookings = async () => {
             paymentMethod: b.paymentMethod,
             paymentStatus: 'partially-paid',
             notes: b.notes,
+            isSample: true,
         }, { upsert: true, new: true });
     }
     console.log(`✅ Seeded ${INITIAL_DEMO_BOOKINGS.length} Bookings.`);

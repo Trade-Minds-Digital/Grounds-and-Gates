@@ -21,12 +21,14 @@ export interface ISiteVisit extends Document {
   status: VisitStatus;
   feedback?: string;
   notes?: string;
+  isSample?: boolean;
   transportProvided: boolean;
 }
 
 const SiteVisitSchema = new Schema<ISiteVisit>(
   {
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     lead: { type: Schema.Types.ObjectId, ref: 'Lead' },
     leadId: { type: String, trim: true },
     property: { type: Schema.Types.ObjectId, ref: 'Property' },

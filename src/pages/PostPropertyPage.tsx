@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Property, LanguageCode, PropertyCategory, ListingType, FacingDirection, SellerType } from '../types/property';
+import { useAppState } from '../context/AppStateContext';
 import { CATEGORIES_DATA } from '../data/categories';
 import { LOCATIONS_DATA } from '../data/locations';
 import { translations } from '../i18n/translations';
 import { formatPriceINR } from '../utils/propertyUtils';
 import { Badge } from '../components/common/Badge';
+import { api } from '../services/api';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CheckIcon from '@mui/icons-material/Check';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CircularProgress from '@mui/material/CircularProgress';
 
 interface PostPropertyPageProps {
   lang: LanguageCode;
@@ -17,23 +22,38 @@ interface PostPropertyPageProps {
   onNavigate: (view: string, params?: any) => void;
 }
 
-const SAMPLE_PHOTO_CHOICES = [
-  'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1000&q=80',
-  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80',
-  'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1000&q=80',
-  'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80',
-  'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1000&q=80',
-  'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=1000&q=80',
-];
-
 export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
   lang,
   onListingCreated,
   onNavigate
 }) => {
   const t = translations[lang];
+  const { masters } = useAppState();
   const [currentStep, setCurrentStep] = useState(1);
   const [submittedPropertyId, setSubmittedPropertyId] = useState<string | null>(null);
+
+  // Dynamic API Master Options
+  const categoryOptions = useMemo(() => {
+    if (masters['property_category'] && masters['property_category'].length > 0) {
+      return masters['property_category'].map(c => ({
+        id: c.code as PropertyCategory,
+        name: c.name,
+        tamilName: c.nameTa || c.name,
+      }));
+    }
+    return CATEGORIES_DATA.map(c => ({ id: c.id, name: c.name, tamilName: c.tamilName }));
+  }, [masters]);
+
+  const districtOptions = useMemo(() => {
+    if (masters['district'] && masters['district'].length > 0) {
+      return masters['district'].map(d => ({
+        code: d.code,
+        name: d.name,
+        tamilName: d.nameTa || d.name,
+      }));
+    }
+    return LOCATIONS_DATA.map(l => ({ code: l.id, name: l.name, tamilName: l.tamilName }));
+  }, [masters]);
 
   // Form State
   const [listingType, setListingType] = useState<ListingType>('buy');
@@ -41,12 +61,65 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
-  // Location
+  // Location (Parent-child hierarchy: changing district clears incompatible locality)
   const [state] = useState('Tamil Nadu');
   const [district, setDistrict] = useState('Coimbatore');
   const [locality, setLocality] = useState('');
   const [pincode, setPincode] = useState('641035');
   const [address, setAddress] = useState('');
+
+  const activeDistrictObj = useMemo(() => {
+    return districtOptions.find(d => d.name.toLowerCase() === district.toLowerCase() || d.code.toLowerCase() === district.toLowerCase());
+  }, [districtOptions, district]);
+
+  const localityOptions = useMemo(() => {
+    if (!activeDistrictObj) return [];
+    const locs = masters['locality'] || [];
+    return locs.filter(l => l.parentCode === activeDistrictObj.code || l.parentCode === activeDistrictObj.name.toLowerCase());
+  }, [masters, activeDistrictObj]);
+
+  const handleDistrictChange = (newDistName: string) => {
+    setDistrict(newDistName);
+    setLocality(''); // Clear incompatible child selection
+    setPincode('');
+  };
+
+  const handleLocalityChange = (newLocName: string) => {
+    setLocality(newLocName);
+    const matchedLoc = localityOptions.find(l => l.name.toLowerCase() === newLocName.toLowerCase() || l.code.toLowerCase() === newLocName.toLowerCase());
+    if (matchedLoc?.metadata?.pinCode) {
+      setPincode(matchedLoc.metadata.pinCode);
+    }
+  };
+
+  const facingOptions = useMemo(() => {
+    if (masters['facing_direction'] && masters['facing_direction'].length > 0) {
+      return masters['facing_direction'].map(f => f.name as FacingDirection);
+    }
+    return ['North', 'East', 'South', 'West', 'North-East', 'South-East', 'North-West', 'South-West'] as FacingDirection[];
+  }, [masters]);
+
+  const areaUnitOptions = useMemo(() => {
+    if (masters['area_unit'] && masters['area_unit'].length > 0) {
+      return masters['area_unit'].map(u => ({
+        code: u.code,
+        name: u.name,
+        desc: u.metadata?.conversionFactorToSqft ? `(~${u.metadata.conversionFactorToSqft} sq.ft)` : '',
+      }));
+    }
+    return [
+      { code: 'cents', name: 'Cents', desc: '(~435.6 sq.ft each)' },
+      { code: 'sq.ft', name: 'Square Feet', desc: '(sq.ft)' },
+      { code: 'acres', name: 'Acres', desc: '(100 Cents)' },
+    ];
+  }, [masters]);
+
+  const approvalOptions = useMemo(() => {
+    if (masters['approval_authority'] && masters['approval_authority'].length > 0) {
+      return masters['approval_authority'].map(a => a.name);
+    }
+    return ['DTCP', 'CMDA', 'RERA', 'Panchayat', 'Agricultural Patta'];
+  }, [masters]);
 
   // Specs
   const [plotArea, setPlotArea] = useState<number>(5.0);
@@ -62,11 +135,42 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
   const [price, setPrice] = useState<number>(4500000);
   const [negotiable, setNegotiable] = useState(true);
 
-  // Images
-  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([
-    SAMPLE_PHOTO_CHOICES[0],
-    SAMPLE_PHOTO_CHOICES[1]
-  ]);
+  // Real Uploaded Photos
+  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setIsUploadingPhoto(true);
+    setUploadError(null);
+
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`File "${file.name}" is not a valid image format.`);
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`File "${file.name}" exceeds the 10MB size limit.`);
+        }
+        const res = await api.uploadMedia(file);
+        return res.url;
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      setSelectedPhotos((prev) => [...prev, ...uploadedUrls]);
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to upload photo. Please try again.');
+    } finally {
+      setIsUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
+
+  const removePhoto = (urlToRemove: string) => {
+    setSelectedPhotos((prev) => prev.filter((u) => u !== urlToRemove));
+  };
 
   // Seller
   const [sellerName, setSellerName] = useState('Mohanraj S.');
@@ -75,6 +179,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
   const [sellerType, setSellerType] = useState<SellerType>('owner');
 
   const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const steps = [
     { num: 1, label: t.postProperty.step1 },
@@ -103,6 +208,11 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
         setFormError('Please specify a valid expected price.');
         return;
       }
+    } else if (currentStep === 5) {
+      if (selectedPhotos.length === 0) {
+        setFormError('Please upload at least 1 real photograph of the property or land parcel.');
+        return;
+      }
     } else if (currentStep === 6) {
       if (!sellerName.trim() || !sellerPhone.trim()) {
         setFormError('Please enter your contact details.');
@@ -118,32 +228,22 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const togglePhoto = (url: string) => {
-    if (selectedPhotos.includes(url)) {
-      if (selectedPhotos.length > 1) {
-        setSelectedPhotos(selectedPhotos.filter(u => u !== url));
-      }
-    } else {
-      setSelectedPhotos([...selectedPhotos, url]);
-    }
-  };
-
-  const handleFinalSubmit = (e: React.FormEvent) => {
+  const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setFormError('');
 
-    const newPropertyId = `user-demo-${Date.now()}`;
-    const newProperty: Property = {
-      id: newPropertyId,
-      slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    const newPropertyPayload: any = {
       title,
-      description: description || 'Premium property situated in prime growth corridor of Tamil Nadu. Clear documents and ready access.',
+      description: description || `Verified clear title listing in ${locality}, ${district}.`,
       category,
       listingType,
       ownershipType: 'third-party',
       price,
       priceUnit: listingType === 'rent' ? '/ Month' : 'Total',
       negotiable,
-      location: locality || 'Coimbatore',
+      location: locality || district,
+      locality: locality || district,
       district,
       state,
       pincode,
@@ -160,23 +260,28 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
       nearbyFacilities: [
         { name: `${district} Central Hub`, distance: '3.0 km', type: 'transit' }
       ],
-      images: selectedPhotos,
+      images: selectedPhotos.length > 0 ? selectedPhotos : ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80'],
       seller: {
         name: sellerName,
         type: sellerType,
         phone: sellerPhone,
         email: sellerEmail,
-        badgeTitle: sellerType === 'owner' ? 'Direct Property Owner' : 'Registered Broker',
-        responseTimeMinutes: 30
+        isCompanyRepresentative: false,
       },
-      listingDate: new Date().toISOString().split('T')[0],
       status: 'active',
+      published: true,
       featured: false,
-      demoLabel: 'Demo Listing'
     };
 
-    onListingCreated(newProperty);
-    setSubmittedPropertyId(newPropertyId);
+    try {
+      const created = await api.createProperty(newPropertyPayload);
+      onListingCreated(created);
+      setSubmittedPropertyId((created as any).referenceId || created.id);
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to submit property to backend server.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submittedPropertyId) {
@@ -187,8 +292,8 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
             <CheckCircleIcon sx={{ fontSize: 40 }} />
           </div>
 
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded">
-            Frontend Demo Submission Logged
+          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded">
+            Listing Live on Database & Public Discovery
           </span>
 
           <h2 className="text-2xl font-extrabold text-[#18241B] mt-2">
@@ -329,7 +434,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                   {t.postProperty.category}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {CATEGORIES_DATA.map(cat => (
+                  {categoryOptions.map(cat => (
                     <button
                       key={cat.id}
                       type="button"
@@ -397,11 +502,11 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                   <label className="block text-xs font-bold text-stone-700 mb-1">District / City *</label>
                   <select
                     value={district}
-                    onChange={(e) => setDistrict(e.target.value)}
+                    onChange={(e) => handleDistrictChange(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-xs font-semibold text-[#18241B] focus:border-[#013E18] outline-hidden bg-white"
                   >
-                    {LOCATIONS_DATA.map(loc => (
-                      <option key={loc.id} value={loc.name}>{loc.name} ({loc.tamilName})</option>
+                    {districtOptions.map(loc => (
+                      <option key={loc.code} value={loc.name}>{loc.name} {loc.tamilName ? `(${loc.tamilName})` : ''}</option>
                     ))}
                   </select>
                 </div>
@@ -410,13 +515,26 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">Locality / Area Name *</label>
-                  <input
-                    type="text"
-                    value={locality}
-                    onChange={(e) => setLocality(e.target.value)}
-                    placeholder="e.g. Saravanampatti, Vadavalli, OMR"
-                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-xs text-[#18241B] focus:border-[#013E18] outline-hidden"
-                  />
+                  {localityOptions.length > 0 ? (
+                    <select
+                      value={locality}
+                      onChange={(e) => handleLocalityChange(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-xs font-semibold text-[#18241B] focus:border-[#013E18] outline-hidden bg-white"
+                    >
+                      <option value="">Select a locality in {district}</option>
+                      {localityOptions.map(l => (
+                        <option key={l.code} value={l.name}>{l.name} {l.nameTa ? `(${l.nameTa})` : ''}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={locality}
+                      onChange={(e) => handleLocalityChange(e.target.value)}
+                      placeholder="e.g. Saravanampatti, Vadavalli, OMR"
+                      className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-xs text-[#18241B] focus:border-[#013E18] outline-hidden"
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -470,9 +588,9 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                     onChange={(e) => setPlotAreaUnit(e.target.value as any)}
                     className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-xs font-semibold text-[#18241B] focus:border-[#013E18] outline-hidden bg-white"
                   >
-                    <option value="cents">Cents (~435.6 sq.ft each)</option>
-                    <option value="sq.ft">Square Feet (sq.ft)</option>
-                    <option value="acres">Acres (100 Cents)</option>
+                    {areaUnitOptions.map(u => (
+                      <option key={u.code} value={u.code}>{u.name} {u.desc}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -511,12 +629,9 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                     onChange={(e) => setFacing(e.target.value as any)}
                     className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-xs font-semibold text-[#18241B] focus:border-[#013E18] outline-hidden bg-white"
                   >
-                    <option value="North">North</option>
-                    <option value="East">East</option>
-                    <option value="South">South</option>
-                    <option value="West">West</option>
-                    <option value="North-East">North-East</option>
-                    <option value="South-East">South-East</option>
+                    {facingOptions.map(f => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -538,10 +653,9 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                   onChange={(e) => setApprovalAuthority(e.target.value as any)}
                   className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-xs font-semibold text-[#18241B] focus:border-[#013E18] outline-hidden bg-white"
                 >
-                  <option value="DTCP">DTCP Approved (Coimbatore, Salem, etc.)</option>
-                  <option value="CMDA">CMDA Approved (Chennai Metropolitan)</option>
-                  <option value="RERA">RERA Registered Layout</option>
-                  <option value="Agricultural Patta">Agricultural Patta Land</option>
+                  {approvalOptions.map(a => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -583,41 +697,73 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
             </div>
           )}
 
-          {/* STEP 5: Photos */}
+          {/* STEP 5: Real Photographs Upload */}
           {currentStep === 5 && (
             <div className="space-y-5 animate-in fade-in duration-200">
               <h2 className="text-lg font-bold text-[#18241B] pb-3 border-b border-stone-100">
-                Step 5: Illustrative Photographs
+                Step 5: Property Photographs
               </h2>
               <p className="text-xs text-stone-500">
-                Select high-resolution demo photos from our curated gallery to represent this property.
+                Upload authentic, high-resolution photographs of the actual land parcel, building elevation, road approach, or interior layout.
               </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {SAMPLE_PHOTO_CHOICES.map((url, i) => {
-                  const isSelected = selectedPhotos.includes(url);
-                  return (
-                    <div
-                      key={i}
-                      onClick={() => togglePhoto(url)}
-                      className={`relative h-28 rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${
-                        isSelected ? 'border-[#013E18] ring-2 ring-[#C99325]' : 'border-transparent opacity-60 hover:opacity-100'
-                      }`}
-                    >
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#013E18] text-white flex items-center justify-center shadow-md">
-                          <CheckIcon sx={{ fontSize: 14 }} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              {uploadError && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-semibold">
+                  {uploadError}
+                </div>
+              )}
 
-              <div className="text-xs text-stone-500 font-medium">
-                {selectedPhotos.length} photo(s) selected for demo listing.
-              </div>
+              {/* Upload Dropzone */}
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#C99325]/40 hover:border-[#013E18] rounded-2xl p-6 bg-white cursor-pointer transition-all">
+                <CloudUploadIcon sx={{ fontSize: 40, color: '#013E18', mb: 1.5 }} />
+                <span className="text-xs font-bold text-[#18241B]">
+                  Click to select images or drag and drop
+                </span>
+                <span className="text-[11px] text-stone-500 mt-1">
+                  PNG, JPG, WebP up to 10MB per image
+                </span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+
+              {isUploadingPhoto && (
+                <div className="flex items-center justify-center gap-2 py-3 text-xs font-bold text-[#013E18]">
+                  <CircularProgress size={18} sx={{ color: '#013E18' }} />
+                  <span>Uploading authentic image to server...</span>
+                </div>
+              )}
+
+              {/* Uploaded Photos Gallery */}
+              {selectedPhotos.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-stone-700">
+                    Uploaded Photographs ({selectedPhotos.length})
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {selectedPhotos.map((url, i) => (
+                      <div
+                        key={i}
+                        className="relative h-28 rounded-xl overflow-hidden border border-stone-200 group shadow-xs"
+                      >
+                        <img src={url} alt={`Uploaded ${i + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(url)}
+                          className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600 text-white opacity-80 hover:opacity-100 transition-opacity shadow-md"
+                          title="Remove photo"
+                        >
+                          <DeleteIcon sx={{ fontSize: 16 }} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -703,7 +849,7 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
 
               <div className="bg-[#FAF8F2] rounded-2xl p-5 border border-stone-200 space-y-4">
                 <div className="flex items-center gap-2">
-                  <Badge type="demo" size="sm" />
+                  <Badge type="status" status="pending-review" size="sm" />
                   <span className="text-xs font-bold uppercase text-[#C99325]">{category.replace('-', ' ')}</span>
                   <span className="text-xs text-stone-500 font-semibold">• For {listingType}</span>
                 </div>
@@ -721,10 +867,10 @@ export const PostPropertyPage: React.FC<PostPropertyPageProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
-                <VerifiedUserIcon sx={{ fontSize: 20, color: '#b45309', flexShrink: 0, mt: '2px' }} />
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2">
+                <VerifiedUserIcon sx={{ fontSize: 20, color: '#013E18', flexShrink: 0, mt: '2px' }} />
                 <p>
-                  <strong>Listing Notice:</strong> Clicking "Submit Demo Listing" adds this record to the active marketplace dataset in memory and links it to your Seller Dashboard.
+                  <strong>Listing Notice:</strong> Submitting publishes this property directly to the live database and links it to your Seller Management CRM.
                 </p>
               </div>
             </div>

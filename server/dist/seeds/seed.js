@@ -11,6 +11,7 @@ import { seedSiteVisits } from './seedSiteVisits.js';
 import { seedBookings } from './seedBookings.js';
 import { seedActivities } from './seedActivities.js';
 import { seedNotifications } from './seedNotifications.js';
+import { seedMastersAndContent } from '../database/mastersMigration.js';
 export const runSeed = async (shouldDisconnect = true) => {
     console.log('🚀 Running Grounds & Gates Database Seeder...\n');
     await connectDatabase();
@@ -27,6 +28,7 @@ export const runSeed = async (shouldDisconnect = true) => {
         await seedBookings();
         await seedActivities();
         await seedNotifications();
+        await seedMastersAndContent();
         console.log('\n🌟 Database seeding completed successfully!');
     }
     catch (err) {

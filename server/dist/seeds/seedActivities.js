@@ -13,6 +13,7 @@ export const seedActivities = async () => {
             timestamp: a.timestamp,
             performedBy: a.performedBy,
             performedByEmployeeId: a.performedByEmployeeId,
+            isSample: true,
         }, { upsert: true, new: true });
     }
     console.log(`✅ Seeded ${INITIAL_DEMO_ACTIVITIES.length} Activities.`);

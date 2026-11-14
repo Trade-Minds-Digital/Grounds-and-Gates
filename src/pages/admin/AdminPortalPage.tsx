@@ -13,6 +13,8 @@ import { AdminTeamModule } from './modules/AdminTeamModule';
 import { AdminReportsModule } from './modules/AdminReportsModule';
 import { AdminAuditLogModule } from './modules/AdminAuditLogModule';
 import { AdminSettingsModule } from './modules/AdminSettingsModule';
+import { AdminMastersModule } from './modules/AdminMastersModule';
+import { AdminContentModule } from './modules/AdminContentModule';
 import { AdminAccessDeniedPage } from './AdminAccessDeniedPage';
 import { api } from '../../services/api';
 import { AdminUser } from '../../types/crm';
@@ -181,6 +183,14 @@ export const AdminPortalPage: React.FC<AdminPortalPageProps> = ({
 
       {currentModule === 'settings' && (
         <AdminSettingsModule currentUser={currentUser} lang={lang} />
+      )}
+
+      {currentModule === 'masters' && (
+        <AdminMastersModule lang={lang} onShowToast={onShowToast} />
+      )}
+
+      {currentModule === 'content' && (
+        <AdminContentModule lang={lang} onShowToast={onShowToast} />
       )}
     </AdminLayout>
   );

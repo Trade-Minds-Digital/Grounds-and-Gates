@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Property, LanguageCode, UserRole, PropertyFilterState, EnquirySubmission, ListingStatus } from './types/property';
-import { INITIAL_PROPERTIES } from './data/properties';
-import { useDemoState } from './context/DemoStateContext';
+import { useAppState } from './context/AppStateContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
@@ -138,25 +137,26 @@ const parseRoute = (): { view: string; params: any } => {
 };
 
 export default function App() {
-  // Centralized Shared Demo State
+  // Centralized Real-time API State
   const {
     properties,
     savedPropertyIds,
     comparedPropertyIds,
     savedProperties,
     comparedProperties,
-    leads,
-    siteVisits,
+    currentUser,
+    isLoggedIn,
+    userRole,
     getPropertyById,
     addProperty,
     updatePropertyStatus,
     toggleSaveProperty,
     toggleCompareProperty,
     clearFavorites,
-    addLead,
-    scheduleSiteVisit,
-    resetDemoData,
-  } = useDemoState();
+    refreshProperties,
+    refreshAll,
+    logout,
+  } = useAppState();
 
   // Current View & Routing (Synchronized with URL path and history)
   const initialRoute = useMemo(() => parseRoute(), []);
@@ -202,9 +202,7 @@ export default function App() {
   // Selected Target Location
   const [selectedLocation, setSelectedLocation] = useState<string>('All');
 
-  // User Authentication & Role State
-  const [userRole, setUserRole] = useState<UserRole>('buyer');
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+  // Auth Modal State
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
 
@@ -225,28 +223,23 @@ export default function App() {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  // Unified Enquiries derived reactively from Centralized Demo State (Leads + Site Visits)
-  const enquiries: EnquirySubmission[] = useMemo(() => {
-    return leads.map(l => {
-      const prop = getPropertyById(l.propertyId);
-      const visit = siteVisits.find(v => v.leadId === l.id);
-      return {
-        id: l.id,
-        propertyId: l.propertyId,
-        propertyTitle: l.propertyTitle,
-        propertyPrice: prop?.price || 0,
-        propertyLocation: prop ? `${prop.location}, ${prop.district}` : 'Tamil Nadu',
-        fullName: l.buyerName,
-        phone: l.phone,
-        email: l.email,
-        visitDate: visit?.date || l.scheduledVisitDate || undefined,
-        preferredTimeSlot: visit?.timeSlot || 'morning',
-        message: l.message,
-        submittedAt: l.createdAt || new Date().toISOString(),
-        status: (l.stage === 'scheduled' || l.stage === 'negotiation' || l.stage === 'won' ? 'confirmed' : 'pending') as 'pending' | 'confirmed' | 'completed'
-      };
-    });
-  }, [leads, siteVisits, getPropertyById]);
+  // Real API-backed buyer enquiries
+  const [enquiries, setEnquiries] = useState<EnquirySubmission[]>([]);
+
+  const fetchEnquiries = useCallback(async () => {
+    if (isLoggedIn) {
+      try {
+        const res = await api.getMyEnquiries();
+        if (Array.isArray(res)) setEnquiries(res);
+      } catch {}
+    } else {
+      setEnquiries([]);
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    fetchEnquiries();
+  }, [fetchEnquiries]);
 
   // Enquiry Modal State
   const [enquiryModalOpen, setEnquiryModalOpen] = useState(false);
@@ -337,65 +330,50 @@ export default function App() {
   };
 
   // Post Property Handler
-  const handleListingCreated = (newProperty: Property) => {
-    addProperty(newProperty);
-    showToast(`Listing "${newProperty.title.slice(0, 30)}..." posted successfully!`, 'success');
+  const handleListingCreated = async (newProperty: Partial<Property>) => {
+    try {
+      await addProperty(newProperty);
+      showToast(`Listing "${(newProperty.title || '').slice(0, 30)}..." published successfully!`, 'success');
+      handleNavigate('properties');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to publish listing.', 'error');
+    }
   };
 
   // Status Change in Seller Dashboard
-  const handleUpdatePropertyStatus = (propertyId: string, newStatus: ListingStatus) => {
-    updatePropertyStatus(propertyId, newStatus);
-    showToast(`Listing status updated to: ${newStatus.toUpperCase()}`, 'info');
+  const handleUpdatePropertyStatus = async (propertyId: string, newStatus: ListingStatus) => {
+    try {
+      await updatePropertyStatus(propertyId, newStatus);
+      showToast(`Listing status updated to: ${newStatus.toUpperCase()}`, 'info');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update property status.', 'error');
+    }
   };
 
   // Enquiry Submission Handler
-  const handleSubmitEnquiry = (submissionData: any) => {
-    // Create connected Lead in centralized demo state
-    const createdLead = addLead({
-      customerId: 'cust-mohan-01',
-      buyerName: submissionData.fullName,
-      phone: submissionData.phone,
-      email: submissionData.email,
-      propertyId: submissionData.propertyId,
-      propertyTitle: submissionData.propertyTitle,
-      stage: submissionData.visitDate ? 'scheduled' : 'new',
-      priority: 'high',
-      assignedEmployeeId: 'emp-senthil-01',
-      message: submissionData.message,
-      date: 'Just now',
-      scheduledVisitDate: submissionData.visitDate || null,
-    });
-
-    // Schedule site visit if requested
-    if (submissionData.visitDate) {
-      scheduleSiteVisit({
-        leadId: createdLead.id,
+  const handleSubmitEnquiry = async (submissionData: any) => {
+    try {
+      await api.createEnquiry({
         propertyId: submissionData.propertyId,
-        propertyTitle: submissionData.propertyTitle,
-        customerId: 'cust-mohan-01',
-        customerName: submissionData.fullName,
-        customerPhone: submissionData.phone,
-        assignedEmployeeId: 'emp-senthil-01',
-        date: submissionData.visitDate,
-        timeSlot: (submissionData.preferredTimeSlot as any) || 'morning',
-        status: 'scheduled',
-        notes: submissionData.message,
-        transportProvided: true,
+        fullName: submissionData.fullName,
+        phone: submissionData.phone,
+        email: submissionData.email,
+        message: submissionData.message,
+        visitDate: submissionData.visitDate,
+        preferredTimeSlot: submissionData.preferredTimeSlot,
       });
+
+      showToast(
+        submissionData.visitDate
+          ? 'Site walkthrough request registered & synced to CRM. Coordinator will connect with you.'
+          : 'Property enquiry received. Our sales desk will call you shortly.',
+        'success'
+      );
+      await fetchEnquiries();
+      await refreshProperties();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to submit enquiry. Please check your network and try again.', 'error');
     }
-
-    // Persist enquiry to MERN REST backend
-    api.createEnquiry({
-      propertyId: submissionData.propertyId,
-      fullName: submissionData.fullName,
-      phone: submissionData.phone,
-      email: submissionData.email,
-      message: submissionData.message,
-      visitDate: submissionData.visitDate,
-      preferredTimeSlot: submissionData.preferredTimeSlot
-    }).catch(e => console.warn('Backend sync for enquiry:', e));
-
-    showToast(`Site visit scheduled & synced to CRM! Our coordinator will call you.`, 'success');
   };
 
 
@@ -496,15 +474,15 @@ export default function App() {
                 handleNavigate('properties', { district: loc });
               }
             }}
-            userRole={userRole}
-            onUserRoleChange={setUserRole}
+            userRole={(userRole || 'buyer') as UserRole}
+            onUserRoleChange={() => {}}
             onOpenAuth={(mode) => {
               setAuthModalMode(mode || 'login');
               setAuthModalOpen(true);
             }}
             isLoggedIn={isLoggedIn}
-            onLogout={() => {
-              setIsLoggedIn(false);
+            onLogout={async () => {
+              await logout();
               showToast('You have been logged out.', 'info');
             }}
           />
@@ -641,9 +619,8 @@ export default function App() {
                     initialMode="login"
                     lang={lang}
                     onNavigate={handleNavigate}
-                    onLoginSuccess={(role, user) => {
-                      setUserRole(role);
-                      setIsLoggedIn(true);
+                    onLoginSuccess={async (role, user) => {
+                      await refreshAll();
                       showToast(`Welcome back, ${user.name}! Logged in as ${role === 'owner' ? 'Seller/Owner' : 'Property Buyer'}.`, 'success');
                       handleNavigate('home');
                     }}
@@ -656,9 +633,8 @@ export default function App() {
                     initialMode="register"
                     lang={lang}
                     onNavigate={handleNavigate}
-                    onLoginSuccess={(role, user) => {
-                      setUserRole(role);
-                      setIsLoggedIn(true);
+                    onLoginSuccess={async (_role, user) => {
+                      await refreshAll();
                       showToast(`Welcome to Grounds & Gates, ${user.name}!`, 'success');
                       handleNavigate('home');
                     }}
@@ -703,9 +679,8 @@ export default function App() {
             onClose={() => setAuthModalOpen(false)}
             lang={lang}
             initialMode={authModalMode}
-            onLoginSuccess={(role, name) => {
-              setUserRole(role);
-              setIsLoggedIn(true);
+            onLoginSuccess={async (role, name) => {
+              await refreshAll();
               showToast(`Welcome, ${name}! Signed in as ${role === 'owner' ? 'Seller' : 'Buyer'}.`, 'success');
             }}
           />

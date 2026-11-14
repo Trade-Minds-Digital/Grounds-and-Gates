@@ -32,6 +32,7 @@ export const seedLeads = async () => {
         scheduledVisitDate: l.scheduledVisitDate ? new Date(l.scheduledVisitDate) : null,
         dateStr: l.date,
         source: 'property-enquiry',
+        isSample: true,
       },
       { upsert: true, new: true }
     );

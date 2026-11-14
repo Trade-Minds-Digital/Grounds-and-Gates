@@ -14,12 +14,14 @@ export interface IDeveloper extends Document {
   email: string;
   headquarters: string;
   description: string;
+  isSample?: boolean;
   isActive: boolean;
 }
 
 const DeveloperSchema = new Schema<IDeveloper>(
   {
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     name: { type: String, required: true, trim: true },
     tamilName: { type: String, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },

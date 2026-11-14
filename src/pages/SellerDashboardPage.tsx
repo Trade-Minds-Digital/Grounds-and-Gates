@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Property, LanguageCode, ListingStatus } from '../types/property';
 import { translations } from '../i18n/translations';
 import { formatPriceINR } from '../utils/propertyUtils';
-import { useDemoState } from '../context/DemoStateContext';
+import { useAppState } from '../context/AppStateContext';
 import {
   Container,
   Box,
@@ -44,7 +44,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 interface SellerDashboardPageProps {
   properties: Property[];
@@ -89,7 +89,7 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
   const t = translations[lang];
   const [activeTab, setActiveTab] = useState<'overview' | 'listings' | 'leads' | 'analytics'>('overview');
 
-  // Centralized Demo State integration
+  // Centralized Real-time API State
   const {
     properties: sharedProperties,
     leads: sharedLeads,
@@ -99,19 +99,17 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
     updateLeadStage,
     addLead,
     updatePropertyStatus: updateSharedPropertyStatus,
-    resetDemoData,
-  } = useDemoState();
-
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+    refreshAll,
+  } = useAppState();
 
   // Use sharedProperties from centralized state if available or fall back to props
   const localProperties = sharedProperties.length > 0 ? sharedProperties : properties;
 
-  const totalViews = localProperties.reduce((sum, p) => sum + (p.viewsCount || 350), 0);
-  const totalLeads = localProperties.reduce((sum, p) => sum + (p.enquiriesCount || 12), 0);
+  const totalViews = localProperties.reduce((sum, p) => sum + (p.viewsCount || 0), 0);
+  const totalLeads = localProperties.reduce((sum, p) => sum + (p.enquiriesCount || 0), 0);
   const activeCount = localProperties.filter(p => p.status === 'active').length;
 
-  // CRM Kanban Leads mapped from centralized shared state
+  // CRM Kanban Leads mapped from real-time database state
   const leads: LeadItem[] = sharedLeads.map(l => ({
     id: l.id,
     buyerName: l.buyerName,
@@ -147,19 +145,16 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
 
     const matchedProp = localProperties.find(p => p.id === newLeadProperty);
     addLead({
-      customerId: 'cust-mohan-01',
       buyerName: newLeadName,
       phone: newLeadPhone,
-      email: 'inbound@lead.gg',
+      email: 'inbound@customer.com',
       propertyTitle: matchedProp ? matchedProp.title : 'General Portfolio Inquiry',
-      propertyId: newLeadProperty,
+      propertyId: newLeadProperty || 'prop-general',
       stage: newLeadStage,
       priority: 'high',
-      assignedEmployeeId: 'emp-senthil-01',
       offerAmount: newLeadOffer ? Number(newLeadOffer) : undefined,
       message: newLeadNotes || 'Inbound inquiry logged via CRM',
-      date: 'Just now',
-      scheduledVisitDate: newLeadVisitDate ? newLeadVisitDate.toISOString().split('T')[0] : null,
+      scheduledVisitDate: newLeadVisitDate ? newLeadVisitDate.toISOString().slice(0, 10) : undefined,
     });
 
     setOpenNewLeadModal(false);
@@ -460,8 +455,8 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
               <Button
                 variant="outlined"
                 color="inherit"
-                startIcon={<RestartAltIcon sx={{ fontSize: 18, color: '#C99325' }} />}
-                onClick={() => setResetConfirmOpen(true)}
+                startIcon={<RefreshIcon sx={{ fontSize: 18, color: '#C99325' }} />}
+                onClick={() => refreshAll()}
                 sx={{
                   borderRadius: '12px',
                   fontWeight: 700,
@@ -473,7 +468,7 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
                   '&:hover': { bgcolor: 'rgba(201, 147, 37, 0.08)', borderColor: '#C99325' }
                 }}
               >
-                Reset Demo Data
+                Refresh CRM
               </Button>
               <Button
                 variant="outlined"
@@ -601,7 +596,7 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
                       {totalViews.toLocaleString()}
                     </Typography>
                     <Typography variant="caption" sx={{ color: '#065F46', fontWeight: 700 }}>
-                      ↑ +24% this week (Demo)
+                      Live traffic metrics
                     </Typography>
                   </Card>
 
@@ -1115,44 +1110,6 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
             </Button>
           </DialogActions>
         </Box>
-      </Dialog>
-
-      {/* Demo Reset Confirmation Modal */}
-      <Dialog
-        open={resetConfirmOpen}
-        onClose={() => setResetConfirmOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: { borderRadius: '20px', p: 1, bgcolor: '#FFFFFF' }
-          }
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 800, color: '#18241B' }}>
-          Reset Demo Dataset?
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: '#536458', lineHeight: 1.6 }}>
-            This will restore all properties, leads, site visits, bookings, and audit activities to their pristine seed state for CEO review.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setResetConfirmOpen(false)} sx={{ color: '#536458', fontWeight: 700 }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              resetDemoData();
-              setResetConfirmOpen(false);
-            }}
-            sx={{ borderRadius: '10px', px: 2.5, fontWeight: 800 }}
-          >
-            Confirm Reset
-          </Button>
-        </DialogActions>
       </Dialog>
     </Box>
   );

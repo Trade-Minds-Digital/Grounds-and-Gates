@@ -5,6 +5,7 @@ import { filterProperties, sortProperties } from '../utils/propertyUtils';
 import { PropertyCard } from '../components/property/PropertyCard';
 import { PropertyGridSkeleton } from '../components/common/Skeleton';
 import { translations } from '../i18n/translations';
+import { useAppState } from '../context/AppStateContext';
 import { CATEGORIES_DATA } from '../data/categories';
 import { LOCATIONS_DATA } from '../data/locations';
 import { Select, MenuItem, FormControl } from '@mui/material';
@@ -64,6 +65,21 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
   onSelectProperty
 }) => {
   const t = translations[lang];
+  const { masters } = useAppState();
+
+  const categoriesList = useMemo(() => {
+    if (masters['property_category'] && masters['property_category'].length > 0) {
+      return masters['property_category'].map(c => ({ id: c.code, name: c.name, tamilName: c.nameTa || c.name }));
+    }
+    return CATEGORIES_DATA;
+  }, [masters]);
+
+  const districtsList = useMemo(() => {
+    if (masters['district'] && masters['district'].length > 0) {
+      return masters['district'].map(d => ({ id: d.code, name: d.name, tamilName: d.nameTa || d.name }));
+    }
+    return LOCATIONS_DATA;
+  }, [masters]);
 
   // Combined Filters State
   const [filters, setFilters] = useState<PropertyFilterState>({
@@ -302,7 +318,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
             }}
           >
             <MenuItem value="all" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>All Categories</MenuItem>
-            {CATEGORIES_DATA.map(c => (
+            {categoriesList.map(c => (
               <MenuItem key={c.id} value={c.id} sx={{ fontSize: '0.8rem' }}>
                 {lang === 'ta' ? c.tamilName : c.name}
               </MenuItem>
@@ -333,7 +349,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
             }}
           >
             <MenuItem value="All" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>All Tamil Nadu</MenuItem>
-            {LOCATIONS_DATA.map(loc => (
+            {districtsList.map(loc => (
               <MenuItem key={loc.id} value={loc.name} sx={{ fontSize: '0.8rem' }}>
                 {loc.name} ({loc.tamilName})
               </MenuItem>
@@ -475,7 +491,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
               Tamil Nadu Property Marketplace
             </h1>
             <p className="text-xs sm:text-sm text-stone-500 mt-1">
-              Showing <strong>{filteredAndSortedProperties.length}</strong> verified demo properties across Coimbatore, Chennai, and key regional growth corridors.
+              Showing <strong>{filteredAndSortedProperties.length}</strong> verified properties across Coimbatore, Chennai, and key regional growth corridors.
             </p>
           </div>
 
@@ -634,12 +650,20 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                 <p className="text-xs text-stone-500 mt-2 max-w-sm">
                   {t.filters.noResultsSub}
                 </p>
-                <button
-                  onClick={handleResetFilters}
-                  className="mt-6 px-6 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] font-bold text-xs hover:bg-[#00280f] transition-all cursor-pointer"
-                >
-                  {t.filters.reset}
-                </button>
+                <div className="mt-6 flex flex-wrap justify-center gap-3">
+                  <button
+                    onClick={handleResetFilters}
+                    className="px-5 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] font-bold text-xs hover:bg-[#00280f] transition-all cursor-pointer"
+                  >
+                    {t.filters.reset}
+                  </button>
+                  <button
+                    onClick={() => onNavigate('post-property')}
+                    className="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs hover:bg-[#FAF8F2] transition-all cursor-pointer"
+                  >
+                    Post a Property
+                  </button>
+                </div>
               </div>
             ) : (
               <>

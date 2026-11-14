@@ -30,6 +30,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
 import BusinessIcon from '@mui/icons-material/Business';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import LogoutIcon from '@mui/icons-material/Logout';
 import HomeIcon from '@mui/icons-material/Home';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import InfoIcon from '@mui/icons-material/Info';
@@ -64,10 +65,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   selectedLocation,
   onLocationChange,
   userRole,
-  onUserRoleChange,
+  onUserRoleChange: _onUserRoleChange,
   onOpenAuth,
-  isLoggedIn: _isLoggedIn,
-  onLogout: _onLogout,
+  isLoggedIn,
+  onLogout,
 }) => {
   const t = translations[lang];
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -326,10 +327,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Box sx={{ px: 2, py: 1 }}>
                 <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.62rem' }}>
-                  Active Persona
+                  {isLoggedIn ? 'Active Account' : 'Guest Explorer'}
                 </Typography>
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#18241B' }}>
-                  {userRole === 'buyer' ? 'Buyer / Investor Hub' : 'Seller / Agency CRM'}
+                  {isLoggedIn ? (userRole === 'owner' ? 'Seller / Agency Portal' : 'Buyer / Investor Hub') : 'Welcome to Grounds & Gates'}
                 </Typography>
               </Box>
 
@@ -370,60 +371,29 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <Divider sx={{ my: 0.5 }} />
 
-              <Box sx={{ px: 2, py: 0.8 }}>
-                <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.6rem' }}>
-                  Switch Demo Persona:
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, mt: 0.6 }}>
-                  <Chip
-                    label="Buyer"
-                    size="small"
-                    clickable
-                    onClick={() => {
-                      onUserRoleChange('buyer');
-                      setUserAnchorEl(null);
-                    }}
-                    sx={{
-                      bgcolor: userRole === 'buyer' ? '#013E18' : '#FAF8F2',
-                      color: userRole === 'buyer' ? '#FFFFFF' : '#18241B',
-                      fontWeight: 800,
-                      fontSize: '0.68rem',
-                      height: 24,
-                      flex: 1,
-                    }}
-                  />
-                  <Chip
-                    label="Seller"
-                    size="small"
-                    clickable
-                    onClick={() => {
-                      onUserRoleChange('owner');
-                      setUserAnchorEl(null);
-                    }}
-                    sx={{
-                      bgcolor: userRole === 'owner' ? '#C99325' : '#FAF8F2',
-                      color: userRole === 'owner' ? '#FFFFFF' : '#18241B',
-                      fontWeight: 800,
-                      fontSize: '0.68rem',
-                      height: 24,
-                      flex: 1,
-                    }}
-                  />
-                </Box>
-              </Box>
-
-              <Divider sx={{ my: 0.5 }} />
-
-              <MenuItem
-                onClick={() => {
-                  setUserAnchorEl(null);
-                  onOpenAuth('login');
-                }}
-                sx={{ borderRadius: '10px', fontSize: '0.78rem', color: '#536458', fontWeight: 600 }}
-              >
-                <VpnKeyIcon sx={{ fontSize: 16, color: 'text.disabled', mr: 1 }} />
-                <span>Sign In / Authentication</span>
-              </MenuItem>
+              {isLoggedIn ? (
+                <MenuItem
+                  onClick={() => {
+                    setUserAnchorEl(null);
+                    onLogout();
+                  }}
+                  sx={{ borderRadius: '10px', fontSize: '0.82rem', color: '#B3261E', fontWeight: 600, py: 0.8 }}
+                >
+                  <LogoutIcon sx={{ fontSize: 18, color: '#B3261E', mr: 1.2 }} />
+                  <span>Sign Out</span>
+                </MenuItem>
+              ) : (
+                <MenuItem
+                  onClick={() => {
+                    setUserAnchorEl(null);
+                    onOpenAuth('login');
+                  }}
+                  sx={{ borderRadius: '10px', fontSize: '0.82rem', color: '#013E18', fontWeight: 700, py: 0.8 }}
+                >
+                  <VpnKeyIcon sx={{ fontSize: 18, color: '#013E18', mr: 1.2 }} />
+                  <span>Sign In / Register</span>
+                </MenuItem>
+              )}
             </Menu>
 
             {/* Compact "Post Property" CTA */}
@@ -503,42 +473,38 @@ export const Navbar: React.FC<NavbarProps> = ({
             </IconButton>
           </Box>
 
-          {/* Quick Active Persona Switcher */}
+          {/* Active Session Status */}
           <Box sx={{ my: 2, p: 1.2, bgcolor: '#FAF8F2', borderRadius: '12px', border: '1px solid #ECE7DA' }}>
-            <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.62rem', display: 'block', mb: 0.8 }}>
-              Active Mode:
+            <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.62rem', display: 'block', mb: 0.5 }}>
+              {isLoggedIn ? 'Signed In Session' : 'Account Status'}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Chip
-                label="Buyer Mode"
-                size="small"
-                clickable
-                onClick={() => onUserRoleChange('buyer')}
-                sx={{
-                  flex: 1,
-                  bgcolor: userRole === 'buyer' ? '#013E18' : '#FFFFFF',
-                  color: userRole === 'buyer' ? '#FFFFFF' : '#18241B',
-                  fontWeight: 800,
-                  fontSize: '0.7rem',
-                  height: 28,
-                  border: userRole === 'buyer' ? 'none' : '1px solid #ECE7DA',
-                }}
-              />
-              <Chip
-                label="Seller CRM"
-                size="small"
-                clickable
-                onClick={() => onUserRoleChange('owner')}
-                sx={{
-                  flex: 1,
-                  bgcolor: userRole === 'owner' ? '#C99325' : '#FFFFFF',
-                  color: userRole === 'owner' ? '#FFFFFF' : '#18241B',
-                  fontWeight: 800,
-                  fontSize: '0.7rem',
-                  height: 28,
-                  border: userRole === 'owner' ? 'none' : '1px solid #ECE7DA',
-                }}
-              />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.8rem' }}>
+                {isLoggedIn ? (userRole === 'owner' ? 'Seller Account' : 'Buyer Account') : 'Guest Explorer'}
+              </Typography>
+              {isLoggedIn ? (
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    onLogout();
+                  }}
+                  sx={{ fontSize: '0.7rem', color: '#B3261E', fontWeight: 700, p: 0, minWidth: 'auto' }}
+                >
+                  Sign Out
+                </Button>
+              ) : (
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    onOpenAuth('login');
+                  }}
+                  sx={{ fontSize: '0.7rem', color: '#013E18', fontWeight: 700, p: 0, minWidth: 'auto' }}
+                >
+                  Sign In
+                </Button>
+              )}
             </Box>
           </Box>
 

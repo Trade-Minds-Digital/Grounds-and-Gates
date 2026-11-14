@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { LanguageCode } from '../types/property';
+import { api } from '../services/api';
+import { useAppState } from '../context/AppStateContext';
 import {
   Container,
   Box,
@@ -31,6 +33,8 @@ interface ContactPageProps {
 }
 
 export const ContactPage: React.FC<ContactPageProps> = ({ lang: _lang, onNavigate: _onNavigate, onShowToast }) => {
+  const { masters, webContent } = useAppState();
+  const contactInfo = webContent['contact_branches']?.content || {};
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -41,21 +45,38 @@ export const ContactPage: React.FC<ContactPageProps> = ({ lang: _lang, onNavigat
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.phone) {
       alert('Please provide your name and contact phone number.');
       return;
     }
 
-    setSubmitted(true);
-    if (onShowToast) {
-      onShowToast('Enquiry received! Our desk coordinator will reach out shortly.', 'success');
+    setIsSubmitting(true);
+    try {
+      await api.createEnquiry({
+        propertyId: 'prop-general',
+        fullName: formData.name,
+        phone: formData.phone,
+        email: formData.email || `${formData.phone}@lead.gg`,
+        message: `[Inquiry: ${formData.inquiryType.toUpperCase()}] [District: ${formData.district}] ${formData.message}`,
+      });
+      setSubmitted(true);
+      if (onShowToast) {
+        onShowToast('Enquiry received and registered in CRM! Our desk coordinator will reach out shortly.', 'success');
+      }
+    } catch (err: any) {
+      if (onShowToast) {
+        onShowToast(err.message || 'Failed to submit enquiry. Please check connection.', 'error');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const faqs = [
+  const defaultFaqs = [
     {
       q: 'What is the difference between Grounds & Gates Direct and Third-Party listings?',
       a: 'Grounds & Gates Direct listings are company-developed or exclusively managed land parcels with zero buyer brokerage, single-point legal accountability, and direct site tour assistance. Third-Party listings are posted by verified private owners, licensed builders, or channel brokers with direct contact information provided.'
@@ -81,6 +102,13 @@ export const ContactPage: React.FC<ContactPageProps> = ({ lang: _lang, onNavigat
       a: 'You can use our guided 7-step "Post Property" wizard. Once submitted, our team reviews the documentation, approves the details, and publishes the listing across our Tamil Nadu buyer marketplace.'
     }
   ];
+
+  const faqs: { q: string; a: string }[] = (webContent['faqs']?.content?.items && webContent['faqs']?.content?.items.length > 0)
+    ? webContent['faqs'].content.items.map((item: any) => ({
+        q: _lang === 'ta' ? (item.qTa || item.q) : item.q,
+        a: _lang === 'ta' ? (item.aTa || item.a) : item.a,
+      }))
+    : defaultFaqs;
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#F5F2E9', pb: 12 }}>
@@ -233,16 +261,30 @@ export const ContactPage: React.FC<ContactPageProps> = ({ lang: _lang, onNavigat
                     fullWidth
                     size="small"
                   >
-                    <MenuItem value="Coimbatore">Coimbatore (கோயம்புத்தூர்)</MenuItem>
-                    <MenuItem value="Chennai">Chennai (சென்னை)</MenuItem>
-                    <MenuItem value="Madurai">Madurai (மதுரை)</MenuItem>
-                    <MenuItem value="Tiruppur">Tiruppur (திருப்பூர்)</MenuItem>
-                    <MenuItem value="Erode">Erode (ஈரோடு)</MenuItem>
-                    <MenuItem value="Salem">Salem (சேலம்)</MenuItem>
-                    <MenuItem value="Trichy">Trichy (திருச்சிராப்பள்ளி)</MenuItem>
-                    <MenuItem value="Pollachi">Pollachi (பொள்ளாச்சி)</MenuItem>
-                    <MenuItem value="Ooty">Ooty / Nilgiris (ஊட்டி)</MenuItem>
-                    <MenuItem value="Hosur">Hosur (ஓசூர்)</MenuItem>
+                    {(masters['district'] && masters['district'].length > 0) ? (
+                      masters['district'].map(d => (
+                        <MenuItem key={d.code} value={d.name}>
+                          {d.name} {d.nameTa ? `(${d.nameTa})` : ''}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      [
+                        { name: 'Coimbatore', ta: 'கோயம்புத்தூர்' },
+                        { name: 'Chennai', ta: 'சென்னை' },
+                        { name: 'Madurai', ta: 'மதுரை' },
+                        { name: 'Tiruppur', ta: 'திருப்பூர்' },
+                        { name: 'Erode', ta: 'ஈரோடு' },
+                        { name: 'Salem', ta: 'சேலம்' },
+                        { name: 'Trichy', ta: 'திருச்சிராப்பள்ளி' },
+                        { name: 'Pollachi', ta: 'பொள்ளாச்சி' },
+                        { name: 'Ooty', ta: 'ஊட்டி' },
+                        { name: 'Hosur', ta: 'ஓசூர்' },
+                      ].map(d => (
+                        <MenuItem key={d.name} value={d.name}>
+                          {d.name} ({d.ta})
+                        </MenuItem>
+                      ))
+                    )}
                   </TextField>
                 </Box>
 
@@ -295,10 +337,11 @@ export const ContactPage: React.FC<ContactPageProps> = ({ lang: _lang, onNavigat
                   variant="contained"
                   color="primary"
                   size="large"
+                  disabled={isSubmitting}
                   endIcon={<SendIcon sx={{ fontSize: 18, color: '#C99325' }} />}
                   sx={{ py: 1.5, borderRadius: '14px', fontWeight: 800, mt: 1 }}
                 >
-                  Submit Direct Inquiry (Demo)
+                  {isSubmitting ? 'Registering Inquiry...' : 'Submit Direct Inquiry'}
                 </Button>
               </Box>
             )}

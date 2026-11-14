@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 const ActivitySchema = new Schema({
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     entityType: {
         type: String,
         required: true,

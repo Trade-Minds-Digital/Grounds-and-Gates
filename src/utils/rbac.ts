@@ -12,7 +12,9 @@ export type CrmModule =
   | 'team'
   | 'reports'
   | 'audit-log'
-  | 'settings';
+  | 'settings'
+  | 'masters'
+  | 'content';
 
 export const STAFF_ROLES: UserRole[] = [
   'super-admin',
@@ -41,6 +43,8 @@ export const ROLE_MODULE_PERMISSIONS: Record<UserRole, CrmModule[]> = {
     'reports',
     'audit-log',
     'settings',
+    'masters',
+    'content',
   ],
   'admin': [
     'dashboard',
@@ -54,6 +58,8 @@ export const ROLE_MODULE_PERMISSIONS: Record<UserRole, CrmModule[]> = {
     'team',
     'reports',
     'audit-log',
+    'masters',
+    'content',
   ],
   'sales-manager': [
     'dashboard',
@@ -77,6 +83,7 @@ export const ROLE_MODULE_PERMISSIONS: Record<UserRole, CrmModule[]> = {
     'properties',
     'projects',
     'reports',
+    'masters',
   ],
   'company-admin': [
     'dashboard',

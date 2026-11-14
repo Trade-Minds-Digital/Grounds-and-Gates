@@ -22,6 +22,7 @@ export const getProperties = async (req: Request, res: Response): Promise<void> 
       bathrooms,
       facing,
       featuredOnly,
+      includeSample,
       page = '1',
       limit = '12',
       sortBy = 'newest',
@@ -31,6 +32,11 @@ export const getProperties = async (req: Request, res: Response): Promise<void> 
       published: true,
       publishingStatus: 'published',
     };
+
+    // Reversible sample record exclusion: live responses exclude sample fixtures unless explicitly requested
+    if (includeSample !== 'true') {
+      filter.isSample = { $ne: true };
+    }
 
     // Text search query
     if (searchQuery && searchQuery.trim() !== '') {
@@ -153,6 +159,12 @@ export const getPropertyByIdOrSlug = async (req: Request, res: Response): Promis
     // Access rule: If listing is unpublished/draft/rejected/archived, deny public access
     if ((property.published === false || ['draft', 'pending-review', 'rejected', 'archived'].includes(property.publishingStatus)) && !isStaff) {
       errorResponse(res, 'Property listing is not currently published.', 404);
+      return;
+    }
+
+    // Access rule: Exclude confirmed sample listings from public live views unless explicitly requested
+    if (property.isSample && req.query.includeSample !== 'true' && !isStaff) {
+      errorResponse(res, 'Property not found.', 404);
       return;
     }
 

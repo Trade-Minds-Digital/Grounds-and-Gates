@@ -237,7 +237,11 @@ export const ComparePage: React.FC<ComparePageProps> = ({
                           <CloseIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                         <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
-                          <Badge type="demo" size="sm" />
+                          {prop.ownershipType === 'company' ? (
+                            <Badge type="company" size="sm" />
+                          ) : (
+                            <Badge type="third-party" size="sm" />
+                          )}
                         </Box>
                       </Box>
 

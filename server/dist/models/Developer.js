@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 const DeveloperSchema = new Schema({
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     name: { type: String, required: true, trim: true },
     tamilName: { type: String, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },

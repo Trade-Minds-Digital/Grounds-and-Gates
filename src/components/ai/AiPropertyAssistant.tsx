@@ -198,7 +198,7 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
             />
           </Box>
           <Typography variant="button" sx={{ fontSize: '0.75rem', fontWeight: 800, display: { xs: 'none', sm: 'inline' } }}>
-            Smart Match AI (Demo)
+            Smart Match AI
           </Typography>
         </Fab>
       </Box>
@@ -253,7 +253,7 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
                     Grounds & Gates Smart Match
                   </Typography>
                   <Chip
-                    label="DEMO"
+                    label="LIVE"
                     size="small"
                     sx={{
                       bgcolor: '#C99325',
@@ -265,7 +265,7 @@ export const AiPropertyAssistant: React.FC<AiPropertyAssistantProps> = ({
                   />
                 </Box>
                 <Typography variant="caption" sx={{ color: 'rgba(245, 242, 233, 0.75)', fontSize: '0.65rem' }}>
-                  Natural language property discovery assistant
+                  Intelligent matching assistant over live database listings
                 </Typography>
               </Box>
             </Box>

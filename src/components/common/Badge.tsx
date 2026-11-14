@@ -23,28 +23,7 @@ export const Badge: React.FC<BadgeProps> = ({
   const muiSize = size === 'sm' ? 'small' : 'medium';
 
   if (type === 'demo') {
-    return (
-      <Chip
-        size={muiSize}
-        label="Demo Listing"
-        className={className}
-        icon={
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse ml-1 inline-block" />
-        }
-        sx={{
-          fontWeight: 700,
-          fontSize: size === 'sm' ? '0.65rem' : '0.72rem',
-          letterSpacing: '0.05em',
-          textTransform: 'uppercase',
-          bgcolor: 'rgba(245, 158, 11, 0.12)',
-          color: '#78350F',
-          border: '1px solid rgba(217, 119, 6, 0.35)',
-          height: size === 'sm' ? 22 : 26,
-          '& .MuiChip-label': { px: 1 },
-        }}
-        title="Simulated sample listing for demonstration purposes"
-      />
-    );
+    return null;
   }
 
   if (type === 'company') {

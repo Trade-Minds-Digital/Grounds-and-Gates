@@ -9,9 +9,12 @@ import { AuthenticatedRequest } from '../../middleware/auth.middleware.js';
 
 export const getLeads = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { stage, priority, assignedEmployeeId, search, page = '1', limit = '50' } = req.query as Record<string, string>;
+    const { stage, priority, assignedEmployeeId, search, includeSample, page = '1', limit = '50' } = req.query as Record<string, string>;
 
     const filter: any = {};
+    if (includeSample !== 'true') {
+      filter.isSample = { $ne: true };
+    }
     if (stage && stage !== 'all') filter.stage = stage;
     if (priority && priority !== 'all') filter.priority = priority;
 

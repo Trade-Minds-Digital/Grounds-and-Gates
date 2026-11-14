@@ -16,6 +16,7 @@ import {
   Tabs,
   Tab,
   InputAdornment,
+  Alert,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
@@ -41,48 +42,53 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const t = translations[lang];
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [role, setRole] = useState<UserRole>('buyer');
-  const [fullName, setFullName] = useState('Mohanraj S.');
-  const [email, setEmail] = useState('mohanrajs0410@gmail.com');
-  const [password, setPassword] = useState('demo123456');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (!email.trim() || !password.trim()) {
+      setError('Please provide your email and password.');
+      return;
+    }
+
+    if (mode === 'register' && !fullName.trim()) {
+      setError('Please enter your full name.');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       if (mode === 'register') {
         const res = await api.register({
-          fullName,
-          email,
-          password: password || 'Buyer@123',
-          role
+          fullName: fullName.trim(),
+          email: email.trim(),
+          password,
+          role,
         });
         const name = res.user?.fullName || fullName;
         onLoginSuccess(role, name);
+        onClose();
       } else {
         const res = await api.login({
-          email,
-          password: password || 'Buyer@123'
+          email: email.trim(),
+          password,
         });
-        const name = res.user?.fullName || fullName;
+        const name = res.user?.fullName || email.split('@')[0];
         const resRole = (res.user?.role as UserRole) || role;
         onLoginSuccess(resRole, name);
+        onClose();
       }
-    } catch {
-      // Offline fallback
-      onLoginSuccess(role, fullName);
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed. Please verify your credentials.');
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
-  };
-
-  const fillAsBuyer = () => {
-    setRole('buyer');
-    setFullName('Mohanraj S. (Buyer)');
-    setEmail('mohanrajs0410@gmail.com');
-  };
-
-  const fillAsSeller = () => {
-    setRole('owner');
-    setFullName('Senthil Nathan (Owner)');
-    setEmail('senthil.nathan@example.com');
   };
 
   return (
@@ -140,7 +146,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       <Box sx={{ borderBottom: 1, borderColor: '#ECE7DA', bgcolor: '#FAF8F2' }}>
         <Tabs
           value={mode}
-          onChange={(_, val) => setMode(val)}
+          onChange={(_, val) => {
+            setError(null);
+            setMode(val);
+          }}
           variant="fullWidth"
           indicatorColor="secondary"
         >
@@ -149,45 +158,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </Tabs>
       </Box>
 
-      {/* Quick Demo Pre-Fill Helpers */}
-      <Box sx={{ p: 1.5, bgcolor: '#FAF8F2', borderBottom: '1px solid #ECE7DA', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-        <Typography variant="caption" sx={{ fontWeight: 800, color: '#536458', textTransform: 'uppercase', fontSize: '0.65rem' }}>
-          Quick Demo:
-        </Typography>
-        <Chip
-          label={t.auth.quickFillBuyer}
-          size="small"
-          clickable
-          onClick={fillAsBuyer}
-          sx={{
-            bgcolor: '#FFFFFF',
-            border: '1px solid #013E18',
-            color: '#013E18',
-            fontWeight: 700,
-            fontSize: '0.7rem',
-            height: 24,
-            '&:hover': { bgcolor: 'rgba(1, 62, 24, 0.08)' },
-          }}
-        />
-        <Chip
-          label={t.auth.quickFillSeller}
-          size="small"
-          clickable
-          onClick={fillAsSeller}
-          sx={{
-            bgcolor: '#FFFFFF',
-            border: '1px solid #C99325',
-            color: '#8B6413',
-            fontWeight: 700,
-            fontSize: '0.7rem',
-            height: 24,
-            '&:hover': { bgcolor: 'rgba(201, 147, 37, 0.12)' },
-          }}
-        />
-      </Box>
-
       {/* Form Content */}
       <DialogContent sx={{ p: 3.5 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>
+            {error}
+          </Alert>
+        )}
         <form onSubmit={handleSubmit}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {/* Role Selection when Registering */}

@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 const LeadSchema = new Schema({
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     customer: { type: Schema.Types.ObjectId, ref: 'Customer' },
     customerId: { type: String, trim: true },
     buyerName: { type: String, required: true, trim: true },

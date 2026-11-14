@@ -8,8 +8,11 @@ import { AuthenticatedRequest } from '../../middleware/auth.middleware.js';
 
 export const getSiteVisits = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { status, date, assignedEmployeeId } = req.query as Record<string, string>;
+    const { status, date, assignedEmployeeId, includeSample } = req.query as Record<string, string>;
     const filter: any = {};
+    if (includeSample !== 'true') {
+      filter.isSample = { $ne: true };
+    }
     if (status && status !== 'all') filter.status = status;
     if (date) filter.date = date;
 

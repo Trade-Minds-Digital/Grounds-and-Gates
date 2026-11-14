@@ -5,6 +5,7 @@
 
 import { Property, EnquirySubmission, PropertyFilterState, ListingStatus } from '../types/property';
 import { Lead, SiteVisit, Booking, DemoNotification, Developer, Project, Employee, Customer, Activity } from '../types/demo';
+import { MasterItem, MasterGroupSummary, MasterUsageReport, WebContentSection } from '../types/masters';
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api/v1';
 
@@ -479,6 +480,117 @@ class ApiClient {
     return this.request<any>('/leads/merge', {
       method: 'POST',
       body: JSON.stringify({ primaryLeadId, secondaryLeadId }),
+    });
+  }
+
+  // ─── Centralized Master Management ────────────────
+  async getPublicMasters(type?: string, parentCode?: string, group?: string) {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (parentCode) params.append('parentCode', parentCode);
+    if (group) params.append('group', group);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request<MasterItem[]>(`/masters/public${qs}`);
+  }
+
+  async getPublicMastersBatch() {
+    return this.request<Record<string, MasterItem[]>>('/masters/public/batch');
+  }
+
+  async getMasterGroups() {
+    return this.request<MasterGroupSummary[]>('/masters/groups');
+  }
+
+  async getMasters(filters: {
+    type?: string;
+    group?: string;
+    parentCode?: string;
+    isActive?: boolean | string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  } = {}) {
+    const params = new URLSearchParams();
+    if (filters.type) params.append('type', filters.type);
+    if (filters.group) params.append('group', filters.group);
+    if (filters.parentCode) params.append('parentCode', filters.parentCode);
+    if (filters.isActive !== undefined && filters.isActive !== '') params.append('isActive', String(filters.isActive));
+    if (filters.search) params.append('search', filters.search);
+    if (filters.page) params.append('page', String(filters.page));
+    if (filters.limit) params.append('limit', String(filters.limit));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request<{ items: MasterItem[]; pagination: { total: number; page: number; limit: number; totalPages: number } }>(`/masters${qs}`);
+  }
+
+  async getMaster(type: string, idOrCode: string) {
+    return this.request<MasterItem>(`/masters/${type}/${idOrCode}`);
+  }
+
+  async createMaster(type: string, data: Partial<MasterItem>) {
+    return this.request<MasterItem>(`/masters/${type}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateMaster(type: string, id: string, data: Partial<MasterItem>) {
+    return this.request<MasterItem>(`/masters/${type}/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async toggleMasterStatus(type: string, id: string, isActive?: boolean) {
+    return this.request<MasterItem>(`/masters/${type}/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    });
+  }
+
+  async getMasterUsage(type: string, id: string) {
+    return this.request<MasterUsageReport>(`/masters/${type}/${id}/usage`);
+  }
+
+  async deleteMaster(type: string, id: string) {
+    return this.request<{ message: string }>(`/masters/${type}/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getMastersMigrationReport(dryRun = true) {
+    return this.request<any>(`/masters/migration/report?dryRun=${dryRun}`);
+  }
+
+  // ─── Website Content Management ───────────────────
+  async getPublicContent(section?: string) {
+    const endpoint = section ? `/content/public/${section}` : '/content/public';
+    return this.request<any>(endpoint);
+  }
+
+  async getContentSections() {
+    return this.request<WebContentSection[]>('/content');
+  }
+
+  async getContentSection(section: string) {
+    return this.request<WebContentSection>(`/content/${section}`);
+  }
+
+  async saveContentDraft(section: string, data: { title?: string; titleTa?: string; subtitle?: string; subtitleTa?: string; draftContent: any }) {
+    return this.request<WebContentSection>(`/content/${section}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async publishContent(section: string) {
+    return this.request<WebContentSection>(`/content/${section}/publish`, {
+      method: 'POST',
+    });
+  }
+
+  async discardContentDraft(section: string) {
+    return this.request<WebContentSection>(`/content/${section}/discard`, {
+      method: 'POST',
     });
   }
 }

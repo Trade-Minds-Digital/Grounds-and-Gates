@@ -5,9 +5,13 @@ import { slugify } from '../../utils/slug.js';
 import { authenticate } from '../../middleware/auth.middleware.js';
 import { requireRole } from '../../middleware/rbac.middleware.js';
 
-export const getDevelopers = async (_req: Request, res: Response): Promise<void> => {
+export const getDevelopers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const developers = await Developer.find({ isActive: true });
+    const filter: any = { isActive: true };
+    if (req.query.includeSample !== 'true') {
+      filter.isSample = { $ne: true };
+    }
+    const developers = await Developer.find(filter);
     successResponse(res, developers);
   } catch (err: any) {
     errorResponse(res, err.message, 500);

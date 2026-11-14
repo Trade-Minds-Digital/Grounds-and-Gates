@@ -15,6 +15,7 @@ export const seedCustomers = async () => {
             enquiryIds: cust.enquiryIds,
             bookingIds: cust.bookingIds,
             isActive: true,
+            isSample: true,
         }, { upsert: true, new: true });
     }
     console.log(`✅ Seeded ${INITIAL_DEMO_CUSTOMERS.length} Customers.`);

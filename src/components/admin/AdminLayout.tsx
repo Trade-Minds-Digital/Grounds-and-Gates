@@ -37,6 +37,7 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import HistoryIcon from '@mui/icons-material/History';
 import SettingsIcon from '@mui/icons-material/Settings';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import SearchIcon from '@mui/icons-material/Search';
@@ -94,6 +95,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     { id: 'reports', labelEn: 'Reports & Exports', labelTa: 'அறிக்கைகள் & ஏற்றுமதிகள்', icon: <AssessmentIcon /> },
     { id: 'audit-log', labelEn: 'Audit Log', labelTa: 'தணிக்கை பதிவு (Audit)', icon: <HistoryIcon /> },
     { id: 'settings', labelEn: 'System Settings', labelTa: 'கணினி அமைப்புகள்', icon: <SettingsIcon /> },
+    { id: 'masters', labelEn: 'Masters Management', labelTa: 'மாஸ்டர் மேலாண்மை', icon: <AccountTreeIcon /> },
+    { id: 'content', labelEn: 'Website Content', labelTa: 'வலைத்தள உள்ளடக்கம்', icon: <LanguageIcon /> },
   ];
 
   // Filter menu items by user role permissions

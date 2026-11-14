@@ -20,3 +20,5 @@ export * from './Review.js';
 export * from './SystemSetting.js';
 export * from './AuditLog.js';
 export * from './Task.js';
+export * from './MasterItem.js';
+export * from './WebContent.js';

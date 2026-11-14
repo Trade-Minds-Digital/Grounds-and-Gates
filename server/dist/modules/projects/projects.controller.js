@@ -1,9 +1,13 @@
 import { Project } from '../../models/Project.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
 import { slugify } from '../../utils/slug.js';
-export const getProjects = async (_req, res) => {
+export const getProjects = async (req, res) => {
     try {
-        const projects = await Project.find({ isActive: true }).populate('developer');
+        const filter = { isActive: true };
+        if (req.query.includeSample !== 'true') {
+            filter.isSample = { $ne: true };
+        }
+        const projects = await Project.find(filter).populate('developer');
         successResponse(res, projects);
     }
     catch (err) {

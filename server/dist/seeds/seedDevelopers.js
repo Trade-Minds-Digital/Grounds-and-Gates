@@ -19,6 +19,7 @@ export const seedDevelopers = async () => {
             headquarters: dev.headquarters,
             description: dev.description,
             isActive: true,
+            isSample: true,
         }, { upsert: true, new: true });
     }
     console.log(`✅ Seeded ${INITIAL_DEMO_DEVELOPERS.length} Developers.`);

@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 const BookingSchema = new Schema({
     bookingNumber: { type: String, required: true, unique: true, trim: true },
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     property: { type: Schema.Types.ObjectId, ref: 'Property' },
     propertyId: { type: String, required: true, trim: true },
     propertyTitle: { type: String, required: true, trim: true },

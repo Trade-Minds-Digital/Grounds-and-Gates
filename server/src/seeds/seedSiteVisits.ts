@@ -34,6 +34,7 @@ export const seedSiteVisits = async () => {
         feedback: v.feedback,
         notes: v.notes,
         transportProvided: v.transportProvided ?? false,
+        isSample: true,
       },
       { upsert: true, new: true }
     );

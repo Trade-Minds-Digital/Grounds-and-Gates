@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 const SiteVisitSchema = new Schema({
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     lead: { type: Schema.Types.ObjectId, ref: 'Lead' },
     leadId: { type: String, trim: true },
     property: { type: Schema.Types.ObjectId, ref: 'Property' },

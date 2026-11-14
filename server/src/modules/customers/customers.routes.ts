@@ -7,9 +7,13 @@ import { successResponse, errorResponse } from '../../utils/response.js';
 import { authenticate, AuthenticatedRequest } from '../../middleware/auth.middleware.js';
 import { requireRole } from '../../middleware/rbac.middleware.js';
 
-export const getCustomers = async (_req: Request, res: Response): Promise<void> => {
+export const getCustomers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const customers = await Customer.find({ isActive: true });
+    const filter: any = { isActive: true };
+    if (req.query.includeSample !== 'true') {
+      filter.isSample = { $ne: true };
+    }
+    const customers = await Customer.find(filter);
     successResponse(res, customers);
   } catch (err: any) {
     errorResponse(res, err.message, 500);

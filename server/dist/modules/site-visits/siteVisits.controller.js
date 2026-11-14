@@ -5,8 +5,11 @@ import { Notification } from '../../models/Notification.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
 export const getSiteVisits = async (req, res) => {
     try {
-        const { status, date, assignedEmployeeId } = req.query;
+        const { status, date, assignedEmployeeId, includeSample } = req.query;
         const filter = {};
+        if (includeSample !== 'true') {
+            filter.isSample = { $ne: true };
+        }
         if (status && status !== 'all')
             filter.status = status;
         if (date)

@@ -13,11 +13,13 @@ export interface IActivity extends Document {
   performedBy: string;
   performedByEmployeeId?: string;
   metadata?: Record<string, any>;
+  isSample?: boolean;
 }
 
 const ActivitySchema = new Schema<IActivity>(
   {
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     entityType: {
       type: String,
       required: true,

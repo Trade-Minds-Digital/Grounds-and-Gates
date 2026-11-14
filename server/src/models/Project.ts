@@ -21,12 +21,14 @@ export interface IProject extends Document {
   amenities: string[];
   gallery: string[];
   description: string;
+  isSample?: boolean;
   isActive: boolean;
 }
 
 const ProjectSchema = new Schema<IProject>(
   {
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     developer: { type: Schema.Types.ObjectId, ref: 'Developer', required: true },
     developerId: { type: String, trim: true },
     name: { type: String, required: true, trim: true },

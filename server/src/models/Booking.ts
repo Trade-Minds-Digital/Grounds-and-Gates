@@ -28,6 +28,7 @@ export interface IBooking extends Document {
   documents?: string[];
   notes?: string;
   bookingStatus?: BookingStatus;
+  isSample?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -36,6 +37,7 @@ const BookingSchema = new Schema<IBooking>(
   {
     bookingNumber: { type: String, required: true, unique: true, trim: true },
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     property: { type: Schema.Types.ObjectId, ref: 'Property' },
     propertyId: { type: String, required: true, trim: true },
     propertyTitle: { type: String, required: true, trim: true },

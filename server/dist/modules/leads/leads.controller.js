@@ -5,8 +5,11 @@ import { Employee } from '../../models/Employee.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
 export const getLeads = async (req, res) => {
     try {
-        const { stage, priority, assignedEmployeeId, search, page = '1', limit = '50' } = req.query;
+        const { stage, priority, assignedEmployeeId, search, includeSample, page = '1', limit = '50' } = req.query;
         const filter = {};
+        if (includeSample !== 'true') {
+            filter.isSample = { $ne: true };
+        }
         if (stage && stage !== 'all')
             filter.stage = stage;
         if (priority && priority !== 'all')

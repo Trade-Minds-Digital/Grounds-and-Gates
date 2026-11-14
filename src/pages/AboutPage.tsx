@@ -1,5 +1,6 @@
 import React from 'react';
 import { LanguageCode } from '../types/property';
+import { useAppState } from '../context/AppStateContext';
 import {
   Container,
   Box,
@@ -23,6 +24,11 @@ interface AboutPageProps {
 }
 
 export const AboutPage: React.FC<AboutPageProps> = ({ lang: _lang, onNavigate }) => {
+  const { webContent } = useAppState();
+  const aboutData = webContent['about_page'] || {};
+  const headline = (_lang === 'ta' ? aboutData.titleTa : aboutData.title) || 'Grounds and Gates';
+  const subtitle = (_lang === 'ta' ? aboutData.subtitleTa : aboutData.subtitle) || 'Establishing architectural distinction, clear land titles, and verified property ownership across Tamil Nadu’s prime residential and agricultural corridors.';
+
   const leadership = [
     {
       name: 'K. Sundararajan',
@@ -93,10 +99,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ lang: _lang, onNavigate })
             }}
           />
           <Typography variant="h3" sx={{ fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', mb: 2 }}>
-            Grounds and Gates
+            {headline}
           </Typography>
           <Typography variant="h6" sx={{ color: 'rgba(245, 242, 233, 0.85)', maxWidth: 750, mx: 'auto', fontWeight: 500, fontSize: { xs: '1rem', sm: '1.2rem' }, lineHeight: 1.6 }}>
-            Establishing architectural distinction, clear land titles, and verified property ownership across Tamil Nadu’s prime residential and agricultural corridors.
+            {subtitle}
           </Typography>
         </Container>
       </Box>

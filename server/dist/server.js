@@ -1,10 +1,14 @@
 import { createApp } from './app.js';
 import { connectDatabase, disconnectDatabase } from './database/connection.js';
+import { markSampleProvenance } from './database/provenance.js';
+import { seedMastersAndContent } from './database/mastersMigration.js';
 import { config } from './config/index.js';
 const app = createApp();
 const startServer = async () => {
     try {
         await connectDatabase();
+        await markSampleProvenance();
+        await seedMastersAndContent();
         const server = app.listen(config.port, () => {
             console.log(`🚀 Grounds & Gates REST API running on port ${config.port} (${config.env})`);
             console.log(`📡 Base API endpoint: http://localhost:${config.port}/api/v1`);

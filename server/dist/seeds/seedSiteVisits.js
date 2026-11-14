@@ -30,6 +30,7 @@ export const seedSiteVisits = async () => {
             feedback: v.feedback,
             notes: v.notes,
             transportProvided: v.transportProvided ?? false,
+            isSample: true,
         }, { upsert: true, new: true });
     }
     console.log(`✅ Seeded ${INITIAL_DEMO_SITE_VISITS.length} Site Visits.`);

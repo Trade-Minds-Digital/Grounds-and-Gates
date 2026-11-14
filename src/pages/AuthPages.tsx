@@ -51,56 +51,32 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const handleQuickLogin = async (demoRole: UserRole, demoName: string, demoEmail: string) => {
-    setIsSubmitting(true);
-    setAuthError(null);
-    const demoCredentials: Record<string, string> = {
-      'admin@groundsandgates.com': 'Admin@123',
-      'seller@groundsandgates.com': 'Seller@123',
-      'agent@groundsandgates.com': 'Agent@123',
-      'buyer@groundsandgates.com': 'Buyer@123',
-      'mohanrajs0410@gmail.com': 'Buyer@123',
-      'kavitha@gatedproperties.in': 'Seller@123'
-    };
-    const targetPassword = demoCredentials[demoEmail] || 'Buyer@123';
-
-    try {
-      const res = await api.login({ email: demoEmail, password: targetPassword });
-      const activeName = res.user?.fullName || demoName;
-      const activeRole = (res.user?.role as UserRole) || demoRole;
-      onLoginSuccess(activeRole, { name: activeName, email: demoEmail });
-      if (onShowToast) {
-        onShowToast(`Authenticated as ${activeName} (${activeRole.toUpperCase()})`, 'success');
-      }
-    } catch {
-      // Graceful fallback for offline development mode
-      onLoginSuccess(demoRole, { name: demoName, email: demoEmail });
-      if (onShowToast) {
-        onShowToast(`Signed in as ${demoName} (${demoRole.toUpperCase()})`, 'success');
-      }
-    } finally {
-      setIsSubmitting(false);
-      if (demoRole === 'buyer') {
-        onNavigate('buyer-dashboard');
-      } else {
-        onNavigate('seller-dashboard');
-      }
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
 
     if (mode === 'forgot-password') {
-      if (!email) {
-        alert('Please enter your registered email address.');
+      if (!email.trim()) {
+        setAuthError('Please enter your registered email address.');
         return;
       }
-      setResetSent(true);
-      if (onShowToast) {
-        onShowToast('Simulated password reset link sent to your email.', 'info');
+      setIsSubmitting(true);
+      try {
+        const res = await api.forgotPassword(email.trim());
+        setResetSent(true);
+        if (onShowToast) {
+          onShowToast(res.message, res.hasEmailProvider ? 'success' : 'info');
+        }
+      } catch (err: any) {
+        setAuthError(err.message || 'Failed to submit password reset request.');
+      } finally {
+        setIsSubmitting(false);
       }
+      return;
+    }
+
+    if (!email.trim() || !password.trim()) {
+      setAuthError('Email and password are required.');
       return;
     }
 
@@ -108,24 +84,24 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     try {
       if (mode === 'register') {
         const res = await api.register({
-          fullName: name || 'Valued Client',
-          email,
-          password: password || 'Secure@123',
-          role
+          fullName: name.trim() || 'Client',
+          email: email.trim(),
+          password,
+          role,
         });
         const finalName = res.user?.fullName || name || 'User';
-        onLoginSuccess(role, { name: finalName, email });
+        onLoginSuccess(role, { name: finalName, email: email.trim() });
         if (onShowToast) {
-          onShowToast(`Account registered in MongoDB! Welcome, ${finalName}`, 'success');
+          onShowToast(`Account registered successfully! Welcome, ${finalName}`, 'success');
         }
       } else {
         const res = await api.login({
-          email: email || 'buyer@groundsandgates.com',
-          password: password || 'Buyer@123'
+          email: email.trim(),
+          password,
         });
-        const finalName = res.user?.fullName || name || (email ? email.split('@')[0] : 'User');
+        const finalName = res.user?.fullName || (email ? email.split('@')[0] : 'User');
         const finalRole = (res.user?.role as UserRole) || role;
-        onLoginSuccess(finalRole, { name: finalName, email: email || 'buyer@groundsandgates.com' });
+        onLoginSuccess(finalRole, { name: finalName, email: email.trim() });
         if (onShowToast) {
           onShowToast(`Welcome back, ${finalName}!`, 'success');
         }
@@ -137,18 +113,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
         onNavigate('seller-dashboard');
       }
     } catch (err: any) {
-      console.warn('Authentication API note:', err.message);
-      // If server unreachable, proceed with local session so reviewer experience is completely smooth
-      const fallbackName = name || (email ? email.split('@')[0] : 'User');
-      onLoginSuccess(role, { name: fallbackName, email: email || 'user@groundsandgates.com' });
-      if (onShowToast) {
-        onShowToast(`Welcome, ${fallbackName}!`, 'success');
-      }
-      if (role === 'buyer') {
-        onNavigate('buyer-dashboard');
-      } else {
-        onNavigate('seller-dashboard');
-      }
+      setAuthError(err.message || 'Authentication failed. Please verify your credentials.');
     } finally {
       setIsSubmitting(false);
     }
@@ -199,81 +164,19 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
           <Typography variant="body2" sx={{ color: '#536458', mt: 0.5, fontSize: '0.8rem' }}>
             {mode === 'login' && 'Manage your shortlisted properties, site visit schedules, or listings.'}
             {mode === 'register' && 'Join thousands of buyers and property owners across Tamil Nadu.'}
-            {mode === 'forgot-password' && 'Enter your email to receive a demo verification link.'}
+            {mode === 'forgot-password' && 'Enter your email to receive password recovery instructions.'}
           </Typography>
         </Box>
-
-        {/* 1-Click Demo Profiles */}
-        {mode !== 'forgot-password' && (
-          <Box sx={{ py: 2.5, borderBottom: '1px solid #ECE7DA', mb: 3 }}>
-            <Typography variant="caption" sx={{ color: '#8C9A90', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem', display: 'block', mb: 1.2 }}>
-              Instant 1-Click Demo Profiles:
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => handleQuickLogin('buyer', 'Mohanraj S.', 'mohanrajs0410@gmail.com')}
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  py: 1,
-                  px: 1.5,
-                  borderRadius: '12px',
-                  borderColor: '#ECE7DA',
-                  bgcolor: '#FAF8F2',
-                  textAlign: 'left',
-                  textTransform: 'none',
-                  '&:hover': { bgcolor: '#013E18', color: '#FFFFFF', borderColor: '#013E18' },
-                }}
-              >
-                <Typography variant="caption" sx={{ fontWeight: 800, color: 'inherit', display: 'block', fontSize: '0.75rem' }}>
-                  Mohanraj (Buyer)
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#8C9A90', fontSize: '0.65rem' }}>
-                  Saved + Visits Portal
-                </Typography>
-              </Button>
-
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => handleQuickLogin('owner', 'Kavitha Land Developers', 'kavitha@gatedproperties.in')}
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  py: 1,
-                  px: 1.5,
-                  borderRadius: '12px',
-                  borderColor: 'rgba(201, 147, 37, 0.4)',
-                  bgcolor: '#FAF8F2',
-                  textAlign: 'left',
-                  textTransform: 'none',
-                  '&:hover': { bgcolor: '#013E18', color: '#FFFFFF', borderColor: '#013E18' },
-                }}
-              >
-                <Typography variant="caption" sx={{ fontWeight: 800, color: '#C99325', display: 'block', fontSize: '0.75rem' }}>
-                  Kavitha (Seller CRM)
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#8C9A90', fontSize: '0.65rem' }}>
-                  Listings + Leads CRM
-                </Typography>
-              </Button>
-            </Box>
-          </Box>
-        )}
 
         {/* Form Body */}
         {resetSent ? (
           <Box sx={{ p: 3, textAlign: 'center', bgcolor: '#FAF8F2', borderRadius: '16px', border: '1px solid #ECE7DA' }}>
             <CheckCircleIcon sx={{ fontSize: 40, color: '#013E18', mb: 1 }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#013E18' }}>
-              Recovery Email Dispatched
+              Recovery Instructions Dispatched
             </Typography>
             <Typography variant="body2" sx={{ color: '#536458', fontSize: '0.8rem', mt: 0.5 }}>
-              A demo recovery link has been simulated for <strong>{email}</strong>.
+              If an account is associated with <strong>{email}</strong>, secure recovery instructions have been sent.
             </Typography>
             <Button
               variant="text"

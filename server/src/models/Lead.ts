@@ -34,6 +34,7 @@ export interface ILead extends Document {
   nextFollowUpDate?: Date | null;
   notes?: string;
   dateStr: string;
+  isSample?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -41,6 +42,7 @@ export interface ILead extends Document {
 const LeadSchema = new Schema<ILead>(
   {
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     customer: { type: Schema.Types.ObjectId, ref: 'Customer' },
     customerId: { type: String, trim: true },
     buyerName: { type: String, required: true, trim: true },

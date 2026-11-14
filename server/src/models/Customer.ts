@@ -14,6 +14,7 @@ export interface ICustomer extends Document {
   enquiryIds: string[];
   bookingIds: string[];
   notes?: string;
+  isSample?: boolean;
   isActive: boolean;
 }
 
@@ -21,6 +22,7 @@ const CustomerSchema = new Schema<ICustomer>(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User' },
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     fullName: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true },
     email: { type: String, required: true, lowercase: true, trim: true },

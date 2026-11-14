@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Property, LanguageCode, PropertyCategory, ListingType } from '../types/property';
 import { translations } from '../i18n/translations';
+import { useAppState } from '../context/AppStateContext';
 import { CATEGORIES_DATA } from '../data/categories';
 import { LOCATIONS_DATA } from '../data/locations';
 import { PropertyCard } from '../components/property/PropertyCard';
@@ -48,6 +49,57 @@ export const HomePage: React.FC<HomePageProps> = ({
   onSelectProperty
 }) => {
   const t = translations[lang];
+  const { masters, webContent } = useAppState();
+
+  // Authoritative Content & Master Overrides
+  const heroContent = webContent['homepage_hero'] || {};
+  const heroHeadline = lang === 'ta'
+    ? (heroContent.titleTa || heroContent.content?.headlineTa || t.hero.headline)
+    : (heroContent.title || heroContent.content?.headline || t.hero.headline);
+  const heroSubtext = lang === 'ta'
+    ? (heroContent.subtitleTa || heroContent.content?.subtextTa || t.hero.subtext)
+    : (heroContent.subtitle || heroContent.content?.subtext || t.hero.subtext);
+  const heroBadge = lang === 'ta'
+    ? (heroContent.content?.headlineBadgeTa || t.hero.badge)
+    : (heroContent.content?.headlineBadge || t.hero.badge);
+
+  const categoryList = useMemo(() => {
+    if (masters['property_category'] && masters['property_category'].length > 0) {
+      return masters['property_category'].map(c => {
+        const fallback = CATEGORIES_DATA.find(cat => cat.id === c.code || cat.name.toLowerCase() === c.name.toLowerCase());
+        return {
+          id: c.code as PropertyCategory,
+          name: c.name,
+          tamilName: c.nameTa || c.name,
+          description: c.description || fallback?.description || '',
+          tamilDescription: c.nameTa || fallback?.tamilDescription || '',
+          typicalUnits: c.metadata?.typicalUnits || fallback?.typicalUnits || 'Cents / Sq.ft',
+          imageUrl: c.metadata?.imageUrl || fallback?.imageUrl || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80',
+        };
+      });
+    }
+    return CATEGORIES_DATA;
+  }, [masters]);
+
+  const locationList = useMemo(() => {
+    if (masters['district'] && masters['district'].length > 0) {
+      return masters['district'].map(d => {
+        const fallback = LOCATIONS_DATA.find(l => l.id.toLowerCase() === d.code.toLowerCase() || l.name.toLowerCase() === d.name.toLowerCase());
+        const count = properties.filter(p => p.district?.toLowerCase() === d.name.toLowerCase() || p.district?.toLowerCase() === d.code.toLowerCase()).length;
+        return {
+          id: d.code,
+          name: d.name,
+          tamilName: d.nameTa || d.name,
+          popularLocalities: fallback?.popularLocalities || [],
+          listingCount: count > 0 ? count : (fallback?.listingCount || 0),
+          imageUrl: d.metadata?.imageUrl || fallback?.imageUrl || 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?auto=format&fit=crop&w=800&q=80',
+          description: d.description || fallback?.description || '',
+          isMetro: fallback?.isMetro || false,
+        };
+      });
+    }
+    return LOCATIONS_DATA;
+  }, [masters, properties]);
 
   // Hero Search States
   const [heroListingType, setHeroListingType] = useState<ListingType>('buy');
@@ -86,9 +138,11 @@ export const HomePage: React.FC<HomePageProps> = ({
   const leadSpotlightProperty = featuredTab === 'all' && displayedFeatured.length > 0 ? displayedFeatured[0] : null;
   const gridFeaturedProperties = leadSpotlightProperty ? displayedFeatured.slice(1, 7) : displayedFeatured.slice(0, 6);
 
-  // Word-by-word split for animated hero headline
-  const heroLine1Words = (lang === 'ta' ? 'சொத்தை விட மேலானது.' : 'Find More Than a Property.').split(' ');
-  const heroLine2Words = (lang === 'ta' ? 'உங்கள் உலகத்தைக் கண்டறியுங்கள்.' : 'Find Your Place in the World.').split(' ');
+  // Dynamic Word-by-word split for animated hero headline
+  const heroWords = heroHeadline.split(' ');
+  const midPoint = Math.ceil(heroWords.length / 2);
+  const heroLine1Words = heroWords.slice(0, midPoint);
+  const heroLine2Words = heroWords.slice(midPoint);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FAF8F2]">
@@ -96,7 +150,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* ===================================================================== */}
       {/* 1. CINEMATIC ARCHITECTURAL HERO EXPERIENCE                            */}
       {/* ===================================================================== */}
-      <section className="relative min-h-[82vh] lg:min-h-[88vh] bg-[#00280f] text-white flex flex-col justify-center py-14 sm:py-20 overflow-hidden">
+      <section className="relative min-h-[82vh] lg:min-h-[93vh] bg-[#00280f] text-white flex flex-col justify-center py-14 sm:py-20 overflow-hidden">
         {/* Full-bleed Architectural Photography with Ambient Ken Burns Zoom */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <img
@@ -105,8 +159,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             className="w-full h-full object-cover object-center opacity-50 animate-ken-burns"
           />
           {/* Carefully Balanced Editorial Scrim: Keeps architectural daylight clear while anchoring text legibility */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#001d0b]/92 via-[#013E18]/70 to-[#001d0b]/45" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#001d0b] via-transparent to-[#001d0b]/55" />
+          <div className="absolute bg-gradient-to-r from-[#001d0b]/92 via-[#013E18]/70 to-[#001d0b]/45" />
+          <div className="absolute bg-gradient-to-t from-[#001d0b] via-transparent to-[#001d0b]/55" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -121,12 +175,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                 className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-[#C99325]/50 text-[#F5F2E9] text-[11px] font-bold uppercase tracking-[0.16em] mb-6 backdrop-blur-md"
               >
                 <span className="w-2 h-2 rounded-full bg-[#C99325] animate-pulse" />
-                <span>{t.hero.badge}</span>
+                <span>{heroBadge}</span>
               </motion.div>
 
               <h1 className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight text-white leading-[1.12]">
                 <span className="block">
-                  {heroLine1Words.map((word, idx) => (
+                  {heroLine1Words.map((word: string, idx: number) => (
                     <motion.span
                       key={`l1-${idx}`}
                       initial={{ opacity: 0, y: 18 }}
@@ -139,7 +193,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   ))}
                 </span>
                 <span className="block text-[#e0aa3e] mt-1">
-                  {heroLine2Words.map((word, idx) => (
+                  {heroLine2Words.map((word: string, idx: number) => (
                     <motion.span
                       key={`l2-${idx}`}
                       initial={{ opacity: 0, y: 18 }}
@@ -163,7 +217,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 transition={{ duration: 0.65, delay: 0.55, ease: [0.22, 1, 0.36, 1] }}
                 className="mt-5 text-sm sm:text-lg text-[#F5F2E9]/90 font-normal max-w-xl leading-relaxed"
               >
-                {t.hero.subtext}
+                {heroSubtext}
               </motion.p>
             </div>
 
@@ -247,7 +301,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-[11px] bg-[#FAF8F2] px-2.5 py-1 rounded-full border border-stone-200">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#C99325]" />
-                  <span>{properties.length} Demo Listings Live</span>
+                  <span>{properties.length > 0 ? `${properties.length} Verified Properties Live` : 'Live Marketplace Connected'}</span>
                 </span>
               </div>
             </div>
@@ -322,9 +376,9 @@ export const HomePage: React.FC<HomePageProps> = ({
                     }}
                   >
                     <MenuItem value="All" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>All Tamil Nadu</MenuItem>
-                    {LOCATIONS_DATA.map(loc => (
+                    {locationList.map(loc => (
                       <MenuItem key={loc.id} value={loc.name} sx={{ fontSize: '0.85rem' }}>
-                        {loc.name}
+                        {lang === 'ta' ? loc.tamilName : loc.name}
                       </MenuItem>
                     ))}
                   </Select>
@@ -365,7 +419,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     }}
                   >
                     <MenuItem value="all" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>All Categories</MenuItem>
-                    {CATEGORIES_DATA.map(cat => (
+                    {categoryList.map(cat => (
                       <MenuItem key={cat.id} value={cat.id} sx={{ fontSize: '0.85rem' }}>
                         {lang === 'ta' ? cat.tamilName : cat.name}
                       </MenuItem>
@@ -615,7 +669,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Asymmetric Bento Layout: Top 2 Flagship Categories Larger, Next 4 Balanced */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
-            {CATEGORIES_DATA.map((category, index) => {
+            {categoryList.map((category, index) => {
               const isLeadCategory = index < 2;
               return (
                 <motion.div
@@ -724,6 +778,34 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {isFeaturedLoading ? (
             <PropertyGridSkeleton count={3} layout="grid" />
+          ) : properties.length === 0 ? (
+            <div className="text-center py-16 px-4 bg-[#FAF8F2] rounded-3xl border border-dashed border-stone-300">
+              <div className="w-16 h-16 rounded-full bg-[#013E18]/10 text-[#013E18] flex items-center justify-center mx-auto mb-4">
+                <AutoAwesomeIcon sx={{ fontSize: 28, color: '#C99325' }} />
+              </div>
+              <h3 className="text-lg font-bold text-[#18241B]">
+                {lang === 'ta' ? 'புதிய சரிபார்க்கப்பட்ட சொத்துக்கள் சேர்க்கப்படுகின்றன' : 'Curating Verified Properties'}
+              </h3>
+              <p className="text-xs text-stone-600 max-w-md mx-auto mt-2 leading-relaxed">
+                {lang === 'ta'
+                  ? 'தற்போது புதிய நேரடி மனைகள் மற்றும் வில்லாக்கள் சரிபார்க்கப்பட்டு வருகின்றன. உங்களது சொத்தினை சந்தைப்படுத்த கீழே கிளிக் செய்யவும்.'
+                  : 'New DTCP/CMDA verified land parcels and luxury homes are currently being verified by our advisory desk. Be the first to list with zero buyer brokerage.'}
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={() => onNavigate('post-property')}
+                  className="px-5 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] font-bold text-xs hover:bg-[#00280f] shadow-md transition-all cursor-pointer"
+                >
+                  {lang === 'ta' ? 'சொத்து சேர்க்க' : 'Post a Property'}
+                </button>
+                <button
+                  onClick={() => onNavigate('contact')}
+                  className="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs hover:bg-white transition-all cursor-pointer"
+                >
+                  {lang === 'ta' ? 'ஆலோசகரைத் தொடர்புகொள்ள' : 'Connect with Advisory Desk'}
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="space-y-8">
               {/* Distinctive Featured Lead Listing in Horizontal Editorial Layout */}
@@ -897,7 +979,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             {/* Distinct Regional Visual Mosaic: 2 Metro Anchors + 8 Regional Corridors */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {LOCATIONS_DATA.map((loc, idx) => {
+              {locationList.map((loc, idx) => {
                 const isMetroAnchor = idx < 2;
                 return (
                   <motion.div
@@ -1095,66 +1177,6 @@ export const HomePage: React.FC<HomePageProps> = ({
             <EmiCalculator initialPrice={4500000} lang={lang} />
           </div>
 
-        </div>
-      </section>
-
-      {/* ===================================================================== */}
-      {/* 9. BUYER EXPERIENCE HIGHLIGHTS (ILLUSTRATIVE DEMO TESTIMONIALS)       */}
-      {/* ===================================================================== */}
-      <section className="py-20 bg-white border-t border-stone-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.15em] px-3 py-1 rounded-full bg-[#F5F2E9] text-[#013E18] border border-stone-200 mb-3">
-              Demonstration Showcase Feedback
-            </span>
-            <h2 className="text-3xl font-extrabold text-[#18241B]">
-              Buyer Experience Highlights
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                name: 'K. Rajasekaran',
-                location: 'Coimbatore, Saravanampatti',
-                property: '5.5 Cents Villa Plot',
-                comment: 'Clear reporting of the 40ft blacktop frontage and verified DTCP permit numbers gave our family total confidence prior to visiting the site.',
-                rating: 5
-              },
-              {
-                name: 'Ananya & Karthik',
-                location: 'Chennai, OMR Corridor',
-                property: '3BHK Gated Apartment',
-                comment: 'Comparing specifications side-by-side made our financial decision straightforward. Direct corporate desk transparency is refreshing.',
-                rating: 5
-              },
-              {
-                name: 'V. Balasubramaniam',
-                location: 'Tiruppur, Avinashi Junction',
-                property: '4.5 Cents Residential Plot',
-                comment: 'Accurate cent-to-sqft clarity and responsive site walkthrough coordination helped us finalize within two weeks.',
-                rating: 5
-              }
-            ].map((item, i) => (
-              <div key={i} className="bg-[#FAF8F2] p-7 rounded-3xl border border-stone-200/70 flex flex-col justify-between relative">
-                <FormatQuoteIcon sx={{ fontSize: 32, color: 'rgba(201, 147, 37, 0.25)', position: 'absolute', top: 24, right: 24 }} />
-                <div>
-                  <div className="flex items-center gap-1 mb-4">
-                    {Array.from({ length: item.rating }).map((_, r) => (
-                      <StarIcon key={r} sx={{ fontSize: 14, color: '#C99325' }} />
-                    ))}
-                  </div>
-                  <p className="text-sm text-stone-700 leading-relaxed font-medium">
-                    "{item.comment}"
-                  </p>
-                </div>
-                <div className="mt-6 pt-4 border-t border-stone-200/70">
-                  <div className="font-extrabold text-sm text-[#18241B]">{item.name}</div>
-                  <div className="text-[11px] text-stone-500 mt-0.5">{item.location} · {item.property}</div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 

@@ -188,11 +188,10 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
 
               {/* Top Editorial Badges */}
               <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                <Badge type="demo" size="md" />
                 {property.ownershipType === 'company' ? (
                   <Badge type="company" size="md" />
                 ) : (
-                  <Badge type="third-party" label={property.seller.badgeTitle} size="md" />
+                  <Badge type="third-party" label={property.seller?.badgeTitle} size="md" />
                 )}
                 {property.featured && <Badge type="featured" size="md" />}
               </div>
@@ -604,14 +603,14 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                 </div>
               </div>
 
-              {/* Demo Listing Disclaimer Banner */}
-              <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 text-xs text-amber-900 leading-relaxed">
-                <div className="font-bold text-amber-950 flex items-center gap-1.5 mb-1">
-                  <VerifiedUserIcon sx={{ fontSize: 16, color: '#b45309' }} />
-                  <span>CEO Presentation Demo Listing</span>
+              {/* Verification & Trust Advisory */}
+              <div className="bg-[#FAF8F2] border border-[#ECE7DA] rounded-3xl p-5 text-xs text-[#536458] leading-relaxed">
+                <div className="font-bold text-[#013E18] flex items-center gap-1.5 mb-1">
+                  <VerifiedUserIcon sx={{ fontSize: 16, color: '#013E18' }} />
+                  <span>Verified Listing Standard</span>
                 </div>
-                <p className="text-[11px] text-amber-800">
-                  Real photographs are illustrative media. All specifications, seller names, and prices are demonstration records prepared for executive evaluation.
+                <p className="text-[11px] text-[#536458]">
+                  Grounds & Gates conducts legal title verification and zoning checks on listed assets. RERA and local planning authority approvals are cross-referenced before contract facilitation.
                 </p>
               </div>
 

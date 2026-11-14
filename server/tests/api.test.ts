@@ -12,6 +12,8 @@ import { Booking } from '../src/models/Booking.js';
 import { AuditLog } from '../src/models/AuditLog.js';
 import { Task } from '../src/models/Task.js';
 import { SiteVisit } from '../src/models/SiteVisit.js';
+import { MasterItem } from '../src/models/MasterItem.js';
+import { WebContent } from '../src/models/WebContent.js';
 
 let app: any;
 let request: any;
@@ -328,9 +330,10 @@ test('7. Lead Duplicate Detection and Merge', async () => {
 });
 
 test('8. End-to-End CRM Flow: Lead -> Site Visit -> Booking -> Property State Sync', async () => {
-  // 1. Fetch available property
-  const propRes = await request.get('/api/v1/properties?limit=1');
+  // 1. Fetch available property (supporting both live & sample in test environment)
+  const propRes = await request.get('/api/v1/properties?limit=1&includeSample=true');
   assert.strictEqual(propRes.status, 200);
+  assert.ok(propRes.body.data.length > 0);
   testPropertyId = propRes.body.data[0].referenceId;
 
   // 2. Schedule site visit
@@ -654,4 +657,293 @@ test('16. Append-Only Audit Log Querying & Filtering', async () => {
   assert.ok(Array.isArray(auditRes.body.data));
   assert.ok(auditRes.body.data.length > 0);
   assert.ok(auditRes.body.data.every((a: any) => a.module === 'TEAM'));
+});
+
+test('17. Reversible Sample Data Provenance & Live API Exclusion', async () => {
+  // Query live properties endpoint without includeSample flag
+  const liveRes = await request.get('/api/v1/properties');
+  assert.strictEqual(liveRes.status, 200);
+  // All returned records must NOT be sample fixtures
+  assert.ok(liveRes.body.data.every((p: any) => p.isSample !== true));
+
+  // Query provenance audit endpoint
+  const provRes = await request
+    .get('/api/v1/analytics/provenance')
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(provRes.status, 200);
+  assert.ok(provRes.body.data.properties.sample >= 32);
+  assert.strictEqual(provRes.body.data.properties.ambiguous, 0);
+});
+
+test('18. Masters: Public Safe Lookups & Batch Endpoint', async () => {
+  // Batch lookup for categories and districts
+  const batchRes = await request
+    .get('/api/v1/masters/public/batch?types=property_category,district,amenity');
+  assert.strictEqual(batchRes.status, 200);
+  assert.ok(batchRes.body.data);
+  assert.ok(Array.isArray(batchRes.body.data.property_category));
+  assert.ok(Array.isArray(batchRes.body.data.district));
+  assert.ok(batchRes.body.data.property_category.length > 0);
+  assert.ok(batchRes.body.data.district.length > 0);
+
+  // Single public lookup for districts
+  const distRes = await request.get('/api/v1/masters/public?type=district');
+  assert.strictEqual(distRes.status, 200);
+  assert.ok(Array.isArray(distRes.body.data));
+  const cbe = distRes.body.data.find((d: any) => d.code === 'coimbatore');
+  assert.ok(cbe);
+  assert.strictEqual(cbe.name, 'Coimbatore');
+  assert.strictEqual(cbe.nameTa, 'கோயம்புத்தூர்');
+});
+
+test('19. Masters: Create Locality with Parent District & Dependent Filtering', async () => {
+  // Create a new custom locality under Coimbatore
+  const newLocRes = await request
+    .post('/api/v1/masters/locality')
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({
+      code: 'test-neelambur',
+      name: 'Neelambur Bypass',
+      nameTa: 'நீலம்பூர் பைபாஸ்',
+      parentCode: 'coimbatore',
+      displayOrder: 99,
+      metadata: { pinCode: '641062', zone: 'East Coimbatore' }
+    });
+  assert.strictEqual(newLocRes.status, 201);
+  assert.strictEqual(newLocRes.body.data.code, 'test-neelambur');
+  assert.strictEqual(newLocRes.body.data.parentCode, 'coimbatore');
+
+  // Verify dependent child filtering by parentCode
+  const filteredRes = await request
+    .get('/api/v1/masters?type=locality&parentCode=coimbatore')
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(filteredRes.status, 200);
+  const found = filteredRes.body.data.items.find((l: any) => l.code === 'test-neelambur');
+  assert.ok(found);
+  assert.strictEqual(found.metadata.pinCode, '641062');
+
+  // Verify it does NOT appear when querying under Chennai
+  const chennaiRes = await request
+    .get('/api/v1/masters?type=locality&parentCode=chennai')
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(chennaiRes.status, 200);
+  const notFound = chennaiRes.body.data.items.find((l: any) => l.code === 'test-neelambur');
+  assert.strictEqual(notFound, undefined);
+});
+
+test('20. Masters: Create & Update Amenity with Bilingual Fields', async () => {
+  // Create an amenity
+  const amenityRes = await request
+    .post('/api/v1/masters/amenity')
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({
+      code: 'ev-charging-station',
+      name: 'EV Fast Charging Station',
+      nameTa: 'மின்னூட்டு நிலையம்',
+      description: 'Dedicated 50kW fast charger for electric vehicles.',
+      displayOrder: 25,
+      metadata: { icon: 'EvStationIcon' }
+    });
+  assert.strictEqual(amenityRes.status, 201);
+  const amenityId = amenityRes.body.data._id;
+
+  // Update its description and Tamil name
+  const updateRes = await request
+    .put(`/api/v1/masters/amenity/${amenityId}`)
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({
+      name: 'Ultra EV Fast Charging Station',
+      nameTa: 'அதிவேக மின்னூட்டு நிலையம்',
+      description: 'Updated dedicated 60kW fast charger.',
+    });
+  assert.strictEqual(updateRes.status, 200);
+  assert.strictEqual(updateRes.body.data.name, 'Ultra EV Fast Charging Station');
+  assert.strictEqual(updateRes.body.data.nameTa, 'அதிவேக மின்னூட்டு நிலையம்');
+});
+
+test('21. Masters: Deactivate Lead Source and Verify Exclusion from Public APIs', async () => {
+  // Find whatsapp lead source
+  const findRes = await request
+    .get('/api/v1/masters?type=lead_source&search=whatsapp')
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(findRes.status, 200);
+  assert.ok(findRes.body.data.items.length > 0);
+  const sourceItem = findRes.body.data.items[0];
+
+  // Toggle status to Inactive (PATCH /api/v1/masters/:type/:id/status)
+  const toggleRes = await request
+    .patch(`/api/v1/masters/lead_source/${sourceItem._id}/status`)
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({ isActive: false });
+  assert.strictEqual(toggleRes.status, 200);
+  assert.strictEqual(toggleRes.body.data.isActive, false);
+
+  // Verify public endpoint excludes this inactive master
+  const pubRes = await request.get('/api/v1/masters/public?type=lead_source');
+  assert.strictEqual(pubRes.status, 200);
+  const existsInPublic = pubRes.body.data.some((s: any) => s.code === sourceItem.code);
+  assert.strictEqual(existsInPublic, false);
+
+  // Re-activate it for subsequent test safety
+  await request
+    .patch(`/api/v1/masters/lead_source/${sourceItem._id}/status`)
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({ isActive: true });
+});
+
+test('22. Masters: Hard Delete Blocked on Referenced Master with Usage Counts', async () => {
+  // 1. Create a custom non-system parent district
+  const customDistRes = await request
+    .post('/api/v1/masters/district')
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({
+      code: 'custom-delta-region',
+      name: 'Custom Delta Region',
+      nameTa: 'டெல்டா மண்டலம்',
+      displayOrder: 80,
+      isSystem: false,
+    });
+  assert.strictEqual(customDistRes.status, 201);
+  const customDist = customDistRes.body.data;
+
+  // 2. Create a child locality referencing this parent code
+  const childLocRes = await request
+    .post('/api/v1/masters/locality')
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({
+      code: 'kumbakonam-town',
+      name: 'Kumbakonam Town',
+      nameTa: 'கும்பகோணம்',
+      parentCode: customDist.code,
+      displayOrder: 1,
+      isSystem: false,
+    });
+  assert.strictEqual(childLocRes.status, 201);
+
+  // 3. Query usage endpoint directly
+  const usageRes = await request
+    .get(`/api/v1/masters/district/${customDist._id}/usage`)
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(usageRes.status, 200);
+  assert.strictEqual(usageRes.body.data.totalUsage, 1);
+  assert.strictEqual(usageRes.body.data.references.childMasters, 1);
+
+  // 4. Attempt hard delete on this actively referenced parent master
+  const delRes = await request
+    .delete(`/api/v1/masters/district/${customDist._id}`)
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  // Must return 409 Conflict with detailed error message
+  assert.strictEqual(delRes.status, 409);
+  assert.ok(delRes.body.message.includes('Cannot delete'));
+  assert.ok(delRes.body.message.includes('actively referenced in 1 records'));
+});
+
+test('23. Masters: System Master Protected from Deletion & Code Mutation', async () => {
+  // System master item (e.g. sale transaction type)
+  const txRes = await request
+    .get('/api/v1/masters?type=transaction_type&search=buy')
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(txRes.status, 200);
+  const buyTx = txRes.body.data.items.find((t: any) => t.code === 'buy');
+  assert.ok(buyTx);
+  assert.strictEqual(buyTx.isSystem, true);
+
+  // Attempting to delete a system master must return 400 Bad Request
+  const delSysRes = await request
+    .delete(`/api/v1/masters/transaction_type/${buyTx._id}`)
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(delSysRes.status, 400);
+  assert.ok(delSysRes.body.message.includes('cannot be deleted'));
+
+  // Attempting to mutate stable code of a system master must fail
+  const renameRes = await request
+    .put(`/api/v1/masters/transaction_type/${buyTx._id}`)
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({ code: 'mutated-buy-code' });
+  assert.strictEqual(renameRes.status, 400);
+  assert.ok(renameRes.body.message.includes('Cannot alter the stable system code'));
+});
+
+test('24. WebContent: Draft vs. Published Separation', async () => {
+  // Get public version of homepage_hero
+  const initialPubRes = await request.get('/api/v1/content/public/homepage_hero');
+  assert.strictEqual(initialPubRes.status, 200);
+  const originalTitle = initialPubRes.body.data.title;
+
+  // Save a draft update as Super Admin
+  const draftRes = await request
+    .put('/api/v1/content/homepage_hero')
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({
+      title: 'Unpublished Draft Title - Architects of Trust',
+      titleTa: 'வெளியிடப்படாத வரைவு தலைப்பு',
+      subtitle: 'Exclusive draft subtext that is not live yet.',
+      content: { headlineBadge: 'Draft Exclusive 2026' }
+    });
+  assert.strictEqual(draftRes.status, 200);
+  assert.strictEqual(draftRes.body.data.status, 'draft');
+  assert.strictEqual(draftRes.body.data.draftContent.title, 'Unpublished Draft Title - Architects of Trust');
+
+  // Verify public endpoint still serves the ORIGINAL published content
+  const cachedPubRes = await request.get('/api/v1/content/public/homepage_hero');
+  assert.strictEqual(cachedPubRes.status, 200);
+  assert.strictEqual(cachedPubRes.body.data.title, originalTitle);
+  assert.notStrictEqual(cachedPubRes.body.data.title, 'Unpublished Draft Title - Architects of Trust');
+});
+
+test('25. WebContent: Publish to Live & Discard Draft Workflows', async () => {
+  // Publish the draft created in previous test
+  const pubRes = await request
+    .post('/api/v1/content/homepage_hero/publish')
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(pubRes.status, 200);
+  assert.strictEqual(pubRes.body.data.status, 'published');
+  assert.strictEqual(pubRes.body.data.title, 'Unpublished Draft Title - Architects of Trust');
+
+  // Verify public endpoint NOW returns the updated published content
+  const liveRes = await request.get('/api/v1/content/public/homepage_hero');
+  assert.strictEqual(liveRes.status, 200);
+  assert.strictEqual(liveRes.body.data.title, 'Unpublished Draft Title - Architects of Trust');
+
+  // Test Discard Draft Workflow: create another draft then discard it
+  await request
+    .put('/api/v1/content/homepage_hero')
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({ title: 'Temporary Mistake Title' });
+
+  const discardRes = await request
+    .post('/api/v1/content/homepage_hero/discard')
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(discardRes.status, 200);
+  assert.strictEqual(discardRes.body.data.status, 'published');
+  assert.strictEqual(discardRes.body.data.draftContent, null);
+});
+
+test('26. Masters: Reconciliation Dry-Run Migration Report', async () => {
+  const reportRes = await request
+    .get('/api/v1/masters/migration/report')
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(reportRes.status, 200);
+  assert.strictEqual(reportRes.body.data.isDryRun, true);
+  assert.ok(reportRes.body.data.totalMastersSeeded > 0);
+  assert.ok(reportRes.body.data.totalContentSectionsSeeded > 0);
+  assert.ok(reportRes.body.data.propertiesReconciled.total >= 0);
+});
+
+test('27. Masters & Content RBAC: Anonymous & Unauthorized Access Denied', async () => {
+  // Anonymous GET protected endpoint -> 401
+  const anonRes = await request.get('/api/v1/masters');
+  assert.strictEqual(anonRes.status, 401);
+
+  // Sales Executive cannot delete a master -> 403
+  const execDelRes = await request
+    .delete('/api/v1/masters/property_category/dummy-id')
+    .set('Authorization', `Bearer ${executive1Token}`);
+  assert.strictEqual(execDelRes.status, 403);
+
+  // Sales Executive cannot publish web content -> 403
+  const execPubRes = await request
+    .post('/api/v1/content/homepage_hero/publish')
+    .set('Authorization', `Bearer ${executive1Token}`);
+  assert.strictEqual(execPubRes.status, 403);
 });

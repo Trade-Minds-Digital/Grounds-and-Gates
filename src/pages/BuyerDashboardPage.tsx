@@ -3,7 +3,7 @@ import { Property, LanguageCode, EnquirySubmission } from '../types/property';
 import { translations } from '../i18n/translations';
 import { formatPriceINR } from '../utils/propertyUtils';
 import { PropertyCard } from '../components/property/PropertyCard';
-import { useDemoState } from '../context/DemoStateContext';
+import { useAppState } from '../context/AppStateContext';
 import {
   Container,
   Box,
@@ -50,7 +50,7 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({
   onToggleCompare
 }) => {
   const t = translations[lang];
-  const { siteVisits, bookings } = useDemoState();
+  const { siteVisits, bookings } = useAppState();
   const [activeTab, setActiveTab] = useState<'overview' | 'enquiries' | 'saved' | 'settings'>('overview');
   const [preferencesSaved, setPreferencesSaved] = useState(false);
 
@@ -220,7 +220,9 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({
             <Paper elevation={0} sx={{ p: 2, borderRadius: '16px', bgcolor: '#FFFFFF', border: '1px solid #ECE7DA', display: { xs: 'none', lg: 'flex' }, gap: 1.5, alignItems: 'flex-start' }}>
               <VerifiedUserIcon sx={{ fontSize: 18, color: '#013E18', flexShrink: 0, mt: 0.3 }} />
               <Typography variant="caption" sx={{ color: '#536458', fontSize: '0.72rem', lineHeight: 1.5 }}>
-                {t.buyerDashboard.demoAnalyticsNote}
+                {lang === 'ta'
+                  ? 'நேரடி சி.ஆர்.எம் தொடர்பு: உங்கள் தளப் பார்வை கோரிக்கைகள் மற்றும் சேமிக்கப்பட்ட பட்டியல்கள் அனைத்தும் கிரவுண்ட்ஸ் அண்ட் கேட்ஸ் ஆலோசகர் தளத்துடன் இணைக்கப்பட்டுள்ளன.'
+                  : 'Live Client Desk: All walkthrough requests and saved properties connect directly with Grounds & Gates property advisors.'}
               </Typography>
             </Paper>
           </Box>

@@ -4,7 +4,7 @@ import { Permission } from '../models/Permission.js';
 export const seedRolesAndPermissions = async () => {
   console.log('🌱 Seeding Roles & Permissions...');
 
-  const modules = ['properties', 'projects', 'developers', 'leads', 'customers', 'employees', 'bookings', 'site-visits', 'analytics', 'settings'];
+  const modules = ['properties', 'projects', 'developers', 'leads', 'customers', 'employees', 'bookings', 'site-visits', 'analytics', 'settings', 'masters', 'content'];
   const actions: Array<'view' | 'create' | 'edit' | 'delete' | 'approve' | 'reject' | 'publish' | 'assign' | 'export'> = [
     'view', 'create', 'edit', 'delete', 'approve', 'reject', 'publish', 'assign', 'export',
   ];

@@ -71,6 +71,7 @@ export const seedProperties = async () => {
         verified: Boolean((p.reraId && p.reraId.trim().length > 0) || (p.approvalAuthority && ['DTCP', 'CMDA', 'RERA'].includes(p.approvalAuthority) && p.ownershipType === 'company')),
         featured: p.featured,
         published: true,
+        isSample: true,
         viewsCount: p.viewsCount || 250,
         enquiriesCount: p.enquiriesCount || 10,
       },

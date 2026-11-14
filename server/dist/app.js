@@ -25,6 +25,8 @@ import taskRoutes from './modules/tasks/tasks.routes.js';
 import auditLogRoutes from './modules/audit-logs/auditLogs.routes.js';
 import settingsRoutes from './modules/settings/settings.routes.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
+import mastersRoutes from './modules/masters/masters.routes.js';
+import contentRoutes from './modules/content/content.routes.js';
 export const createApp = () => {
     const app = express();
     // Security Middleware
@@ -77,6 +79,8 @@ export const createApp = () => {
     apiV1.use('/audit-logs', auditLogRoutes);
     apiV1.use('/settings', settingsRoutes);
     apiV1.use('/reports', reportsRoutes);
+    apiV1.use('/masters', mastersRoutes);
+    apiV1.use('/content', contentRoutes);
     app.use('/api/v1', apiV1);
     // Legacy /api fallback prefix support
     app.use('/api', apiV1);

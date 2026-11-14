@@ -12,11 +12,13 @@ export interface INotification extends Document {
   timestamp: string;
   actionView?: string;
   actionParams?: Record<string, any>;
+  isSample?: boolean;
 }
 
 const NotificationSchema = new Schema<INotification>(
   {
     referenceId: { type: String, required: true, unique: true, trim: true },
+    isSample: { type: Boolean, default: false, index: true },
     recipient: { type: Schema.Types.ObjectId, ref: 'User' },
     title: { type: String, required: true, trim: true },
     message: { type: String, required: true },

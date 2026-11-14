@@ -10,8 +10,11 @@ import { AuthenticatedRequest } from '../../middleware/auth.middleware.js';
 
 export const getBookings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { status } = req.query as Record<string, string>;
+    const { status, includeSample } = req.query as Record<string, string>;
     const filter: any = {};
+    if (includeSample !== 'true') {
+      filter.isSample = { $ne: true };
+    }
     if (status && status !== 'all') filter.status = status;
 
     // Sales Executive ownership isolation
