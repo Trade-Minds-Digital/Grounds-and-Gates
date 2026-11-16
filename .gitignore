@@ -5,3 +5,7 @@ coverage/
 *.log
 .env*
 !.env.example
+serviceAccountKey.json
+*service-account*.json
+*serviceAccount*.json
+server/uploads/

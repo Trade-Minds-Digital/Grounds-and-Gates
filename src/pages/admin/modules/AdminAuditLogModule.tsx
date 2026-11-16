@@ -5,16 +5,23 @@ import {
   Typography,
   Chip,
   CircularProgress,
-  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Button,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TablePagination,
 } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ShieldIcon from '@mui/icons-material/Shield';
+
 import { api } from '../../../services/api';
 import { AdminUser, CrmAuditLog } from '../../../types/crm';
 import { LanguageCode } from '../../../types/property';
@@ -28,6 +35,8 @@ export const AdminAuditLogModule: React.FC<AdminAuditLogModuleProps> = ({ curren
   const [logs, setLogs] = useState<CrmAuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [moduleFilter, setModuleFilter] = useState('all');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
 
   const fetchLogs = async () => {
     setIsLoading(true);
@@ -47,14 +56,33 @@ export const AdminAuditLogModule: React.FC<AdminAuditLogModuleProps> = ({ curren
     fetchLogs();
   }, [moduleFilter]);
 
+  const paginatedLogs = logs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+      {/* Header Bar */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          gap: 1.5,
+          mb: 2.5,
+        }}
+      >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: '#18241B' }}>
-            {lang === 'ta' ? 'பாதுகாப்பு & தணிக்கை பதிவு' : 'Security & Administrative Audit Log'}
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#536458', mt: 0.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#18241B', fontSize: '1.25rem' }}>
+              {lang === 'ta' ? 'பாதுகாப்பு & தணிக்கை பதிவு' : 'Security & Administrative Audit Log'}
+            </Typography>
+            <Chip
+              label={`${logs.length} Immutable Records`}
+              size="small"
+              sx={{ bgcolor: '#FAF8F2', color: '#013E18', fontWeight: 700, fontSize: '0.72rem', height: 22 }}
+            />
+          </Box>
+          <Typography variant="body2" sx={{ color: '#536458', mt: 0.25, fontSize: '0.82rem' }}>
             Append-only tamper-evident record of permissions, stage updates, financial adjustments, and logins.
           </Typography>
         </Box>
@@ -62,23 +90,33 @@ export const AdminAuditLogModule: React.FC<AdminAuditLogModuleProps> = ({ curren
         <Button
           variant="outlined"
           size="small"
-          startIcon={<RefreshIcon />}
+          startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
           onClick={fetchLogs}
-          sx={{ borderRadius: '10px', textTransform: 'none', color: '#013E18', borderColor: 'rgba(24, 36, 27, 0.2)' }}
+          sx={{
+            borderRadius: '8px',
+            textTransform: 'none',
+            color: '#013E18',
+            borderColor: 'rgba(24, 36, 27, 0.2)',
+            fontWeight: 700,
+            fontSize: '0.80rem',
+            height: 36,
+            px: 1.5,
+            '&:hover': { borderColor: '#013E18', bgcolor: 'rgba(1, 62, 24, 0.04)' },
+          }}
         >
           Refresh Logs
         </Button>
       </Box>
 
       {/* Filter toolbar */}
-      <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: '16px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)', display: 'flex', gap: 2 }}>
-        <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel>Filter by Module</InputLabel>
+      <Paper elevation={0} sx={{ p: 1.75, mb: 2.5, borderRadius: '14px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)', display: 'flex', gap: 2, alignItems: 'center' }}>
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel sx={{ fontSize: '0.84rem' }}>Filter by Module</InputLabel>
           <Select
             value={moduleFilter}
             label="Filter by Module"
-            onChange={(e) => setModuleFilter(e.target.value)}
-            sx={{ borderRadius: '10px' }}
+            onChange={(e) => { setModuleFilter(e.target.value); setPage(0); }}
+            sx={{ borderRadius: '8px', fontSize: '0.84rem' }}
           >
             <MenuItem value="all">All Modules</MenuItem>
             <MenuItem value="AUTH">AUTH (Logins & Passwords)</MenuItem>
@@ -94,71 +132,87 @@ export const AdminAuditLogModule: React.FC<AdminAuditLogModuleProps> = ({ curren
       {/* Audit Log Table */}
       {isLoading ? (
         <Box sx={{ py: 8, textAlign: 'center' }}>
-          <CircularProgress size={36} sx={{ color: '#013E18' }} />
+          <CircularProgress size={32} sx={{ color: '#013E18' }} />
         </Box>
+      ) : logs.length === 0 ? (
+        <Paper elevation={0} sx={{ p: 5, textAlign: 'center', borderRadius: '14px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)' }}>
+          <ShieldIcon sx={{ fontSize: 44, color: '#9CA3AF', mb: 1.5 }} />
+          <Typography variant="body1" sx={{ fontWeight: 700, color: '#18241B', mb: 0.5 }}>
+            No audit records matching this filter
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#536458' }}>
+            All administrative mutations and RBAC events will be captured here in real-time.
+          </Typography>
+        </Paper>
       ) : (
-        <Paper elevation={1} sx={{ borderRadius: '16px', overflow: 'hidden' }}>
-          <Box sx={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#FAF8F2', borderBottom: '1px solid rgba(24, 36, 27, 0.08)' }}>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Timestamp (IST)</th>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Actor</th>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Module</th>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Action Code</th>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Changes & Metadata</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => (
-                  <tr key={log.id || (log as any)._id} style={{ borderBottom: '1px solid rgba(24, 36, 27, 0.05)' }}>
-                    <td style={{ padding: '14px 18px', fontSize: '0.8rem', color: '#536458', whiteSpace: 'nowrap' }}>
+        <Paper elevation={0} sx={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(24, 36, 27, 0.08)', bgcolor: '#FFFFFF' }}>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#FAF8F2' }}>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Timestamp (IST)</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Actor</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Module</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Action Code</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Changes & Metadata</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {paginatedLogs.map((log) => (
+                  <TableRow key={log.id || (log as any)._id} hover sx={{ '&:last-child td': { border: 0 } }}>
+                    <TableCell sx={{ py: 1.5, fontSize: '0.76rem', color: '#536458', whiteSpace: 'nowrap' }}>
                       {new Date(log.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
-                    </td>
-                    <td style={{ padding: '14px 18px' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#18241B' }}>
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#18241B', fontSize: '0.82rem' }}>
                         {log.user?.fullName || log.userEmail || 'System / CLI'}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: '#8B6413' }}>
+                      <Typography variant="caption" sx={{ color: '#8B6413', fontSize: '0.70rem' }}>
                         {log.user?.role || 'authorized-actor'}
                       </Typography>
-                    </td>
-                    <td style={{ padding: '14px 18px' }}>
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5 }}>
                       <Chip
                         label={log.module}
                         size="small"
-                        sx={{ fontWeight: 700, fontSize: '0.7rem', bgcolor: '#FAF8F2' }}
+                        sx={{ fontWeight: 700, fontSize: '0.68rem', height: 20, bgcolor: '#FAF8F2', border: '1px solid rgba(24, 36, 27, 0.1)' }}
                       />
-                    </td>
-                    <td style={{ padding: '14px 18px' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 800, color: '#013E18', fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 800, color: '#013E18', fontFamily: 'monospace', fontSize: '0.76rem' }}>
                         {log.action}
                       </Typography>
-                    </td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.8rem', color: '#536458', maxWidth: 380 }}>
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5, fontSize: '0.76rem', color: '#536458', maxWidth: 380 }}>
                       {log.changes ? (
-                        <pre style={{ margin: 0, fontSize: '0.75rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                        <pre style={{ margin: 0, fontSize: '0.72rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap', maxHeight: 80, overflowY: 'auto' }}>
                           {JSON.stringify(log.changes, null, 1)}
                         </pre>
                       ) : (
                         `Entity ID: ${log.entityId || 'N/A'}`
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-                {logs.length === 0 && (
-                  <tr>
-                    <td colSpan={5} style={{ padding: '36px', textAlign: 'center', color: '#9CA3AF' }}>
-                      No audit records found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </Box>
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            rowsPerPageOptions={[10, 15, 30]}
+            component="div"
+            count={logs.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            sx={{ borderTop: '1px solid rgba(24, 36, 27, 0.08)' }}
+          />
         </Paper>
       )}
     </Box>
   );
 };
-

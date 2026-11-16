@@ -18,7 +18,7 @@ export const getLeads = async (req: AuthenticatedRequest, res: Response): Promis
     if (stage && stage !== 'all') filter.stage = stage;
     if (priority && priority !== 'all') filter.priority = priority;
 
-    // Sales Executive ownership isolation: Only see assigned leads
+    // Role-based record scoping
     const userRole = req.user?.role;
     const userId = req.user?.userId;
     if (userRole === 'sales-executive' && userId) {
@@ -26,6 +26,18 @@ export const getLeads = async (req: AuthenticatedRequest, res: Response): Promis
         { assignedEmployeeId: userId },
         { assignedEmployee: userId },
       ];
+    } else if (userRole === 'seller' && userId) {
+      // Seller scoping: only leads associated with the seller's owned properties
+      const sellerProperties = await Property.find({
+        $or: [
+          { ownerId: userId },
+          { 'seller.email': req.user?.email },
+        ],
+      }).select('_id referenceId slug');
+      const propIdentifiers = sellerProperties
+        .flatMap((p) => [p._id.toString(), (p as any).referenceId, p.slug])
+        .filter(Boolean);
+      filter.propertyId = { $in: propIdentifiers };
     } else if (assignedEmployeeId) {
       filter.assignedEmployeeId = assignedEmployeeId;
     }
@@ -58,7 +70,17 @@ export const getLeads = async (req: AuthenticatedRequest, res: Response): Promis
       Lead.countDocuments(filter),
     ]);
 
-    successResponse(res, leads, 'Leads fetched successfully', 200, {
+    const sanitizedLeads = userRole === 'seller'
+      ? leads.map((l: any) => {
+          const obj = l.toObject ? l.toObject() : { ...l };
+          delete obj.notes;
+          delete obj.assignedEmployee;
+          delete obj.assignedEmployeeId;
+          return obj;
+        })
+      : leads;
+
+    successResponse(res, sanitizedLeads, 'Leads fetched successfully', 200, {
       total,
       page: pageNum,
       limit: limitNum,
@@ -84,13 +106,31 @@ export const getLeadById = async (req: AuthenticatedRequest, res: Response): Pro
       return;
     }
 
-    // Sales Executive record ownership check: Cannot update another executive's lead
-    if (req.user?.role === 'sales-executive') {
-      const isOwner = lead.assignedEmployeeId === req.user.userId || (lead.assignedEmployee && (lead.assignedEmployee as any).toString() === req.user.userId);
-      if (!isOwner) {
-        errorResponse(res, 'Access Denied: You cannot modify another executive\'s lead.', 403);
+    // Seller ownership check: Seller can only update leads for properties they own
+    if (req.user?.role === 'seller') {
+      const sellerProperties = await Property.find({
+        $or: [
+          { ownerId: req.user.userId },
+          { createdBy: req.user.userId },
+          ...(req.user.email ? [{ 'seller.email': req.user.email }] : []),
+        ],
+      }).select('_id referenceId slug');
+      const propIdentifiers = sellerProperties
+        .flatMap((p) => [p._id.toString(), (p as any).referenceId, p.slug])
+        .filter(Boolean);
+
+      const belongsToSeller = propIdentifiers.includes(lead.propertyId) || (lead.property && propIdentifiers.includes(lead.property.toString()));
+      if (!belongsToSeller) {
+        errorResponse(res, 'Access Denied: You do not have permission to view leads for listings you do not own.', 403);
         return;
       }
+
+      const leadObj = lead.toObject ? lead.toObject() : { ...lead };
+      delete leadObj.notes;
+      delete leadObj.assignedEmployee;
+      delete leadObj.assignedEmployeeId;
+      successResponse(res, { lead: leadObj, activities: [] });
+      return;
     }
 
     // Sales Executive record ownership check: Cannot access another executive's lead by ID
@@ -172,6 +212,26 @@ export const updateLeadStage = async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
+    // Seller ownership check: Seller can only update leads for properties they own
+    if (req.user?.role === 'seller') {
+      const sellerProperties = await Property.find({
+        $or: [
+          { ownerId: req.user.userId },
+          { createdBy: req.user.userId },
+          ...(req.user.email ? [{ 'seller.email': req.user.email }] : []),
+        ],
+      }).select('_id referenceId slug');
+      const propIdentifiers = sellerProperties
+        .flatMap((p) => [p._id.toString(), (p as any).referenceId, p.slug])
+        .filter(Boolean);
+
+      const belongsToSeller = propIdentifiers.includes(lead.propertyId) || (lead.property && propIdentifiers.includes(lead.property.toString()));
+      if (!belongsToSeller) {
+        errorResponse(res, 'Access Denied: You do not have permission to update leads for listings you do not own.', 403);
+        return;
+      }
+    }
+
     // Sales Executive record ownership check: Cannot update another executive's lead
     if (req.user?.role === 'sales-executive') {
       const isOwner = lead.assignedEmployeeId === req.user.userId || (lead.assignedEmployee && (lead.assignedEmployee as any).toString() === req.user.userId);
@@ -231,15 +291,6 @@ export const assignLead = async (req: AuthenticatedRequest, res: Response): Prom
     if (!lead) {
       errorResponse(res, 'Lead not found', 404);
       return;
-    }
-
-    // Sales Executive record ownership check: Cannot update another executive's lead
-    if (req.user?.role === 'sales-executive') {
-      const isOwner = lead.assignedEmployeeId === req.user.userId || (lead.assignedEmployee && (lead.assignedEmployee as any).toString() === req.user.userId);
-      if (!isOwner) {
-        errorResponse(res, 'Access Denied: You cannot modify another executive\'s lead.', 403);
-        return;
-      }
     }
 
     await Activity.create({

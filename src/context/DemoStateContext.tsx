@@ -452,7 +452,7 @@ export const DemoStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         entityType: 'lead',
         entityId: leadId,
         type: 'status-change',
-        title: `Stage Updated: ${stage.toUpperCase()}`,
+        title: `Stage Updated: ${(stage || '').toUpperCase()}`,
         description: `Lead moved from '${lead.stage}' to '${stage}'`,
         timestamp: new Date().toISOString(),
         performedBy: 'Sales Representative'

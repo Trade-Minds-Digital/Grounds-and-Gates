@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Property, LanguageCode, PropertyFilterState, PropertyCategory, OwnershipType, FacingDirection } from '../types/property';
+import { Property, LanguageCode, PropertyFilterState, PropertyCategory, OwnershipType, FacingDirection, MapMarkerItem } from '../types/property';
 import { filterProperties, sortProperties } from '../utils/propertyUtils';
 import { PropertyCard } from '../components/property/PropertyCard';
 import { PropertyGridSkeleton } from '../components/common/Skeleton';
@@ -8,6 +8,7 @@ import { translations } from '../i18n/translations';
 import { useAppState } from '../context/AppStateContext';
 import { CATEGORIES_DATA } from '../data/categories';
 import { LOCATIONS_DATA } from '../data/locations';
+import { PropertyCatalogMap } from '../components/map/PropertyCatalogMap';
 import { Select, MenuItem, FormControl } from '@mui/material';
 import TuneIcon from '@mui/icons-material/Tune';
 import SearchIcon from '@mui/icons-material/Search';
@@ -22,9 +23,14 @@ import ShieldIcon from '@mui/icons-material/Shield';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import MapIcon from '@mui/icons-material/Map';
+import VerticalSplitIcon from '@mui/icons-material/VerticalSplit';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 interface PropertiesPageProps {
   properties: Property[];
+  mapMarkers?: MapMarkerItem[];
   lang: LanguageCode;
   initialFilters?: Partial<PropertyFilterState>;
   onNavigate: (view: string, params?: any) => void;
@@ -50,11 +56,17 @@ const DEFAULT_FILTERS: PropertyFilterState = {
   facing: 'all',
   ownershipType: 'all',
   featuredOnly: false,
-  sortBy: 'relevance'
+  sortBy: 'relevance',
+  locationStatus: 'all',
+  nearLat: undefined,
+  nearLng: undefined,
+  radius: undefined,
+  bbox: undefined,
 };
 
 export const PropertiesPage: React.FC<PropertiesPageProps> = ({
   properties,
+  mapMarkers = [],
   lang,
   initialFilters = {},
   onNavigate,
@@ -81,16 +93,29 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
     return LOCATIONS_DATA;
   }, [masters]);
 
+  const companyCount = useMemo(() => properties.filter(p => p.ownershipType === 'company').length, [properties]);
+  const thirdPartyCount = useMemo(() => properties.filter(p => p.ownershipType === 'third-party').length, [properties]);
+
   // Combined Filters State
   const [filters, setFilters] = useState<PropertyFilterState>({
     ...DEFAULT_FILTERS,
     ...initialFilters
   });
 
-  const [layoutView, setLayoutView] = useState<'grid' | 'list'>('grid');
+  // Keep filters in sync when initialFilters from URL params change
+  useEffect(() => {
+    setFilters(prev => ({
+      ...prev,
+      ...initialFilters,
+    }));
+  }, [initialFilters]);
+
+  const [layoutView, setLayoutView] = useState<'grid' | 'list' | 'split' | 'map'>('grid');
+  const [selectedMapPropertyId, setSelectedMapPropertyId] = useState<string | null>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(12);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
 
   // Trigger smooth skeleton shimmer on initial render or filter changes
   useEffect(() => {
@@ -99,12 +124,14 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
       setIsLoading(false);
     }, 280);
     return () => clearTimeout(timer);
-  }, [filters.category, filters.district, filters.listingType, filters.ownershipType, filters.bedrooms, filters.facing, filters.sortBy]);
+  }, [filters.category, filters.district, filters.listingType, filters.ownershipType, filters.bedrooms, filters.facing, filters.sortBy, filters.nearLat, filters.nearLng, filters.bbox]);
 
   const handleFilterChange = (key: keyof PropertyFilterState, value: any) => {
     setIsLoading(true);
-    setFilters(prev => ({ ...prev, [key]: value }));
+    const nextFilters = { ...filters, [key]: value };
+    setFilters(nextFilters);
     setVisibleCount(12);
+    onNavigate('properties', nextFilters);
     setTimeout(() => {
       setIsLoading(false);
     }, 280);
@@ -114,9 +141,73 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
     setIsLoading(true);
     setFilters(DEFAULT_FILTERS);
     setVisibleCount(12);
+    onNavigate('properties', DEFAULT_FILTERS);
     setTimeout(() => {
       setIsLoading(false);
     }, 280);
+  };
+
+  const handleRadiusSearch = (lat: number, lng: number, radiusKm: number) => {
+    setIsLoading(true);
+    const next = {
+      ...filters,
+      nearLat: lat,
+      nearLng: lng,
+      radius: radiusKm,
+      sortBy: 'distance' as const,
+      bbox: undefined,
+    };
+    setFilters(next);
+    onNavigate('properties', next);
+    setTimeout(() => setIsLoading(false), 280);
+  };
+
+  const handleAreaSearch = (bbox: string) => {
+    setIsLoading(true);
+    const next = {
+      ...filters,
+      bbox,
+      nearLat: undefined,
+      nearLng: undefined,
+      radius: undefined,
+    };
+    setFilters(next);
+    onNavigate('properties', next);
+    setTimeout(() => setIsLoading(false), 280);
+  };
+
+  const handleResetMapSearch = () => {
+    setIsLoading(true);
+    const next = {
+      ...filters,
+      nearLat: undefined,
+      nearLng: undefined,
+      radius: undefined,
+      bbox: undefined,
+      sortBy: 'relevance' as const,
+    };
+    setFilters(next);
+    onNavigate('properties', next);
+    setTimeout(() => setIsLoading(false), 280);
+  };
+
+  const handleLocateUser = () => {
+    if (!navigator.geolocation) {
+      alert(lang === 'ta' ? 'உங்கள் உலாவியில் புவிஇருப்பிடம் ஆதரிக்கப்படவில்லை.' : 'Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsLocating(false);
+        handleRadiusSearch(pos.coords.latitude, pos.coords.longitude, 15);
+      },
+      (err) => {
+        setIsLocating(false);
+        alert(lang === 'ta' ? 'இருப்பிடத்தை அணுக முடியவில்லை.' : `Location access denied or timed out (${err.message}).`);
+      },
+      { timeout: 10000 }
+    );
   };
 
   // Skeleton loading simulation trigger
@@ -126,6 +217,32 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
       setIsLoading(false);
     }, 450);
   };
+
+  // Compute effective map markers (passed markers or derived from properties with valid coordinates)
+  const effectiveMarkers: MapMarkerItem[] = useMemo(() => {
+    if (mapMarkers && mapMarkers.length > 0) {
+      return mapMarkers;
+    }
+    return properties
+      .filter((p) => p.coordinates && typeof p.coordinates.lat === 'number' && typeof p.coordinates.lng === 'number')
+      .map((p) => ({
+        id: p.id,
+        slug: p.slug || p.id,
+        title: p.title,
+        tamilTitle: p.tamilTitle,
+        price: p.price,
+        priceUnit: p.priceUnit,
+        category: p.category,
+        listingType: p.listingType,
+        locality: p.locality || p.location || p.district,
+        district: p.district,
+        image: (p.images && p.images[0]) || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=600&q=80',
+        lat: p.coordinates!.lat,
+        lng: p.coordinates!.lng,
+        isApproximateLocation: p.isApproximateLocation,
+        verified: p.verified,
+      }));
+  }, [mapMarkers, properties]);
 
   // Filter & Sort Logic
   const filteredAndSortedProperties = useMemo(() => {
@@ -193,6 +310,44 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
       chips.push({
         label: `${filters.facing} Facing`,
         onRemove: () => handleFilterChange('facing', 'all')
+      });
+    }
+
+    if (filters.nearLat && filters.nearLng) {
+      chips.push({
+        label: `Near Location (${filters.radius || 10} km)`,
+        onRemove: () => {
+          const next: PropertyFilterState = {
+            ...filters,
+            nearLat: undefined,
+            nearLng: undefined,
+            radius: undefined,
+            sortBy: 'relevance',
+          };
+          setFilters(next);
+          onNavigate('properties', next);
+        }
+      });
+    }
+
+    if (filters.bbox) {
+      chips.push({
+        label: 'Map Area',
+        onRemove: () => {
+          const next: PropertyFilterState = {
+            ...filters,
+            bbox: undefined,
+          };
+          setFilters(next);
+          onNavigate('properties', next);
+        }
+      });
+    }
+
+    if (filters.locationStatus && filters.locationStatus !== 'all') {
+      chips.push({
+        label: filters.locationStatus === 'confirmed' ? 'Confirmed Pin' : 'Location Missing',
+        onRemove: () => handleFilterChange('locationStatus', 'all')
       });
     }
 
@@ -273,7 +428,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                 <ApartmentIcon sx={{ fontSize: 16, color: '#C99325' }} />
                 Grounds & Gates Direct
               </span>
-              <span className="text-[10px] bg-[#013E18] text-white px-1.5 py-0.5 rounded font-bold">14</span>
+              <span className="text-[10px] bg-[#013E18] text-white px-2 py-0.5 rounded-full font-bold">{companyCount}</span>
             </div>
           </label>
 
@@ -290,7 +445,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                 <VerifiedUserIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                 Third-Party Sellers
               </span>
-              <span className="text-[10px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded font-bold">18</span>
+              <span className="text-[10px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-bold">{thirdPartyCount}</span>
             </div>
           </label>
         </div>
@@ -465,6 +620,46 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
         </FormControl>
       </div>
 
+      {/* Map & Geospatial Location Discovery */}
+      <div className="pt-2 border-t border-stone-200/80">
+        <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">
+          {lang === 'ta' ? 'வரைபட & இருப்பிட வடிகட்டி' : 'Map & Location Filters'}
+        </label>
+        
+        {/* Near Me Geolocation Button */}
+        <button
+          type="button"
+          onClick={handleLocateUser}
+          disabled={isLocating}
+          className="w-full mb-3 py-2 px-3 rounded-xl bg-white border border-[#C99325] text-[#013E18] hover:bg-[#FAF8F2] font-bold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
+        >
+          <MyLocationIcon sx={{ fontSize: 16, color: '#C99325' }} />
+          <span>{isLocating ? (lang === 'ta' ? 'இருப்பிடம் கண்டறியப்படுகிறது...' : 'Locating...') : (lang === 'ta' ? 'என் அருகிலுள்ள சொத்துகள்' : 'Find Properties Near Me')}</span>
+        </button>
+
+        {/* Location Status (Confirmed / All) */}
+        <FormControl fullWidth size="small">
+          <Select
+            value={filters.locationStatus || 'all'}
+            onChange={(e) => handleFilterChange('locationStatus', e.target.value)}
+            sx={{
+              height: 38,
+              borderRadius: '12px',
+              bgcolor: '#ffffff',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: '#18241B',
+              '& fieldset': { borderColor: '#e7e5e4' },
+              '&:hover fieldset': { borderColor: '#013E18' },
+              '&.Mui-focused fieldset': { borderColor: '#013E18' },
+            }}
+          >
+            <MenuItem value="all" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>All Properties</MenuItem>
+            <MenuItem value="confirmed" sx={{ fontSize: '0.8rem' }}>Confirmed Coordinates Only</MenuItem>
+          </Select>
+        </FormControl>
+      </div>
+
       {/* Reset Action */}
       <div className="pt-2">
         <button
@@ -534,17 +729,8 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
               </Select>
             </FormControl>
 
-            {/* Grid / List Layout Switcher & Shimmer Demo */}
+            {/* Grid / List Layout Switcher */}
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleSimulateLoading}
-                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-[11px] font-bold text-stone-600 hover:text-[#013E18] transition-all shadow-xs cursor-pointer"
-                title="Preview smooth skeleton loading transition"
-              >
-                <AutoAwesomeIcon sx={{ fontSize: 16, color: '#C99325' }} />
-                <span>Simulate Transition</span>
-              </button>
-
               <div className="hidden sm:flex items-center rounded-xl border border-stone-200 bg-white p-0.5 shadow-xs">
                 <button
                   onClick={() => {
@@ -578,10 +764,71 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                 >
                   <ViewListIcon sx={{ fontSize: 18 }} />
                 </button>
+                <button
+                  onClick={() => {
+                    setIsLoading(true);
+                    setLayoutView('split');
+                    setTimeout(() => setIsLoading(false), 200);
+                  }}
+                  className={`p-2 rounded-lg transition-all cursor-pointer ${
+                    layoutView === 'split'
+                      ? 'bg-[#013E18] text-white shadow-2xs'
+                      : 'text-stone-500 hover:text-stone-800'
+                  }`}
+                  title="Split View (List + Map)"
+                  aria-label="Switch to split view"
+                >
+                  <VerticalSplitIcon sx={{ fontSize: 18 }} />
+                </button>
+                <button
+                  onClick={() => {
+                    setIsLoading(true);
+                    setLayoutView('map');
+                    setTimeout(() => setIsLoading(false), 200);
+                  }}
+                  className={`p-2 rounded-lg transition-all cursor-pointer ${
+                    layoutView === 'map'
+                      ? 'bg-[#013E18] text-white shadow-2xs'
+                      : 'text-stone-500 hover:text-stone-800'
+                  }`}
+                  title="Interactive Map Discovery"
+                  aria-label="Switch to map view"
+                >
+                  <MapIcon sx={{ fontSize: 18 }} />
+                </button>
               </div>
             </div>
 
           </div>
+        </div>
+
+        {/* Quick Category Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => handleFilterChange('category', 'all')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer ${
+              filters.category === 'all'
+                ? 'bg-[#013E18] text-white shadow-xs'
+                : 'bg-white border border-stone-200 text-stone-700 hover:border-[#013E18]'
+            }`}
+          >
+            All Categories
+          </button>
+          {categoriesList.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => handleFilterChange('category', c.id)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer ${
+                filters.category === c.id
+                  ? 'bg-[#013E18] text-white shadow-xs'
+                  : 'bg-white border border-stone-200 text-stone-700 hover:border-[#013E18]'
+              }`}
+            >
+              {lang === 'ta' ? c.tamilName : c.name}
+            </button>
+          ))}
         </div>
 
         {/* Active Filter Chips */}
@@ -612,71 +859,50 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
           </div>
         )}
 
-        {/* Layout Grid: Left Sidebar + Listings */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
-          {/* Desktop Filter Sidebar */}
-          <div className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-24 bg-white p-6 rounded-2xl border border-stone-200/90 shadow-sm space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-                <div className="flex items-center gap-2 font-bold text-sm text-[#18241B]">
-                  <TuneIcon sx={{ fontSize: 16, color: '#C99325' }} />
-                  <span>{t.filters.title}</span>
-                </div>
-                {activeChips.length > 0 && (
-                  <button
-                    onClick={handleResetFilters}
-                    className="text-xs font-bold text-[#C99325] hover:underline cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-
-              {FilterSidebarContent}
-            </div>
+        {/* Interactive Layout Views: Map Only, Split (List + Map), or Standard Sidebar + Grid/List */}
+        {layoutView === 'map' ? (
+          <div className="w-full h-[calc(100vh-220px)] min-h-[550px] rounded-3xl overflow-hidden shadow-lg border border-stone-200/90 relative">
+            <PropertyCatalogMap
+              markers={effectiveMarkers}
+              selectedPropertyId={selectedMapPropertyId}
+              onSelectProperty={(id) => setSelectedMapPropertyId(id)}
+              onNavigateProperty={(slug) => onSelectProperty(slug)}
+              onAreaSearch={handleAreaSearch}
+              onRadiusSearch={handleRadiusSearch}
+              onResetSearch={handleResetMapSearch}
+              activeRadius={filters.radius}
+              activeCenter={filters.nearLat && filters.nearLng ? { lat: filters.nearLat, lng: filters.nearLng } : null}
+              lang={lang}
+            />
           </div>
-
-          {/* Listings Display Area */}
-          <div className="lg:col-span-3">
-            {isLoading ? (
-              <PropertyGridSkeleton count={Math.min(displayedProperties.length || 6, 6)} layout={layoutView} />
-            ) : displayedProperties.length === 0 ? (
-              <div className="bg-white rounded-3xl p-12 text-center border border-stone-200/80 shadow-xs flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center mb-4">
-                  <SearchIcon sx={{ fontSize: 32 }} />
-                </div>
-                <h3 className="text-xl font-bold text-[#18241B]">{t.filters.noResults}</h3>
-                <p className="text-xs text-stone-500 mt-2 max-w-sm">
-                  {t.filters.noResultsSub}
-                </p>
-                <div className="mt-6 flex flex-wrap justify-center gap-3">
+        ) : layoutView === 'split' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Listings Column (5 cols on lg) */}
+            <div className="lg:col-span-5 h-[calc(100vh-220px)] min-h-[550px] overflow-y-auto pr-2 space-y-4">
+              <div className="flex items-center justify-between text-xs text-stone-500 font-semibold mb-2">
+                <span>{filteredAndSortedProperties.length} Properties Found</span>
+                <span className="text-[#013E18] font-bold">{effectiveMarkers.length} on Map</span>
+              </div>
+              {filteredAndSortedProperties.length === 0 ? (
+                <div className="bg-white rounded-2xl p-8 text-center border border-stone-200">
+                  <p className="text-xs text-stone-600 font-semibold">{t.filters.noResults}</p>
                   <button
                     onClick={handleResetFilters}
-                    className="px-5 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] font-bold text-xs hover:bg-[#00280f] transition-all cursor-pointer"
+                    className="mt-3 text-xs font-bold text-[#013E18] underline cursor-pointer"
                   >
                     {t.filters.reset}
                   </button>
-                  <button
-                    onClick={() => onNavigate('post-property')}
-                    className="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs hover:bg-[#FAF8F2] transition-all cursor-pointer"
-                  >
-                    Post a Property
-                  </button>
                 </div>
-              </div>
-            ) : (
-              <>
-                <div
-                  className={
-                    layoutView === 'grid'
-                      ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
-                      : 'flex flex-col gap-5'
-                  }
-                >
-                  {displayedProperties.map(property => (
+              ) : (
+                filteredAndSortedProperties.map(property => (
+                  <div
+                    key={property.id}
+                    onMouseEnter={() => setSelectedMapPropertyId(property.id)}
+                    className={`rounded-2xl transition-all ${
+                      selectedMapPropertyId === property.id ? 'ring-2 ring-[#C99325]' : ''
+                    }`}
+                  >
                     <PropertyCard
-                      key={property.id}
                       property={property}
                       lang={lang}
                       isSaved={savedPropertyIds.includes(property.id)}
@@ -684,28 +910,147 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                       isCompared={comparedPropertyIds.includes(property.id)}
                       onToggleCompare={onToggleCompare}
                       onSelect={onSelectProperty}
-                      layout={layoutView}
+                      layout="list"
                     />
-                  ))}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Right Interactive Map Column (7 cols on lg) */}
+            <div className="lg:col-span-7 h-[calc(100vh-220px)] min-h-[550px] rounded-3xl overflow-hidden shadow-lg border border-stone-200/90 sticky top-24">
+              <PropertyCatalogMap
+                markers={effectiveMarkers}
+                selectedPropertyId={selectedMapPropertyId}
+                onSelectProperty={(id) => setSelectedMapPropertyId(id)}
+                onNavigateProperty={(slug) => onSelectProperty(slug)}
+                onAreaSearch={handleAreaSearch}
+                onRadiusSearch={handleRadiusSearch}
+                onResetSearch={handleResetMapSearch}
+                activeRadius={filters.radius}
+                activeCenter={filters.nearLat && filters.nearLng ? { lat: filters.nearLat, lng: filters.nearLng } : null}
+                lang={lang}
+              />
+            </div>
+          </div>
+        ) : (
+          /* Standard Layout Grid: Left Sidebar + Listings */
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            {/* Desktop Filter Sidebar */}
+            <div className="hidden lg:block lg:col-span-1">
+              <div className="sticky top-24 bg-white p-6 rounded-2xl border border-stone-200/90 shadow-sm space-y-6">
+                <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                  <div className="flex items-center gap-2 font-bold text-sm text-[#18241B]">
+                    <TuneIcon sx={{ fontSize: 16, color: '#C99325' }} />
+                    <span>{t.filters.title}</span>
+                  </div>
+                  {activeChips.length > 0 && (
+                    <button
+                      onClick={handleResetFilters}
+                      className="text-xs font-bold text-[#C99325] hover:underline cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  )}
                 </div>
 
-                {/* Load More Button */}
-                {visibleCount < filteredAndSortedProperties.length && (
-                  <div className="mt-10 text-center">
+                {FilterSidebarContent}
+              </div>
+            </div>
+
+            {/* Listings Display Area */}
+            <div className="lg:col-span-3">
+              {isLoading ? (
+                <PropertyGridSkeleton count={Math.min(displayedProperties.length || 6, 6)} layout={layoutView} />
+              ) : displayedProperties.length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center border border-stone-200/80 shadow-xs flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center mb-4">
+                    <SearchIcon sx={{ fontSize: 32 }} />
+                  </div>
+                  <h3 className="text-xl font-bold text-[#18241B]">{t.filters.noResults}</h3>
+                  <p className="text-xs text-stone-500 mt-2 max-w-sm">
+                    {t.filters.noResultsSub}
+                  </p>
+                  <div className="mt-6 flex flex-wrap justify-center gap-3">
                     <button
-                      onClick={() => setVisibleCount(prev => prev + 12)}
-                      className="px-8 py-3 rounded-xl bg-white border border-stone-300 hover:border-[#013E18] text-[#013E18] font-bold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all cursor-pointer"
+                      onClick={handleResetFilters}
+                      className="px-5 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] font-bold text-xs hover:bg-[#00280f] transition-all cursor-pointer"
                     >
-                      Load More Properties ({filteredAndSortedProperties.length - visibleCount} remaining)
+                      {t.filters.reset}
+                    </button>
+                    <button
+                      onClick={() => onNavigate('post-property')}
+                      className="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs hover:bg-[#FAF8F2] transition-all cursor-pointer"
+                    >
+                      Post a Property
                     </button>
                   </div>
-                )}
-              </>
-            )}
+                </div>
+              ) : (
+                <>
+                  <div
+                    className={
+                      layoutView === 'grid'
+                        ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+                        : 'flex flex-col gap-5'
+                    }
+                  >
+                    {displayedProperties.map(property => (
+                      <PropertyCard
+                        key={property.id}
+                        property={property}
+                        lang={lang}
+                        isSaved={savedPropertyIds.includes(property.id)}
+                        onToggleSave={onToggleSave}
+                        isCompared={comparedPropertyIds.includes(property.id)}
+                        onToggleCompare={onToggleCompare}
+                        onSelect={onSelectProperty}
+                        layout={layoutView}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Load More Button */}
+                  {visibleCount < filteredAndSortedProperties.length && (
+                    <div className="mt-10 text-center">
+                      <button
+                        onClick={() => setVisibleCount(prev => prev + 12)}
+                        className="px-8 py-3 rounded-xl bg-white border border-stone-300 hover:border-[#013E18] text-[#013E18] font-bold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all cursor-pointer"
+                      >
+                        Load More Properties ({filteredAndSortedProperties.length - visibleCount} remaining)
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
           </div>
+        )}
 
-        </div>
+      </div>
 
+      {/* Mobile Floating Map/List Switcher */}
+      <div className="fixed bottom-6 right-6 lg:hidden z-40">
+        <button
+          onClick={() => {
+            setLayoutView(layoutView === 'map' ? 'grid' : 'map');
+          }}
+          className="bg-[#013E18] text-[#F5F2E9] border-2 border-[#C99325] px-4 py-2.5 rounded-full shadow-2xl font-bold text-xs flex items-center gap-2 cursor-pointer hover:bg-[#00280f] transition-all"
+        >
+          {layoutView === 'map' ? (
+            <>
+              <ViewListIcon sx={{ fontSize: 18, color: '#C99325' }} />
+              <span>Show List ({filteredAndSortedProperties.length})</span>
+            </>
+          ) : (
+            <>
+              <MapIcon sx={{ fontSize: 18, color: '#C99325' }} />
+              <span>Show Map ({effectiveMarkers.length})</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* Animated Mobile Filters Drawer */}

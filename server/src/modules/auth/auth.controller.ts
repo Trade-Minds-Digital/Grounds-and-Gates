@@ -8,17 +8,263 @@ import { Lead } from '../../models/Lead.js';
 import { SiteVisit } from '../../models/SiteVisit.js';
 import { Employee } from '../../models/Employee.js';
 import { Task } from '../../models/Task.js';
+import {
+  VerificationChallenge,
+  generateNumericOtp,
+  hashOtp,
+  verifyOtpHash,
+  maskEmail,
+} from '../../models/VerificationChallenge.js';
+import { emailService } from '../../services/emailService.js';
+import { config } from '../../config/index.js';
+import { firebaseAdmin } from '../../config/firebaseAdmin.js';
+import { runLegacyUsersMigration } from '../../database/usersMigration.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware.js';
+
+const onboardingSchema = z.object({
+  fullName: z.string().min(2, 'Name must be at least 2 characters'),
+  mobile: z.string().min(10, 'Valid 10-digit mobile number required'),
+  accountUsage: z.enum(['buyer', 'seller', 'both']).optional().default('buyer'),
+  role: z.enum(['buyer', 'seller']).optional(),
+  address: z
+    .object({
+      street: z.string().optional(),
+      locality: z.string().optional(),
+      city: z.string().optional(),
+      district: z.string().optional(),
+      state: z.string().optional(),
+      pincode: z.string().optional(),
+    })
+    .optional(),
+  sellerDetails: z
+    .object({
+      sellerType: z.enum(['owner', 'agent', 'builder', 'developer']).optional(),
+      companyName: z.string().optional(),
+      reraNumber: z.string().optional(),
+      licenseNumber: z.string().optional(),
+      taxId: z.string().optional(),
+      operatingAreas: z.array(z.string()).optional(),
+      preferredContactMethod: z.enum(['email', 'phone', 'whatsapp']).optional(),
+    })
+    .optional(),
+  consents: z
+    .object({
+      termsAccepted: z.literal(true, {
+        errorMap: () => ({ message: 'You must accept the Terms and Conditions and Privacy Policy' }),
+      }),
+      termsPolicyVersion: z.string().optional(),
+      privacyAccepted: z.boolean().optional(),
+      marketingConsent: z.boolean().optional().default(false),
+    })
+    .optional(),
+  termsAccepted: z.boolean().optional(),
+  marketingConsent: z.boolean().optional(),
+});
+
+export const onboarding = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const firebaseUser = req.firebaseUser;
+    if (!firebaseUser?.uid || !firebaseUser?.email) {
+      errorResponse(res, 'Authentication required. No valid Firebase identity found.', 401);
+      return;
+    }
+
+    if (
+      req.body.role &&
+      ['super-admin', 'admin', 'employee', 'sales-manager', 'sales-executive', 'listing-manager'].includes(
+        req.body.role
+      )
+    ) {
+      errorResponse(res, 'Privileged staff accounts cannot be registered through public onboarding.', 403);
+      return;
+    }
+
+    const data = onboardingSchema.parse(req.body);
+    const termsAccepted = data.consents?.termsAccepted ?? data.termsAccepted;
+    if (!termsAccepted) {
+      errorResponse(res, 'You must accept the Terms and Conditions and Privacy Policy to register.', 400);
+      return;
+    }
+
+    const normalizedEmail = firebaseUser.email.toLowerCase().trim();
+
+    let assignedRole = 'buyer';
+    const accountUsage = data.accountUsage || (data.role === 'seller' ? 'seller' : 'buyer');
+    if (accountUsage === 'seller' || accountUsage === 'both' || data.role === 'seller') {
+      assignedRole = 'seller';
+    }
+
+    // 1. Idempotency check: user already exists for this firebaseUid
+    let user = await User.findOne({ firebaseUid: firebaseUser.uid });
+    if (user) {
+      user.fullName = data.fullName;
+      user.mobile = data.mobile;
+      user.accountUsage = accountUsage;
+      user.role = assignedRole;
+      if (data.address) user.address = { ...user.address, ...data.address };
+      if (data.sellerDetails) user.sellerDetails = data.sellerDetails;
+      if (firebaseUser.email_verified && !user.emailVerified) {
+        user.emailVerified = true;
+        user.emailVerifiedAt = new Date();
+      }
+      await user.save();
+      successResponse(res, { user }, 'Profile updated successfully.');
+      return;
+    }
+
+    // 2. Check if user already exists with matching email (linking legacy account)
+    user = await User.findOne({ email: normalizedEmail });
+    if (user) {
+      user.firebaseUid = firebaseUser.uid;
+      user.fullName = data.fullName || user.fullName;
+      user.mobile = data.mobile || user.mobile;
+      user.accountUsage = accountUsage || user.accountUsage;
+      user.role = assignedRole || user.role;
+      if (data.address) user.address = { ...user.address, ...data.address };
+      if (data.sellerDetails) user.sellerDetails = data.sellerDetails;
+      if (firebaseUser.email_verified && !user.emailVerified) {
+        user.emailVerified = true;
+        user.emailVerifiedAt = new Date();
+      }
+      await user.save();
+      successResponse(res, { user }, 'Account linked successfully.');
+      return;
+    }
+
+    // 3. Create new MongoDB profile
+    user = await User.create({
+      firebaseUid: firebaseUser.uid,
+      fullName: data.fullName,
+      email: normalizedEmail,
+      mobile: data.mobile,
+      role: assignedRole,
+      accountUsage,
+      address: data.address,
+      sellerDetails: data.sellerDetails,
+      consents: {
+        termsAccepted: true,
+        termsAcceptedAt: new Date(),
+        termsPolicyVersion: data.consents?.termsPolicyVersion || '2026.1',
+        marketingConsent: Boolean(data.consents?.marketingConsent ?? data.marketingConsent),
+        marketingConsentAt: (data.consents?.marketingConsent ?? data.marketingConsent) ? new Date() : undefined,
+      },
+      accountStatus: 'active',
+      emailVerified: Boolean(firebaseUser.email_verified),
+      phoneVerified: false,
+    });
+
+    await AuditLog.create({
+      user: user._id,
+      userEmail: user.email,
+      action: 'USER_REGISTERED_FIREBASE',
+      module: 'AUTH',
+      entityId: user._id.toString(),
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    successResponse(res, { user }, 'Registration and profile setup completed successfully.', 201);
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      errorResponse(res, 'Validation error', 400, err.issues);
+      return;
+    }
+    errorResponse(res, err.message || 'Onboarding failed', 500);
+  }
+};
+
+export const syncVerification = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const firebaseUser = req.firebaseUser;
+    const userId = req.user?.userId;
+
+    let isVerified = Boolean(firebaseUser?.email_verified);
+    const uid = firebaseUser?.uid || req.user?.firebaseUid;
+
+    if (uid && !isVerified) {
+      try {
+        const record = await firebaseAdmin.getUser(uid);
+        if (record?.emailVerified) {
+          isVerified = true;
+        }
+      } catch {}
+    }
+
+    let user = null;
+    if (uid) {
+      user = await User.findOne({ firebaseUid: uid });
+    }
+    if (!user && userId) {
+      user = await User.findById(userId);
+    }
+
+    if (!user) {
+      errorResponse(res, 'User profile not found', 404);
+      return;
+    }
+
+    if (isVerified && !user.emailVerified) {
+      user.emailVerified = true;
+      user.emailVerifiedAt = new Date();
+      await user.save();
+    }
+
+    successResponse(res, {
+      emailVerified: user.emailVerified,
+      email: user.email,
+      message: user.emailVerified
+        ? 'Email verification confirmed.'
+        : 'Email is not verified yet. Please click the link sent to your inbox.',
+    });
+  } catch (err: any) {
+    errorResponse(res, err.message, 500);
+  }
+};
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   mobile: z.string().min(10, 'Valid 10-digit mobile number required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string().optional(),
+  accountUsage: z.enum(['buyer', 'seller', 'both']).optional().default('buyer'),
   // Public registration is strictly restricted to non-privileged public roles
-  role: z.enum(['buyer', 'seller', 'agent', 'developer']).optional().default('buyer'),
+  role: z.enum(['buyer', 'seller', 'agent', 'developer']).optional(),
+  address: z
+    .object({
+      street: z.string().optional(),
+      locality: z.string().optional(),
+      city: z.string().optional(),
+      district: z.string().optional(),
+      state: z.string().optional(),
+      pincode: z.string().optional(),
+    })
+    .optional(),
+  sellerDetails: z
+    .object({
+      sellerType: z.enum(['owner', 'agent', 'builder', 'developer']).optional(),
+      companyName: z.string().optional(),
+      reraNumber: z.string().optional(),
+      licenseNumber: z.string().optional(),
+      taxId: z.string().optional(),
+      operatingAreas: z.array(z.string()).optional(),
+      preferredContactMethod: z.enum(['email', 'phone', 'whatsapp']).optional(),
+    })
+    .optional(),
+  consents: z
+    .object({
+      termsAccepted: z.literal(true, {
+        errorMap: () => ({ message: 'You must accept the Terms of Service and Privacy Policy' }),
+      }),
+      termsPolicyVersion: z.string().optional(),
+      privacyAccepted: z.boolean().optional(),
+      marketingConsent: z.boolean().optional().default(false),
+    })
+    .optional(),
+  termsAccepted: z.boolean().optional(),
+  marketingConsent: z.boolean().optional(),
 });
 
 const loginSchema = z.object({
@@ -26,67 +272,198 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+const verifyEmailSchema = z.object({
+  challengeId: z.string().min(1, 'Challenge ID is required'),
+  otp: z.string().length(6, 'Verification code must be 6 digits'),
+});
+
+const resendOtpSchema = z.object({
+  challengeId: z.string().min(1, 'Challenge ID is required'),
+});
+
+const changeEmailSchema = z.object({
+  challengeId: z.string().min(1, 'Challenge ID is required'),
+  newEmail: z.string().email('Valid new email address is required'),
+});
+
+/**
+ * Helper to issue an OTP verification challenge and send email
+ */
+async function issueOtpChallenge(user: any): Promise<{
+  challengeId: string;
+  maskedEmail: string;
+  expiresInSeconds: number;
+  resendCooldownSeconds: number;
+}> {
+  // Invalidate any previously active verification challenges for this user/email
+  await VerificationChallenge.updateMany(
+    { email: user.email.toLowerCase(), purpose: 'email_verification', status: 'active' },
+    { status: 'superseded' }
+  );
+
+  const otp = generateNumericOtp();
+  const challengeId = crypto.randomUUID();
+  const otpHash = hashOtp(otp, user.email);
+  const now = Date.now();
+  const expiresAt = new Date(now + 10 * 60 * 1000); // 10 minutes
+  const resendCooldownUntil = new Date(now + 60 * 1000); // 60 seconds
+
+  await VerificationChallenge.create({
+    challengeId,
+    userId: user._id,
+    email: user.email.toLowerCase(),
+    purpose: 'email_verification',
+    otpHash,
+    expiresAt,
+    resendCooldownUntil,
+    attempts: 0,
+    maxAttempts: 5,
+    consumed: false,
+    status: 'active',
+  });
+
+  // Dispatch branded verification email
+  await emailService.sendVerificationOtp({
+    to: user.email,
+    name: user.fullName,
+    otp,
+    expiresInMinutes: 10,
+  });
+
+  return {
+    challengeId,
+    maskedEmail: maskEmail(user.email),
+    expiresInSeconds: 600,
+    resendCooldownSeconds: 60,
+  };
+}
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
+    const rawRole = req.body.role;
+    // Strict privilege guard: reject any attempt to register as admin/staff
+    const forbiddenRoles = [
+      'super-admin',
+      'admin',
+      'employee',
+      'sales-manager',
+      'sales-executive',
+      'listing-manager',
+    ];
+    if (rawRole && forbiddenRoles.includes(rawRole)) {
+      errorResponse(res, 'Privileged staff accounts cannot be registered through public portal.', 400);
+      return;
+    }
+
     const data = registerSchema.parse(req.body);
 
-    const existingUser = await User.findOne({ email: data.email.toLowerCase() });
-    if (existingUser) {
-      errorResponse(res, 'An account with this email already exists.', 409);
+    // Terms acceptance verification (defaults to true for legacy compatibility if omitted)
+    const termsAccepted = data.consents?.termsAccepted ?? data.termsAccepted ?? true;
+    if (!termsAccepted) {
+      errorResponse(res, 'You must accept the Terms and Conditions and Privacy Policy to register.', 400);
       return;
+    }
+
+    const normalizedEmail = data.email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: normalizedEmail });
+
+    // Reconcile role with accountUsage
+    let assignedRole = 'buyer';
+    const accountUsage = data.accountUsage || (data.role === 'seller' ? 'seller' : 'buyer');
+    if (accountUsage === 'seller' || accountUsage === 'both' || data.role === 'seller') {
+      assignedRole = 'seller';
     }
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(data.password, salt);
 
-    const newUser = await User.create({
-      fullName: data.fullName,
-      email: data.email.toLowerCase(),
-      mobile: data.mobile,
-      passwordHash,
-      role: data.role,
-      accountStatus: 'active',
-      emailVerified: true,
-      phoneVerified: true,
-    });
+    let targetUser = existingUser;
+
+    if (existingUser) {
+      // If user exists and is already verified, reject registration
+      if (existingUser.emailVerified) {
+        errorResponse(res, 'An account with this email already exists.', 409);
+        return;
+      }
+
+      // If user exists but is unverified (pending), update details and re-issue verification
+      existingUser.fullName = data.fullName;
+      existingUser.mobile = data.mobile;
+      existingUser.passwordHash = passwordHash;
+      existingUser.role = assignedRole;
+      existingUser.accountUsage = accountUsage;
+      if (data.address) existingUser.address = { ...existingUser.address, ...data.address };
+      if (data.sellerDetails) existingUser.sellerDetails = data.sellerDetails;
+      existingUser.consents = {
+        termsAccepted: true,
+        termsAcceptedAt: new Date(),
+        termsPolicyVersion: data.consents?.termsPolicyVersion || '2026.1',
+        marketingConsent: Boolean(data.consents?.marketingConsent ?? data.marketingConsent),
+        marketingConsentAt: (data.consents?.marketingConsent ?? data.marketingConsent) ? new Date() : undefined,
+      };
+      existingUser.accountStatus = 'active';
+      await existingUser.save();
+      targetUser = existingUser;
+    } else {
+      // Create new pending user
+      targetUser = await User.create({
+        fullName: data.fullName,
+        email: normalizedEmail,
+        mobile: data.mobile,
+        passwordHash,
+        role: assignedRole,
+        accountUsage,
+        address: data.address,
+        sellerDetails: data.sellerDetails,
+        consents: {
+          termsAccepted: true,
+          termsAcceptedAt: new Date(),
+          termsPolicyVersion: data.consents?.termsPolicyVersion || '2026.1',
+          marketingConsent: Boolean(data.consents?.marketingConsent ?? data.marketingConsent),
+          marketingConsentAt: (data.consents?.marketingConsent ?? data.marketingConsent) ? new Date() : undefined,
+        },
+        accountStatus: 'active',
+        emailVerified: false,
+        phoneVerified: false,
+      });
+    }
+
+    // Issue OTP verification challenge
+    const challengeInfo = await issueOtpChallenge(targetUser);
 
     const tokenPayload = {
-      userId: newUser._id.toString(),
-      email: newUser.email,
-      role: newUser.role,
-      tokenVersion: newUser.tokenVersion || 0,
+      userId: targetUser._id.toString(),
+      email: targetUser.email,
+      role: targetUser.role,
+      tokenVersion: targetUser.tokenVersion || 0,
     };
 
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
 
-    newUser.refreshToken = refreshToken;
-    newUser.lastLogin = new Date();
-    await newUser.save();
-
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 3600000,
+    await AuditLog.create({
+      user: targetUser._id,
+      userEmail: targetUser.email,
+      action: 'USER_REGISTERED_PENDING_VERIFICATION',
+      module: 'AUTH',
+      entityId: targetUser._id.toString(),
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
     });
 
     successResponse(
       res,
       {
-        user: {
-          id: newUser._id,
-          fullName: newUser.fullName,
-          email: newUser.email,
-          mobile: newUser.mobile,
-          role: newUser.role,
-          accountStatus: newUser.accountStatus,
-          profileImage: newUser.profileImage,
-        },
+        user: targetUser,
         accessToken,
         refreshToken,
+        requiresEmailVerification: true,
+        challengeId: challengeInfo.challengeId,
+        maskedEmail: challengeInfo.maskedEmail,
+        expiresInSeconds: challengeInfo.expiresInSeconds,
+        resendCooldownSeconds: challengeInfo.resendCooldownSeconds,
       },
-      'Registration successful',
+      'Registration successful. Please enter the 6-digit verification code sent to your email.',
       201
     );
   } catch (err: any) {
@@ -95,6 +472,297 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
     errorResponse(res, err.message || 'Registration failed', 500);
+  }
+};
+
+export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { challengeId, otp } = verifyEmailSchema.parse(req.body);
+
+    const challenge = await VerificationChallenge.findOne({ challengeId });
+    if (!challenge || challenge.status === 'superseded') {
+      errorResponse(res, 'Invalid or expired verification session.', 400);
+      return;
+    }
+
+    if (challenge.consumed || challenge.status === 'consumed') {
+      errorResponse(res, 'This verification code has already been used.', 400);
+      return;
+    }
+
+    if (challenge.status === 'exhausted' || challenge.attempts >= challenge.maxAttempts) {
+      errorResponse(res, 'Maximum verification attempts exceeded. Please request a new code.', 429);
+      return;
+    }
+
+    if (challenge.expiresAt < new Date()) {
+      challenge.status = 'expired';
+      await challenge.save();
+      errorResponse(res, 'This verification code has expired. Please request a new code.', 400);
+      return;
+    }
+
+    const isMatch = verifyOtpHash(otp, challenge.email, challenge.otpHash);
+    if (!isMatch) {
+      challenge.attempts += 1;
+      if (challenge.attempts >= challenge.maxAttempts) {
+        challenge.status = 'exhausted';
+      }
+      await challenge.save();
+      const attemptsRemaining = Math.max(0, challenge.maxAttempts - challenge.attempts);
+      errorResponse(
+        res,
+        attemptsRemaining > 0
+          ? `Invalid verification code. ${attemptsRemaining} attempt(s) remaining.`
+          : 'Maximum verification attempts exceeded. Please request a new code.',
+        400,
+        { attemptsRemaining }
+      );
+      return;
+    }
+
+    // Atomic consumption
+    challenge.consumed = true;
+    challenge.consumedAt = new Date();
+    challenge.status = 'consumed';
+    await challenge.save();
+
+    const user = await User.findById(challenge.userId);
+    if (!user) {
+      errorResponse(res, 'User account associated with this challenge was not found.', 404);
+      return;
+    }
+
+    user.emailVerified = true;
+    user.emailVerifiedAt = new Date();
+    user.accountStatus = 'active';
+
+    const tokenPayload = {
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      tokenVersion: user.tokenVersion || 0,
+    };
+
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
+
+    user.refreshToken = refreshToken;
+    user.lastLogin = new Date();
+    await user.save();
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 3600000,
+    });
+
+    await AuditLog.create({
+      user: user._id,
+      userEmail: user.email,
+      action: 'EMAIL_VERIFIED',
+      module: 'AUTH',
+      entityId: user._id.toString(),
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    successResponse(
+      res,
+      {
+        user: {
+          id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          mobile: user.mobile,
+          role: user.role,
+          accountUsage: user.accountUsage,
+          sellerDetails: user.sellerDetails,
+          accountStatus: user.accountStatus,
+          emailVerified: user.emailVerified,
+          profileImage: user.profileImage,
+        },
+        accessToken,
+        refreshToken,
+      },
+      'Email verified successfully! Welcome to Grounds & Gates.'
+    );
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      errorResponse(res, 'Validation error', 400, err.issues);
+      return;
+    }
+    errorResponse(res, err.message || 'Verification failed', 500);
+  }
+};
+
+export const resendVerificationOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { challengeId } = resendOtpSchema.parse(req.body);
+
+    const oldChallenge = await VerificationChallenge.findOne({ challengeId });
+    if (!oldChallenge) {
+      errorResponse(res, 'Verification session not found.', 404);
+      return;
+    }
+
+    // Cooldown enforcement: 60 seconds between resends
+    if (oldChallenge.resendCooldownUntil > new Date()) {
+      const waitSeconds = Math.ceil((oldChallenge.resendCooldownUntil.getTime() - Date.now()) / 1000);
+      errorResponse(
+        res,
+        `Please wait ${waitSeconds} seconds before requesting a new verification code.`,
+        429,
+        { cooldownSecondsRemaining: waitSeconds }
+      );
+      return;
+    }
+
+    const user = await User.findById(oldChallenge.userId);
+    if (!user) {
+      errorResponse(res, 'User account not found.', 404);
+      return;
+    }
+
+    if (user.emailVerified) {
+      errorResponse(res, 'This email address is already verified. Please sign in.', 400);
+      return;
+    }
+
+    // Mark previous challenge superseded
+    oldChallenge.status = 'superseded';
+    await oldChallenge.save();
+
+    // Generate new OTP and challenge
+    const otp = generateNumericOtp();
+    const newChallengeId = crypto.randomUUID();
+    const otpHash = hashOtp(otp, user.email);
+    const now = Date.now();
+    const expiresAt = new Date(now + 10 * 60 * 1000);
+    const resendCooldownUntil = new Date(now + 60 * 1000);
+
+    await VerificationChallenge.create({
+      challengeId: newChallengeId,
+      userId: user._id,
+      email: user.email.toLowerCase(),
+      purpose: 'email_verification',
+      otpHash,
+      expiresAt,
+      resendCooldownUntil,
+      attempts: 0,
+      maxAttempts: 5,
+      consumed: false,
+      status: 'active',
+    });
+
+    await emailService.sendResentOtp({
+      to: user.email,
+      name: user.fullName,
+      otp,
+      expiresInMinutes: 10,
+    });
+
+    successResponse(
+      res,
+      {
+        challengeId: newChallengeId,
+        maskedEmail: maskEmail(user.email),
+        expiresInSeconds: 600,
+        resendCooldownSeconds: 60,
+      },
+      'A new verification code has been dispatched to your email.'
+    );
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      errorResponse(res, 'Validation error', 400, err.issues);
+      return;
+    }
+    errorResponse(res, err.message || 'Resend failed', 500);
+  }
+};
+
+export const changeVerificationEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { challengeId, newEmail } = changeEmailSchema.parse(req.body);
+    const normalizedNewEmail = newEmail.toLowerCase().trim();
+
+    const oldChallenge = await VerificationChallenge.findOne({ challengeId, status: 'active' });
+    if (!oldChallenge) {
+      errorResponse(res, 'Active verification session not found.', 404);
+      return;
+    }
+
+    // Check if new email is already verified by an existing user
+    const existing = await User.findOne({ email: normalizedNewEmail });
+    if (existing && existing.emailVerified) {
+      errorResponse(res, 'An account with this email address already exists and is verified.', 409);
+      return;
+    }
+
+    const user = await User.findById(oldChallenge.userId);
+    if (!user) {
+      errorResponse(res, 'User account not found.', 404);
+      return;
+    }
+
+    // Invalidate old challenge
+    oldChallenge.status = 'superseded';
+    await oldChallenge.save();
+
+    // Update pending user's email
+    user.email = normalizedNewEmail;
+    await user.save();
+
+    // Issue new challenge for updated email
+    const challengeInfo = await issueOtpChallenge(user);
+
+    successResponse(
+      res,
+      {
+        challengeId: challengeInfo.challengeId,
+        maskedEmail: challengeInfo.maskedEmail,
+        expiresInSeconds: challengeInfo.expiresInSeconds,
+        resendCooldownSeconds: challengeInfo.resendCooldownSeconds,
+      },
+      `Verification email updated. A new code has been sent to ${challengeInfo.maskedEmail}.`
+    );
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      errorResponse(res, 'Validation error', 400, err.issues);
+      return;
+    }
+    errorResponse(res, err.message || 'Change email failed', 500);
+  }
+};
+
+export const getVerificationStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { challengeId } = req.params;
+    const challenge = await VerificationChallenge.findOne({ challengeId });
+
+    if (!challenge) {
+      errorResponse(res, 'Verification challenge not found.', 404);
+      return;
+    }
+
+    const now = new Date();
+    const isExpired = challenge.expiresAt < now;
+    const canResend = challenge.resendCooldownUntil <= now;
+    const attemptsRemaining = Math.max(0, challenge.maxAttempts - challenge.attempts);
+
+    successResponse(res, {
+      challengeId: challenge.challengeId,
+      maskedEmail: maskEmail(challenge.email),
+      status: challenge.status,
+      expiresAt: challenge.expiresAt,
+      resendCooldownUntil: challenge.resendCooldownUntil,
+      isExpired,
+      canResend,
+      attemptsRemaining,
+    });
+  } catch (err: any) {
+    errorResponse(res, err.message || 'Failed to fetch verification status', 500);
   }
 };
 
@@ -108,14 +776,32 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (user.accountStatus !== 'active') {
-      errorResponse(res, 'Your account is suspended or inactive.', 403);
-      return;
-    }
-
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       errorResponse(res, 'Invalid email or password.', 401);
+      return;
+    }
+
+    if (user.accountStatus === 'inactive' || user.accountStatus === 'suspended') {
+      errorResponse(res, 'Your account is deactivated or suspended. Please contact Grounds & Gates concierge.', 403);
+      return;
+    }
+
+    // Unverified user detection: Return 403 with challenge details so UI can transition seamlessly
+    if (!user.emailVerified) {
+      const challengeInfo = await issueOtpChallenge(user);
+      errorResponse(
+        res,
+        'Please verify your email address to access your account.',
+        403,
+        {
+          requiresEmailVerification: true,
+          challengeId: challengeInfo.challengeId,
+          maskedEmail: challengeInfo.maskedEmail,
+          expiresInSeconds: challengeInfo.expiresInSeconds,
+          resendCooldownSeconds: challengeInfo.resendCooldownSeconds,
+        }
+      );
       return;
     }
 
@@ -149,7 +835,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           email: user.email,
           mobile: user.mobile,
           role: user.role,
+          accountUsage: user.accountUsage,
+          sellerDetails: user.sellerDetails,
           accountStatus: user.accountStatus,
+          emailVerified: user.emailVerified,
           profileImage: user.profileImage,
         },
         accessToken,
@@ -230,13 +919,112 @@ export const getMe = async (req: AuthenticatedRequest, res: Response): Promise<v
       email: user.email,
       mobile: user.mobile,
       role: user.role,
+      accountUsage: user.accountUsage,
+      sellerDetails: user.sellerDetails,
+      consents: user.consents,
       accountStatus: user.accountStatus,
+      emailVerified: user.emailVerified,
+      emailVerifiedAt: user.emailVerifiedAt,
       profileImage: user.profileImage,
       address: user.address,
       lastLogin: user.lastLogin,
     });
   } catch (err: any) {
     errorResponse(res, err.message, 500);
+  }
+};
+
+export const updateProfile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      errorResponse(res, 'Unauthorized', 401);
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      errorResponse(res, 'User not found', 404);
+      return;
+    }
+
+    const { fullName, mobile, address, sellerDetails, profileImage, consents } = req.body;
+
+    // Strict privilege guard: users cannot modify their role, accountStatus, or emailVerified via profile update
+    if (req.body.role || req.body.accountStatus || req.body.emailVerified !== undefined) {
+      errorResponse(res, 'Cannot modify privileged security fields through profile update.', 403);
+      return;
+    }
+
+    if (fullName) user.fullName = fullName.trim();
+    if (mobile) user.mobile = mobile.trim();
+    if (profileImage !== undefined) user.profileImage = profileImage;
+    if (address) {
+      user.address = {
+        ...user.address,
+        street: address.street ?? user.address?.street,
+        locality: address.locality ?? user.address?.locality,
+        city: address.city ?? user.address?.city,
+        district: address.district ?? user.address?.district,
+        state: address.state ?? user.address?.state ?? 'Tamil Nadu',
+        pincode: address.pincode ?? user.address?.pincode,
+      };
+    }
+
+    if (sellerDetails && (user.role === 'seller' || user.accountUsage === 'seller' || user.accountUsage === 'both')) {
+      user.sellerDetails = {
+        ...user.sellerDetails,
+        sellerType: sellerDetails.sellerType ?? user.sellerDetails?.sellerType,
+        companyName: sellerDetails.companyName ?? user.sellerDetails?.companyName,
+        reraNumber: sellerDetails.reraNumber ?? user.sellerDetails?.reraNumber,
+        licenseNumber: sellerDetails.licenseNumber ?? user.sellerDetails?.licenseNumber,
+        taxId: sellerDetails.taxId ?? user.sellerDetails?.taxId,
+        operatingAreas: sellerDetails.operatingAreas ?? user.sellerDetails?.operatingAreas,
+        preferredContactMethod: sellerDetails.preferredContactMethod ?? user.sellerDetails?.preferredContactMethod,
+      };
+    }
+
+    if (consents && consents.marketingConsent !== undefined) {
+      user.consents = {
+        ...user.consents,
+        termsAccepted: user.consents?.termsAccepted ?? true,
+        marketingConsent: Boolean(consents.marketingConsent),
+        marketingConsentAt: consents.marketingConsent ? new Date() : undefined,
+      };
+    }
+
+    await user.save();
+
+    await AuditLog.create({
+      user: user._id,
+      userEmail: user.email,
+      action: 'PROFILE_UPDATED',
+      module: 'AUTH',
+      entityId: user._id.toString(),
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    successResponse(
+      res,
+      {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        mobile: user.mobile,
+        role: user.role,
+        accountUsage: user.accountUsage,
+        sellerDetails: user.sellerDetails,
+        consents: user.consents,
+        accountStatus: user.accountStatus,
+        emailVerified: user.emailVerified,
+        profileImage: user.profileImage,
+        address: user.address,
+      },
+      'Profile updated successfully.'
+    );
+  } catch (err: any) {
+    errorResponse(res, err.message || 'Profile update failed', 500);
   }
 };
 
@@ -252,8 +1040,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     if (!user) {
       // Generic response to prevent email enumeration
       successResponse(res, {
-        message: 'If that email address is registered, password reset instructions have been generated.',
-        hasEmailProvider: Boolean(process.env.SMTP_HOST && process.env.SMTP_USER),
+        message: 'If that email address is registered, password reset instructions have been dispatched.',
       });
       return;
     }
@@ -275,19 +1062,17 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       userAgent: req.headers['user-agent'],
     });
 
-    const hasEmailProvider = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
+    const resetUrl = `${config.appUrl}/reset-password?token=${rawToken}`;
+    await emailService.sendPasswordResetEmail({
+      to: user.email,
+      name: user.fullName,
+      resetUrl,
+      expiresInHours: 1,
+    });
 
-    if (hasEmailProvider) {
-      console.log(`[AUTH] Dispatching password reset email to ${user.email}`);
-    } else {
-      console.warn(`[AUTH] Password reset requested for ${user.email}, but SMTP email provider is not configured. Delivery blocked.`);
-    }
-
-    // Secure generic user-facing response: Never leak tokens or reveal user presence
+    // Secure generic user-facing response: Never leak tokens
     successResponse(res, {
-      message: 'If that email address is registered, password reset instructions have been generated.',
-      hasEmailProvider,
-      emailDelivery: hasEmailProvider ? 'dispatched' : 'blocked',
+      message: 'If that email address is registered, password reset instructions have been dispatched.',
       expiresIn: '1 hour',
     });
   } catch (err: any) {
@@ -337,7 +1122,23 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       userAgent: req.headers['user-agent'],
     });
 
+    // Send confirmation notice
+    await emailService.sendPasswordChangedNotification({
+      to: user.email,
+      name: user.fullName,
+    });
+
     successResponse(res, null, 'Password successfully reset. Please log in with your new password.');
+  } catch (err: any) {
+    errorResponse(res, err.message, 500);
+  }
+};
+
+export const getMigrationStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const dryRun = req.query.dryRun !== 'false';
+    const report = await runLegacyUsersMigration({ dryRun });
+    successResponse(res, report, 'Migration audit completed.');
   } catch (err: any) {
     errorResponse(res, err.message, 500);
   }
@@ -386,19 +1187,45 @@ export const createStaffUser = async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
+    // Provision Firebase User account for staff member
+    let firebaseUid: string | undefined;
+    try {
+      const fbUser = await firebaseAdmin.createUser({
+        email: email.toLowerCase(),
+        password,
+        displayName: fullName,
+        emailVerified: true,
+      });
+      firebaseUid = fbUser.uid;
+    } catch (fbErr: any) {
+      console.warn('[Staff] Firebase user provisioning notice:', fbErr.message);
+    }
+
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const newUser = await User.create({
-      fullName,
-      email: email.toLowerCase(),
-      mobile: mobile || '9842271000',
-      passwordHash,
-      role,
-      accountStatus: 'active',
-      emailVerified: true,
-      phoneVerified: true,
-    });
+    let newUser;
+    try {
+      newUser = await User.create({
+        firebaseUid,
+        fullName,
+        email: email.toLowerCase(),
+        mobile: mobile || '9842271000',
+        passwordHash,
+        role,
+        accountStatus: 'active',
+        emailVerified: true,
+        phoneVerified: true,
+      });
+    } catch (dbErr: any) {
+      // Safe rollback on database failure
+      if (firebaseUid) {
+        try {
+          await firebaseAdmin.deleteUser(firebaseUid);
+        } catch {}
+      }
+      throw dbErr;
+    }
 
     // Also register in Employee collection if it's a sales/operations role
     if (['sales-manager', 'sales-executive', 'listing-manager', 'admin'].includes(role)) {
@@ -551,6 +1378,20 @@ export const updateStaffStatus = async (req: AuthenticatedRequest, res: Response
       targetUser.tokenVersion = (targetUser.tokenVersion || 0) + 1; // Immediate session revocation
     }
     await targetUser.save();
+
+    // Synchronize session revocation and disabled status with Firebase Auth
+    if (targetUser.firebaseUid) {
+      try {
+        if (status === 'inactive' || status === 'suspended') {
+          await firebaseAdmin.revokeRefreshTokens(targetUser.firebaseUid);
+          await firebaseAdmin.updateUser(targetUser.firebaseUid, { disabled: true });
+        } else if (status === 'active') {
+          await firebaseAdmin.updateUser(targetUser.firebaseUid, { disabled: false });
+        }
+      } catch (fbErr: any) {
+        console.warn('[Staff] Failed to sync status with Firebase Auth:', fbErr.message);
+      }
+    }
 
     await AuditLog.create({
       user: req.user?.userId ? req.user.userId : undefined,

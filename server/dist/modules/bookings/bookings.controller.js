@@ -1,4 +1,5 @@
 import { Booking } from '../../models/Booking.js';
+import { Customer } from '../../models/Customer.js';
 import { Property } from '../../models/Property.js';
 import { Lead } from '../../models/Lead.js';
 import { Activity } from '../../models/Activity.js';
@@ -14,7 +15,7 @@ export const getBookings = async (req, res) => {
         }
         if (status && status !== 'all')
             filter.status = status;
-        // Sales Executive ownership isolation
+        // Role-based record scoping
         const userRole = req.user?.role;
         const userId = req.user?.userId;
         if (userRole === 'sales-executive' && userId) {
@@ -23,11 +24,49 @@ export const getBookings = async (req, res) => {
                 { assignedEmployee: userId },
             ];
         }
+        else if (userRole === 'seller' && userId) {
+            // Seller scoping: only bookings for properties owned by this seller
+            const sellerProperties = await Property.find({
+                $or: [
+                    { ownerId: userId },
+                    { 'seller.email': req.user?.email },
+                ],
+            }).select('_id referenceId slug');
+            const propIdentifiers = sellerProperties
+                .flatMap((p) => [p._id.toString(), p.referenceId, p.slug])
+                .filter(Boolean);
+            filter.propertyId = { $in: propIdentifiers };
+        }
+        else if (userRole === 'buyer' && userId) {
+            // Buyer scoping: match both direct userId and linked Customer records (referenceId and _id)
+            const userEmail = req.user?.email?.toLowerCase();
+            const customerDocs = await Customer.find({
+                $or: [
+                    { user: userId },
+                    ...(userEmail ? [{ email: userEmail }] : []),
+                ],
+            }).select('_id referenceId');
+            const customerIds = [
+                userId,
+                ...customerDocs.flatMap((c) => [c._id.toString(), c.referenceId]).filter(Boolean),
+            ];
+            filter.$or = [
+                { customerId: { $in: customerIds } },
+                { customer: { $in: customerDocs.map((c) => c._id) } },
+            ];
+        }
         const bookings = await Booking.find(filter)
             .sort({ createdAt: -1 })
             .populate('property')
             .populate('assignedEmployee');
-        successResponse(res, bookings);
+        const sanitizedBookings = (userRole === 'seller' || userRole === 'buyer')
+            ? bookings.map((b) => {
+                const obj = b.toObject ? b.toObject() : { ...b };
+                delete obj.notes;
+                return obj;
+            })
+            : bookings;
+        successResponse(res, sanitizedBookings);
     }
     catch (err) {
         errorResponse(res, err.message, 500);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Property, LanguageCode } from '../types/property';
 import { translations } from '../i18n/translations';
 import { formatPriceINR, formatArea, findPropertyDifferences } from '../utils/propertyUtils';
+import { resolveImageUrl, DEFAULT_PROPERTY_FALLBACK_IMAGE } from '../utils/imageUrl';
 import { Badge } from '../components/common/Badge';
 import {
   Container,
@@ -216,8 +217,11 @@ export const ComparePage: React.FC<ComparePageProps> = ({
                       <Box sx={{ position: 'relative', height: 160, borderRadius: '12px', overflow: 'hidden', mb: 1.5, bgcolor: '#ECE7DA' }}>
                         <Box
                           component="img"
-                          src={prop.images[0]}
+                          src={resolveImageUrl(prop.images?.[0])}
                           alt={prop.title}
+                          onError={(e: any) => {
+                            if (e.currentTarget) e.currentTarget.src = DEFAULT_PROPERTY_FALLBACK_IMAGE;
+                          }}
                           sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                         <IconButton
@@ -485,8 +489,11 @@ export const ComparePage: React.FC<ComparePageProps> = ({
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                   <Box
                     component="img"
-                    src={prop.images[0]}
+                    src={resolveImageUrl(prop.images?.[0])}
                     alt=""
+                    onError={(e: any) => {
+                      if (e.currentTarget) e.currentTarget.src = DEFAULT_PROPERTY_FALLBACK_IMAGE;
+                    }}
                     sx={{ width: 50, height: 42, borderRadius: '8px', objectFit: 'cover' }}
                   />
                   <Box>

@@ -17,8 +17,6 @@ import {
   Divider,
   Chip,
   Tooltip,
-  Badge,
-  InputBase,
   Button,
   useMediaQuery,
   useTheme,
@@ -40,8 +38,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import SearchIcon from '@mui/icons-material/Search';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
 import PublicIcon from '@mui/icons-material/Public';
@@ -51,8 +47,8 @@ import { AdminUser } from '../../types/crm';
 import { LanguageCode } from '../../types/property';
 import { CrmModule, hasModuleAccess, getRoleDisplayName } from '../../utils/rbac';
 
-const SIDEBAR_WIDTH = 260;
-const SIDEBAR_COLLAPSED_WIDTH = 72;
+const SIDEBAR_WIDTH = 252;
+const SIDEBAR_COLLAPSED_WIDTH = 68;
 
 interface AdminLayoutProps {
   currentUser: AdminUser;
@@ -80,27 +76,61 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
-  const menuItems: Array<{ id: CrmModule; labelEn: string; labelTa: string; icon: React.ReactElement }> = [
-    { id: 'dashboard', labelEn: 'Dashboard', labelTa: 'முகப்பலகை', icon: <DashboardIcon /> },
-    { id: 'leads', labelEn: 'Leads & CRM', labelTa: 'லீட்கள் & CRM', icon: <PeopleIcon /> },
-    { id: 'customers', labelEn: 'Customers', labelTa: 'வாடிக்கையாளர்கள்', icon: <PersonOutlineIcon /> },
-    { id: 'properties', labelEn: 'Properties', labelTa: 'சொத்துக்கள்', icon: <BusinessIcon /> },
-    { id: 'projects', labelEn: 'Projects & Builders', labelTa: 'திட்டங்கள் & கட்டுநர்கள்', icon: <ApartmentIcon /> },
-    { id: 'site-visits', labelEn: 'Site Visits', labelTa: 'தள ஆய்வுகள்', icon: <CalendarMonthIcon /> },
-    { id: 'bookings', labelEn: 'Bookings & Payments', labelTa: 'முன்பதிவுகள் & பணம்', icon: <MonetizationOnIcon /> },
-    { id: 'tasks', labelEn: 'Tasks & Follow-ups', labelTa: 'பணிகள் & தொடர்வுகள்', icon: <AssignmentIcon /> },
-    { id: 'team', labelEn: 'Team & Permissions', labelTa: 'குழு & அனுமதிகள்', icon: <ManageAccountsIcon /> },
-    { id: 'reports', labelEn: 'Reports & Exports', labelTa: 'அறிக்கைகள் & ஏற்றுமதிகள்', icon: <AssessmentIcon /> },
-    { id: 'audit-log', labelEn: 'Audit Log', labelTa: 'தணிக்கை பதிவு (Audit)', icon: <HistoryIcon /> },
-    { id: 'settings', labelEn: 'System Settings', labelTa: 'கணினி அமைப்புகள்', icon: <SettingsIcon /> },
-    { id: 'masters', labelEn: 'Masters Management', labelTa: 'மாஸ்டர் மேலாண்மை', icon: <AccountTreeIcon /> },
-    { id: 'content', labelEn: 'Website Content', labelTa: 'வலைத்தள உள்ளடக்கம்', icon: <LanguageIcon /> },
+  const menuGroups: Array<{
+    groupEn: string;
+    groupTa: string;
+    items: Array<{ id: CrmModule; labelEn: string; labelTa: string; icon: React.ReactElement }>;
+  }> = [
+    {
+      groupEn: 'Operations',
+      groupTa: 'செயல்பாடுகள்',
+      items: [
+        { id: 'dashboard', labelEn: 'Dashboard', labelTa: 'முகப்பலகை', icon: <DashboardIcon /> },
+        { id: 'leads', labelEn: 'Leads & CRM', labelTa: 'லீட்கள் & CRM', icon: <PeopleIcon /> },
+        { id: 'customers', labelEn: 'Customers', labelTa: 'வாடிக்கையாளர்கள்', icon: <PersonOutlineIcon /> },
+      ],
+    },
+    {
+      groupEn: 'Inventory & Deals',
+      groupTa: 'சொத்துக்கள் & ஒப்பந்தங்கள்',
+      items: [
+        { id: 'properties', labelEn: 'Properties', labelTa: 'சொத்துக்கள்', icon: <BusinessIcon /> },
+        { id: 'projects', labelEn: 'Projects & Builders', labelTa: 'திட்டங்கள் & கட்டுநர்கள்', icon: <ApartmentIcon /> },
+        { id: 'site-visits', labelEn: 'Site Visits', labelTa: 'தள ஆய்வுகள்', icon: <CalendarMonthIcon /> },
+        { id: 'bookings', labelEn: 'Bookings & Payments', labelTa: 'முன்பதிவுகள் & கட்டணங்கள்', icon: <MonetizationOnIcon /> },
+      ],
+    },
+    {
+      groupEn: 'Management',
+      groupTa: 'மேலாண்மை',
+      items: [
+        { id: 'tasks', labelEn: 'Tasks & Follow-ups', labelTa: 'பணிகள் & தொடர்வுகள்', icon: <AssignmentIcon /> },
+        { id: 'team', labelEn: 'Team & Permissions', labelTa: 'குழு & அனுமதிகள்', icon: <ManageAccountsIcon /> },
+        { id: 'reports', labelEn: 'Reports & Exports', labelTa: 'அறிக்கைகள் & ஏற்றுமதிகள்', icon: <AssessmentIcon /> },
+      ],
+    },
+    {
+      groupEn: 'System',
+      groupTa: 'கணினி அமைப்புகள்',
+      items: [
+        { id: 'masters', labelEn: 'Masters Management', labelTa: 'மாஸ்டர் மேலாண்மை', icon: <AccountTreeIcon /> },
+        { id: 'content', labelEn: 'Website Content', labelTa: 'வலைத்தள உள்ளடக்கம்', icon: <LanguageIcon /> },
+        { id: 'audit-log', labelEn: 'Audit Log', labelTa: 'தணிக்கை பதிவு (Audit)', icon: <HistoryIcon /> },
+        { id: 'settings', labelEn: 'System Settings', labelTa: 'கணினி அமைப்புகள்', icon: <SettingsIcon /> },
+      ],
+    },
   ];
 
-  // Filter menu items by user role permissions
-  const permittedItems = menuItems.filter((item) => hasModuleAccess(currentUser.role, item.id));
+  const allMenuItems = menuGroups.flatMap((g) => g.items);
+
+  // Filter menu items by user role permissions per group
+  const permittedGroups = menuGroups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((item) => hasModuleAccess(currentUser.role, item.id)),
+    }))
+    .filter((g) => g.items.length > 0);
 
   const drawerContent = (
     <Box
@@ -115,127 +145,243 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       {/* Brand Header */}
       <Box
         sx={{
-          p: 2.5,
+          px: isCollapsed ? 1.5 : 2,
+          py: 1.5,
           display: 'flex',
           alignItems: 'center',
           justifyContent: isCollapsed ? 'center' : 'space-between',
           borderBottom: '1px solid rgba(245, 242, 233, 0.1)',
+          minHeight: 60,
+          flexShrink: 0,
         }}
       >
         {!isCollapsed && <Logo variant="light" size="sm" />}
         {isCollapsed && <Logo variant="mark-only" size="sm" />}
 
         {!isMobile && (
-          <IconButton
-            size="small"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            sx={{ color: '#C99325', p: 0.5 }}
-          >
-            <ChevronLeftIcon sx={{ transform: isCollapsed ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
-          </IconButton>
+          <Tooltip title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'} placement="right">
+            <IconButton
+              size="small"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              sx={{
+                color: '#E0AA3E',
+                p: 0.5,
+                bgcolor: 'rgba(201, 147, 37, 0.12)',
+                '&:hover': { bgcolor: 'rgba(201, 147, 37, 0.25)' },
+              }}
+              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <ChevronLeftIcon
+                sx={{
+                  transform: isCollapsed ? 'rotate(180deg)' : 'none',
+                  transition: 'transform 0.2s ease-in-out',
+                  fontSize: 20,
+                }}
+              />
+            </IconButton>
+          </Tooltip>
         )}
       </Box>
 
       {/* Role Pill */}
       {!isCollapsed && (
-        <Box sx={{ px: 2.5, pt: 2, pb: 1 }}>
+        <Box sx={{ px: 2, pt: 1.5, pb: 0.75, flexShrink: 0 }}>
           <Chip
             label={getRoleDisplayName(currentUser.role, lang)}
             size="small"
             sx={{
-              bgcolor: 'rgba(201, 147, 37, 0.15)',
-              color: '#E0AA3E',
-              border: '1px solid rgba(201, 147, 37, 0.3)',
+              bgcolor: 'rgba(201, 147, 37, 0.18)',
+              color: '#F0BE54',
+              border: '1px solid rgba(201, 147, 37, 0.35)',
               fontWeight: 700,
-              fontSize: '0.74rem',
+              fontSize: '0.72rem',
               width: '100%',
               justifyContent: 'flex-start',
+              height: 24,
             }}
           />
         </Box>
       )}
 
-      {/* Navigation List */}
-      <List sx={{ px: 1.5, py: 1.5, flex: 1, overflowY: 'auto' }}>
-        {permittedItems.map((item) => {
-          const isActive = currentModule === item.id;
-          return (
-            <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                selected={isActive}
-                onClick={() => {
-                  onNavigateModule(item.id);
-                  if (isMobile) setMobileOpen(false);
-                }}
+      {/* Grouped Navigation List with independent scrolling and sleek scrollbar */}
+      <List
+        sx={{
+          px: 1.25,
+          py: 1,
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255, 255, 255, 0.18) transparent',
+          '&::-webkit-scrollbar': { width: '4px' },
+          '&::-webkit-scrollbar-thumb': {
+            bgcolor: 'rgba(255, 255, 255, 0.18)',
+            borderRadius: '4px',
+          },
+        }}
+      >
+        {permittedGroups.map((group, gIdx) => (
+          <Box key={group.groupEn} sx={{ mb: 1.25 }}>
+            {!isCollapsed && (
+              <Typography
+                variant="overline"
                 sx={{
-                  borderRadius: '10px',
-                  py: 1,
-                  px: 1.5,
-                  color: isActive ? '#FFFFFF' : 'rgba(245, 242, 233, 0.75)',
-                  bgcolor: isActive ? '#013E18 !important' : 'transparent',
-                  borderLeft: isActive ? '3px solid #C99325' : '3px solid transparent',
-                  '&:hover': {
-                    bgcolor: 'rgba(1, 62, 24, 0.6)',
-                    color: '#FFFFFF',
-                  },
+                  display: 'block',
+                  px: 1.25,
+                  pt: gIdx > 0 ? 0.75 : 0.25,
+                  pb: 0.25,
+                  fontSize: '0.64rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.08em',
+                  color: '#D4A038',
+                  textTransform: 'uppercase',
                 }}
               >
-                <ListItemIcon
+                {lang === 'ta' ? group.groupTa : group.groupEn}
+              </Typography>
+            )}
+            {isCollapsed && gIdx > 0 && (
+              <Divider sx={{ my: 0.75, borderColor: 'rgba(245, 242, 233, 0.08)' }} />
+            )}
+            {group.items.map((item) => {
+              const isActive = currentModule === item.id;
+              const itemLabel = lang === 'ta' ? item.labelTa : item.labelEn;
+              const buttonNode = (
+                <ListItemButton
+                  selected={isActive}
+                  onClick={() => {
+                    onNavigateModule(item.id);
+                    if (isMobile) setMobileOpen(false);
+                  }}
+                  aria-label={itemLabel}
                   sx={{
-                    color: isActive ? '#C99325' : 'inherit',
-                    minWidth: isCollapsed ? 'auto' : 36,
-                    mr: isCollapsed ? 0 : 1,
+                    borderRadius: '8px',
+                    py: 0.85,
+                    px: isCollapsed ? 1 : 1.25,
+                    justifyContent: isCollapsed ? 'center' : 'flex-start',
+                    bgcolor: isActive ? 'rgba(201, 147, 37, 0.16) !important' : 'transparent',
+                    borderLeft: isActive ? '3.5px solid #E0AA3E' : '3.5px solid transparent',
+                    transition: 'all 0.15s ease-in-out',
+                    '&:hover': {
+                      bgcolor: isActive ? 'rgba(201, 147, 37, 0.22)' : 'rgba(255, 255, 255, 0.08)',
+                      '& .menu-icon': {
+                        color: isActive ? '#E0AA3E' : '#FFFFFF',
+                      },
+                      '& .menu-text': {
+                        color: '#FFFFFF',
+                      },
+                    },
+                    '&:focus-visible': {
+                      outline: '2px solid #E0AA3E',
+                      outlineOffset: '2px',
+                    },
                   }}
                 >
-                  {item.icon}
-                </ListItemIcon>
-                {!isCollapsed && (
-                  <ListItemText
-                    primary={
-                      <Typography sx={{ fontSize: '0.86rem', fontWeight: isActive ? 700 : 500 }}>
-                        {lang === 'ta' ? item.labelTa : item.labelEn}
-                      </Typography>
-                    }
-                  />
-                )}
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
+                  <ListItemIcon
+                    className="menu-icon"
+                    sx={{
+                      color: isActive ? '#E0AA3E' : '#9BB6A4',
+                      minWidth: isCollapsed ? 'auto' : 32,
+                      mr: isCollapsed ? 0 : 1,
+                      justifyContent: 'center',
+                      '& svg': { fontSize: 20 },
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  {!isCollapsed && (
+                    <ListItemText
+                      disableTypography
+                      primary={
+                        <Typography
+                          className="menu-text"
+                          sx={{
+                            fontSize: '0.84rem',
+                            fontWeight: isActive ? 700 : 500,
+                            color: isActive ? '#FFFFFF' : '#E6EFE9',
+                            lineHeight: 1.3,
+                            letterSpacing: '0.01em',
+                          }}
+                        >
+                          {itemLabel}
+                        </Typography>
+                      }
+                    />
+                  )}
+                </ListItemButton>
+              );
+
+              return (
+                <ListItem key={item.id} disablePadding sx={{ mb: 0.25 }}>
+                  {isCollapsed ? (
+                    <Tooltip title={itemLabel} placement="right" arrow>
+                      {buttonNode}
+                    </Tooltip>
+                  ) : (
+                    buttonNode
+                  )}
+                </ListItem>
+              );
+            })}
+          </Box>
+        ))}
       </List>
 
-      <Divider sx={{ borderColor: 'rgba(245, 242, 233, 0.1)' }} />
+      <Divider sx={{ borderColor: 'rgba(245, 242, 233, 0.1)', flexShrink: 0 }} />
 
       {/* User Footer Profile */}
       <Box
         sx={{
-          p: 2,
+          p: 1.5,
           display: 'flex',
           alignItems: 'center',
-          gap: 1.5,
+          gap: 1.25,
           cursor: 'pointer',
-          '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' },
+          flexShrink: 0,
+          '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)' },
         }}
         onClick={(e) => setUserMenuAnchor(e.currentTarget)}
       >
         <Avatar
           sx={{
-            width: 36,
-            height: 36,
+            width: 34,
+            height: 34,
             bgcolor: '#C99325',
             color: '#18241B',
             fontWeight: 800,
-            fontSize: '0.9rem',
+            fontSize: '0.85rem',
+            flexShrink: 0,
           }}
         >
-          {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'A'}
+          {(currentUser?.fullName || 'A').charAt(0).toUpperCase()}
         </Avatar>
         {!isCollapsed && (
-          <Box sx={{ overflow: 'hidden', flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+          <Box sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 700,
+                color: '#FFFFFF',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+                fontSize: '0.82rem',
+                lineHeight: 1.2,
+              }}
+            >
               {currentUser.fullName || 'Admin User'}
             </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(245, 242, 233, 0.6)', display: 'block', fontSize: '0.72rem' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'rgba(245, 242, 233, 0.72)',
+                display: 'block',
+                fontSize: '0.70rem',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+              }}
+            >
               {currentUser.email}
             </Typography>
           </Box>
@@ -290,28 +436,29 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             bgcolor: '#FFFFFF',
             color: '#18241B',
             borderBottom: '1px solid rgba(24, 36, 27, 0.08)',
+            zIndex: 1100,
           }}
         >
-          <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 3 } }}>
+          <Toolbar sx={{ minHeight: '60px !important', height: 60, justifyContent: 'space-between', px: { xs: 2, sm: 3 } }}>
             {/* Left: Mobile hamburger & breadcrumbs */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {isMobile && (
-                <IconButton edge="start" onClick={() => setMobileOpen(true)} sx={{ color: '#013E18' }}>
+                <IconButton edge="start" onClick={() => setMobileOpen(true)} sx={{ color: '#013E18' }} aria-label="Open navigation menu">
                   <MenuIcon />
                 </IconButton>
               )}
               <Box>
-                <Typography variant="caption" sx={{ color: '#536458', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <Typography variant="caption" sx={{ color: '#536458', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.70rem' }}>
                   Grounds & Gates CRM / {getRoleDisplayName(currentUser.role, 'en')}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#013E18', lineHeight: 1.2 }}>
-                  {menuItems.find((m) => m.id === currentModule)?.labelEn || 'Dashboard'}
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#013E18', lineHeight: 1.2, fontSize: '1.05rem' }}>
+                  {allMenuItems.find((m) => m.id === currentModule)?.labelEn || 'Dashboard'}
                 </Typography>
               </Box>
             </Box>
 
             {/* Right: Actions, Language Switch, Profile */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
               {/* Language Switch */}
               <Button
                 size="small"
@@ -322,10 +469,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                   borderColor: 'rgba(24, 36, 27, 0.2)',
                   color: '#013E18',
                   fontWeight: 700,
-                  fontSize: '0.8rem',
+                  fontSize: '0.78rem',
                   textTransform: 'none',
-                  borderRadius: '20px',
-                  px: 1.5,
+                  borderRadius: '16px',
+                  px: 1.25,
+                  py: 0.35,
                 }}
               >
                 {lang === 'en' ? 'தமிழ்' : 'English'}
@@ -333,17 +481,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
               {/* View Public Website */}
               <Tooltip title="View Public Marketplace">
-                <IconButton onClick={onNavigatePublic} size="small" sx={{ color: '#536458' }}>
+                <IconButton onClick={onNavigatePublic} size="small" sx={{ color: '#536458' }} aria-label="Open public marketplace">
                   <PublicIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
 
               {/* Profile Avatar & Menu */}
-              <IconButton onClick={(e) => setUserMenuAnchor(e.currentTarget)} size="small">
-                <Avatar sx={{ width: 34, height: 34, bgcolor: '#013E18', fontSize: '0.85rem', fontWeight: 700 }}>
-                  {currentUser.fullName ? currentUser.fullName.charAt(0) : 'A'}
-                </Avatar>
-              </IconButton>
+              <Tooltip title="Staff Account Menu">
+                <IconButton onClick={(e) => setUserMenuAnchor(e.currentTarget)} size="small" aria-label="User account menu">
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: '#013E18', fontSize: '0.82rem', fontWeight: 700 }}>
+                    {currentUser.fullName ? currentUser.fullName.charAt(0) : 'A'}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
             </Box>
           </Toolbar>
         </AppBar>
@@ -392,7 +542,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         </Menu>
 
         {/* Dynamic Main Page Content */}
-        <Box component="main" sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, overflowY: 'auto' }}>
+        <Box component="main" sx={{ flex: 1, p: { xs: 2, sm: 2.5, md: 3 }, overflowY: 'auto' }}>
           {children}
         </Box>
       </Box>

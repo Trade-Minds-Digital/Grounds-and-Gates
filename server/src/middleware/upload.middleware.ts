@@ -7,8 +7,9 @@ import { config } from '../config/index.js';
 const uploadDir = config.uploadDir;
 const imagesDir = path.join(uploadDir, 'images');
 const documentsDir = path.join(uploadDir, 'documents');
+const videosDir = path.join(uploadDir, 'videos');
 
-[uploadDir, imagesDir, documentsDir].forEach((dir) => {
+[uploadDir, imagesDir, documentsDir, videosDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -53,4 +54,38 @@ export const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter,
+});
+
+const videoStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, videosDir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `video-${uniqueSuffix}${ext}`);
+  },
+});
+
+const videoFileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedVideoMimes = [
+    'video/mp4',
+    'video/webm',
+    'video/quicktime',
+    'video/x-msvideo',
+  ];
+
+  if (allowedVideoMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Unsupported video format. Allowed formats: MP4, WebM, MOV.'));
+  }
+};
+
+export const videoUpload = multer({
+  storage: videoStorage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  },
+  fileFilter: videoFileFilter,
 });

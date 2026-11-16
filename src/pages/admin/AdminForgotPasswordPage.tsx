@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Box,
   Paper,
@@ -17,6 +19,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Logo } from '../../components/common/Logo';
 import { api } from '../../services/api';
 import { LanguageCode } from '../../types/property';
+import { forgotPasswordSchema, ForgotPasswordFormData } from '../../schemas/auth.schema';
 
 interface AdminForgotPasswordPageProps {
   lang: LanguageCode;
@@ -27,7 +30,6 @@ export const AdminForgotPasswordPage: React.FC<AdminForgotPasswordPageProps> = (
   lang,
   onNavigate,
 }) => {
-  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [statusResult, setStatusResult] = useState<{
     message: string;
@@ -36,24 +38,22 @@ export const AdminForgotPasswordPage: React.FC<AdminForgotPasswordPageProps> = (
   } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: '' },
+  });
+
+  const onSubmit = async (data: ForgotPasswordFormData) => {
     setErrorMessage(null);
     setStatusResult(null);
-
-    if (!email.trim()) {
-      setErrorMessage(
-        lang === 'ta'
-          ? 'உங்கள் பதிவுசெய்த மின்னஞ்சல் முகவரியை உள்ளிடவும்.'
-          : 'Please enter your registered staff email address.'
-      );
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const res = await api.forgotPassword(email.trim());
+      const res = await api.forgotPassword(data.email.trim());
       setStatusResult(res);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to process password reset request.');
@@ -165,14 +165,14 @@ export const AdminForgotPasswordPage: React.FC<AdminForgotPasswordPageProps> = (
         )}
 
         {!statusResult && (
-          <Box component="form" onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
             <TextField
               fullWidth
-              required
               type="email"
               placeholder="e.g. admin@groundsandgates.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              {...register('email')}
+              error={!!errors.email}
+              helperText={errors.email?.message}
               disabled={isLoading}
               slotProps={{
                 input: {

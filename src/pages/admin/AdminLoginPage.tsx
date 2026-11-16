@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Box,
   Paper,
@@ -20,11 +22,15 @@ import ShieldIcon from '@mui/icons-material/Shield';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../query/queryKeys';
 import { Logo } from '../../components/common/Logo';
 import { api } from '../../services/api';
 import { isStaffRole, getRoleDisplayName } from '../../utils/rbac';
 import { LanguageCode } from '../../types/property';
 import { AdminUser } from '../../types/crm';
+import { loginSchema, LoginFormData } from '../../schemas/auth.schema';
+import { auth, signInWithEmailAndPassword, mapFirebaseError } from '../../config/firebase';
 
 interface AdminLoginPageProps {
   lang: LanguageCode;
@@ -37,30 +43,40 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
   onLoginSuccess,
   onNavigate,
 }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
     setErrorMessage(null);
-
-    if (!email.trim() || !password) {
-      setErrorMessage(
-        lang === 'ta'
-          ? 'மின்னஞ்சல் மற்றும் கடவுச்சொல்லை உள்ளிடவும்.'
-          : 'Please enter your registered staff email and password.'
-      );
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const res = await api.login({ email: email.trim(), password });
-      const user = res.user;
+      let user: any = null;
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, data.email.trim(), data.password);
+        const token = await userCred.user.getIdToken();
+        api.setToken(token);
+        const profileRes = await api.getProfile();
+        user = profileRes?.user || profileRes;
+      } catch (fbErr: any) {
+        // Fallback for legacy bootstrap admin accounts before Firebase sync
+        const res = await api.login({ email: data.email.trim(), password: data.password });
+        user = res.user;
+      }
 
       if (!user || !isStaffRole(user.role)) {
         // Disallow non-staff users from logging into the Admin portal
@@ -74,6 +90,8 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
         return;
       }
 
+      queryClient.setQueryData(queryKeys.auth.me(), user);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
       onLoginSuccess(user as AdminUser);
       onNavigate('admin-dashboard');
     } catch (err: any) {
@@ -263,20 +281,19 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit} noValidate>
+          <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
             <Typography variant="caption" sx={{ fontWeight: 700, color: '#18241B', mb: 1, display: 'block' }}>
               {lang === 'ta' ? 'அதிகாரப்பூர்வ மின்னஞ்சல்' : 'Staff Email Address'}
             </Typography>
             <TextField
               fullWidth
-              required
               id="admin-email"
-              name="email"
               type="email"
               autoComplete="username"
               placeholder="e.g. admin@groundsandgates.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              {...register('email')}
+              error={!!errors.email}
+              helperText={errors.email?.message}
               disabled={isLoading}
               slotProps={{
                 input: {
@@ -322,14 +339,13 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
 
             <TextField
               fullWidth
-              required
               id="admin-password"
-              name="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               placeholder="••••••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              {...register('password')}
+              error={!!errors.password}
+              helperText={errors.password?.message}
               disabled={isLoading}
               slotProps={{
                 input: {

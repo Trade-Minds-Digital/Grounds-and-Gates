@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Property, LanguageCode, ListingStatus } from '../types/property';
 import { translations } from '../i18n/translations';
 import { formatPriceINR } from '../utils/propertyUtils';
+import { resolveImageUrl, DEFAULT_PROPERTY_FALLBACK_IMAGE } from '../utils/imageUrl';
 import { useAppState } from '../context/AppStateContext';
 import {
   Container,
@@ -45,6 +46,7 @@ import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import EditIcon from '@mui/icons-material/Edit';
 
 interface SellerDashboardPageProps {
   properties: Property[];
@@ -102,8 +104,8 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
     refreshAll,
   } = useAppState();
 
-  // Use sharedProperties from centralized state if available or fall back to props
-  const localProperties = sharedProperties.length > 0 ? sharedProperties : properties;
+  // The seller's own listings passed via props from useSellerProperties()
+  const localProperties = properties;
 
   const totalViews = localProperties.reduce((sum, p) => sum + (p.viewsCount || 0), 0);
   const totalLeads = localProperties.reduce((sum, p) => sum + (p.enquiriesCount || 0), 0);
@@ -184,14 +186,27 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', height: '100%' }}>
             <Box
               component="img"
-              src={row.images[0]}
+              src={resolveImageUrl(row.images?.[0])}
               alt={row.title}
+              onError={(e: any) => {
+                if (e.currentTarget) {
+                  e.currentTarget.src = DEFAULT_PROPERTY_FALLBACK_IMAGE;
+                }
+              }}
               sx={{ width: 44, height: 38, borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }}
             />
             <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
               <Typography
                 variant="subtitle2"
-                onClick={() => onSelectProperty(row.id)}
+                onClick={() => {
+                  const pubStatus = (row as any).publishingStatus || ((row as any).published ? 'published' : 'pending-review');
+                  const targetId = (row as any).referenceId || row.slug || row.id;
+                  if (pubStatus === 'published') {
+                    onSelectProperty(row.slug || row.id);
+                  } else {
+                    onNavigate(`seller/preview/${targetId}`);
+                  }
+                }}
                 sx={{
                   fontWeight: 800,
                   color: '#18241B',
@@ -336,28 +351,84 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
       ),
     },
     {
+      field: 'publishingStatus',
+      headerName: 'Publication',
+      flex: 1.1,
+      minWidth: 140,
+      renderCell: (params: GridRenderCellParams) => {
+        const row = params.row as any;
+        const pubStatus = row.publishingStatus || (row.published ? 'published' : 'pending-review');
+        const map: Record<string, { bg: string; color: string; label: string }> = {
+          published: { bg: '#ECFDF5', color: '#065F46', label: 'Published' },
+          'pending-review': { bg: '#FFFBEB', color: '#92400E', label: 'Pending Review' },
+          draft: { bg: '#F3F4F6', color: '#4B5563', label: 'Draft' },
+          rejected: { bg: '#FFE4E6', color: '#9F1239', label: 'Rejected' },
+          archived: { bg: '#F5F5F4', color: '#57534E', label: 'Archived' },
+        };
+        const s = map[pubStatus] || map['pending-review'];
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            <Chip
+              label={s.label}
+              size="small"
+              sx={{
+                fontSize: '0.68rem',
+                fontWeight: 800,
+                bgcolor: s.bg,
+                color: s.color,
+                border: `1px solid ${s.color}30`,
+              }}
+            />
+          </Box>
+        );
+      },
+    },
+    {
       field: 'actions',
-      headerName: 'Action',
-      flex: 0.8,
-      minWidth: 100,
+      headerName: 'Actions',
+      flex: 1.2,
+      minWidth: 130,
       sortable: false,
       renderCell: (params: GridRenderCellParams) => {
         const row = params.row as Property;
+        const pubStatus = (row as any).publishingStatus || ((row as any).published ? 'published' : 'pending-review');
+        const targetId = (row as any).referenceId || row.slug || row.id;
         return (
-          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-            <Tooltip title="View Property Brochure">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, height: '100%' }}>
+            <Tooltip title={pubStatus === 'published' ? "View Live Listing" : "Preview Listing"}>
               <IconButton
                 size="small"
-                onClick={() => onSelectProperty(row.id)}
+                onClick={() => {
+                  if (pubStatus === 'published') {
+                    onSelectProperty(row.slug || row.id);
+                  } else {
+                    onNavigate(`seller/preview/${targetId}`);
+                  }
+                }}
                 sx={{
-                  color: '#013E18',
+                  color: pubStatus === 'published' ? '#013E18' : '#C99325',
                   borderRadius: '8px',
                   border: '1px solid #ECE7DA',
                   p: 0.6,
                   '&:hover': { bgcolor: '#013E18', color: '#FFFFFF' },
                 }}
               >
-                <OpenInNewIcon sx={{ fontSize: 16 }} />
+                <VisibilityIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Edit Listing">
+              <IconButton
+                size="small"
+                onClick={() => onNavigate(`edit-property/${targetId}`)}
+                sx={{
+                  color: '#536458',
+                  borderRadius: '8px',
+                  border: '1px solid #ECE7DA',
+                  p: 0.6,
+                  '&:hover': { bgcolor: '#536458', color: '#FFFFFF' },
+                }}
+              >
+                <EditIcon sx={{ fontSize: 16 }} />
               </IconButton>
             </Tooltip>
           </Box>

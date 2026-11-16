@@ -221,43 +221,6 @@ export const HomePage: React.FC<HomePageProps> = ({
               </motion.p>
             </div>
 
-            {/* Right Floating Architectural Property Discovery Badge (4 cols on desktop) */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
-              className="hidden lg:flex lg:col-span-4 justify-end"
-            >
-              <button
-                type="button"
-                onClick={() => onSelectProperty('gg-cbe-villa-01')}
-                className="group text-left bg-black/45 hover:bg-black/65 backdrop-blur-xl border border-white/20 hover:border-[#C99325]/60 rounded-2xl p-4 max-w-xs transition-all duration-300 shadow-2xl cursor-pointer animate-float-gentle"
-              >
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#C99325] flex items-center gap-1.5">
-                    <AutoAwesomeIcon sx={{ fontSize: 13 }} />
-                    Flagship Residence
-                  </span>
-                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                    DTCP Verified
-                  </span>
-                </div>
-                <div className="text-sm font-extrabold text-white group-hover:text-[#e0aa3e] transition-colors">
-                  The Royal Gates · 4BHK Villa
-                </div>
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/15 text-xs">
-                  <span className="text-stone-300 flex items-center gap-1">
-                    <LocationOnIcon sx={{ fontSize: 14, color: '#C99325' }} />
-                    Coimbatore
-                  </span>
-                  <span className="font-black text-white flex items-center gap-1">
-                    ₹2.45 Cr
-                    <ArrowForwardIcon sx={{ fontSize: 14, color: '#C99325' }} />
-                  </span>
-                </div>
-              </button>
-            </motion.div>
-
           </div>
 
           {/* Floating Glass-Like Search Terminal */}
@@ -298,10 +261,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <span className="hidden sm:inline-flex items-center gap-1.5">
                   <VerifiedUserIcon sx={{ fontSize: 16, color: '#013E18' }} />
                   <span>Direct & Verified Inventory</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-[11px] bg-[#FAF8F2] px-2.5 py-1 rounded-full border border-stone-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C99325]" />
-                  <span>{properties.length > 0 ? `${properties.length} Verified Properties Live` : 'Live Marketplace Connected'}</span>
                 </span>
               </div>
             </div>
@@ -1034,6 +993,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             lang={lang}
             onNavigate={onNavigate}
             onSelectProperty={onSelectProperty}
+            savedPropertyIds={savedPropertyIds}
+            onToggleSave={onToggleSave}
           />
 
         </div>

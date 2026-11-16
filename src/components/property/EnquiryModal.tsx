@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Property, LanguageCode, EnquirySubmission } from '../../types/property';
 import { translations } from '../../i18n/translations';
 import { useAppState } from '../../context/AppStateContext';
 import { formatPriceINR } from '../../utils/propertyUtils';
+import { enquiryModalSchema, EnquiryModalFormData } from '../../schemas/enquiry.schema';
 import {
   Dialog,
   DialogTitle,
@@ -48,36 +51,43 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
   const { masters } = useAppState();
   const timeSlots = masters['visit_time_slot'] || [];
 
-  const [fullName, setFullName] = useState('Mohanraj S.');
-  const [phone, setPhone] = useState('+91 98422 71000');
-  const [email, setEmail] = useState('mohanrajs0410@gmail.com');
-  const [visitDate, setVisitDate] = useState(new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0]);
-  const [preferredSlot, setPreferredSlot] = useState<'morning' | 'afternoon' | 'evening'>('morning');
-  const [message, setMessage] = useState('Hello, I am interested in this property. Please arrange a site visit and share document copies.');
   const [submitted, setSubmitted] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [submittedData, setSubmittedData] = useState<EnquiryModalFormData | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!fullName.trim() || !phone.trim() || !email.trim()) {
-      setErrorMsg('Please fill in your name, phone number, and email.');
-      return;
-    }
-    setErrorMsg('');
+  const defaultVisitDate = new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0];
 
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<EnquiryModalFormData>({
+    resolver: zodResolver(enquiryModalSchema),
+    defaultValues: {
+      fullName: 'Mohanraj S.',
+      phone: '+91 98422 71000',
+      email: 'mohanrajs0410@gmail.com',
+      visitDate: defaultVisitDate,
+      preferredTimeSlot: 'morning',
+      message: 'Hello, I am interested in this property. Please arrange a site visit and share document copies.',
+    },
+  });
+
+  const onSubmit = (data: EnquiryModalFormData) => {
     onSubmitEnquiry({
       propertyId: property.id,
       propertyTitle: property.title,
       propertyPrice: property.price,
       propertyLocation: `${property.location}, ${property.district}`,
-      fullName,
-      phone,
-      email,
-      visitDate,
-      preferredTimeSlot: preferredSlot,
-      message,
+      fullName: data.fullName,
+      phone: data.phone,
+      email: data.email,
+      visitDate: data.visitDate,
+      preferredTimeSlot: data.preferredTimeSlot as any,
+      message: data.message || '',
     });
 
+    setSubmittedData(data);
     setSubmitted(true);
   };
 
@@ -189,10 +199,10 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
               Enquiry Summary:
             </Typography>
             <Typography variant="body2" sx={{ color: '#18241B', fontSize: '0.85rem' }}>
-              • Target Date: <strong>{visitDate}</strong> ({preferredSlot})
+              • Target Date: <strong>{submittedData?.visitDate}</strong> ({submittedData?.preferredTimeSlot})
             </Typography>
             <Typography variant="body2" sx={{ color: '#18241B', fontSize: '0.85rem' }}>
-              • Contact: <strong>{fullName}</strong> ({phone})
+              • Contact: <strong>{submittedData?.fullName}</strong> ({submittedData?.phone})
             </Typography>
             <Typography variant="body2" sx={{ color: '#18241B', fontSize: '0.85rem' }}>
               • Destination: <strong>{property.location}, {property.district}</strong>
@@ -209,7 +219,7 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
           </Button>
         </DialogContent>
       ) : (
-        <form onSubmit={handleSubmit}>
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <DialogContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {/* Guarantee Note */}
@@ -229,18 +239,13 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
                   : t.propertyDetails.thirdPartyNotice}
               </Alert>
 
-              {errorMsg && (
-                <Alert severity="error" sx={{ borderRadius: '12px' }}>
-                  {errorMsg}
-                </Alert>
-              )}
-
               {/* Name & Phone */}
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
                 <TextField
                   label={`${t.propertyDetails.yourName} *`}
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  {...register('fullName')}
+                  error={!!errors.fullName}
+                  helperText={errors.fullName?.message}
                   fullWidth
                   size="small"
                   slotProps={{
@@ -255,8 +260,9 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
                 />
                 <TextField
                   label={`${t.propertyDetails.yourPhone} *`}
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  {...register('phone')}
+                  error={!!errors.phone}
+                  helperText={errors.phone?.message}
                   fullWidth
                   size="small"
                   slotProps={{
@@ -275,8 +281,9 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
               <TextField
                 label={`${t.propertyDetails.yourEmail} *`}
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                {...register('email')}
+                error={!!errors.email}
+                helperText={errors.email?.message}
                 fullWidth
                 size="small"
                 slotProps={{
@@ -295,8 +302,9 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
                 <TextField
                   label={t.propertyDetails.selectDate}
                   type="date"
-                  value={visitDate}
-                  onChange={(e) => setVisitDate(e.target.value)}
+                  {...register('visitDate')}
+                  error={!!errors.visitDate}
+                  helperText={errors.visitDate?.message}
                   fullWidth
                   size="small"
                   slotProps={{
@@ -311,37 +319,44 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
                   }}
                 />
 
-                <TextField
-                  select
-                  label={t.propertyDetails.preferredSlot}
-                  value={preferredSlot}
-                  onChange={(e) => setPreferredSlot(e.target.value as any)}
-                  fullWidth
-                  size="small"
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <AccessTimeIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                >
-                  {timeSlots.length > 0 ? (
-                    timeSlots.map(slot => (
-                      <MenuItem key={slot.code} value={slot.code}>
-                        {lang === 'ta' ? (slot.nameTa || slot.name) : slot.name} {slot.metadata?.timeWindow ? `(${slot.metadata.timeWindow})` : ''}
-                      </MenuItem>
-                    ))
-                  ) : (
-                    [
-                      <MenuItem key="morning" value="morning">{t.propertyDetails.morning}</MenuItem>,
-                      <MenuItem key="afternoon" value="afternoon">{t.propertyDetails.afternoon}</MenuItem>,
-                      <MenuItem key="evening" value="evening">{t.propertyDetails.evening}</MenuItem>,
-                    ]
+                <Controller
+                  name="preferredTimeSlot"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      select
+                      label={t.propertyDetails.preferredSlot}
+                      {...field}
+                      error={!!errors.preferredTimeSlot}
+                      helperText={errors.preferredTimeSlot?.message}
+                      fullWidth
+                      size="small"
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <AccessTimeIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                            </InputAdornment>
+                          ),
+                        },
+                      }}
+                    >
+                      {timeSlots.length > 0 ? (
+                        timeSlots.map(slot => (
+                          <MenuItem key={slot.code} value={slot.code}>
+                            {lang === 'ta' ? (slot.nameTa || slot.name) : slot.name} {slot.metadata?.timeWindow ? `(${slot.metadata.timeWindow})` : ''}
+                          </MenuItem>
+                        ))
+                      ) : (
+                        [
+                          <MenuItem key="morning" value="morning">{t.propertyDetails.morning}</MenuItem>,
+                          <MenuItem key="afternoon" value="afternoon">{t.propertyDetails.afternoon}</MenuItem>,
+                          <MenuItem key="evening" value="evening">{t.propertyDetails.evening}</MenuItem>,
+                        ]
+                      )}
+                    </TextField>
                   )}
-                </TextField>
+                />
               </Box>
 
               {/* Message */}
@@ -349,8 +364,7 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
                 label="Enquiry Note / Questions"
                 multiline
                 rows={2}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                {...register('message')}
                 placeholder={t.propertyDetails.messagePlaceholder}
                 fullWidth
                 size="small"
@@ -381,7 +395,7 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
               {t.propertyDetails.submitEnquiry}
             </Button>
           </DialogActions>
-        </form>
+        </Box>
       )}
     </Dialog>
   );

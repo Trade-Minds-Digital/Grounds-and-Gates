@@ -23,8 +23,11 @@ import {
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
+
 import { api } from '../../../services/api';
 import { AdminUser, CrmTask } from '../../../types/crm';
 import { LanguageCode } from '../../../types/property';
@@ -68,14 +71,25 @@ export const AdminTasksModule: React.FC<AdminTasksModuleProps> = ({ currentUser,
     fetchTasks();
   }, [taskViewFilter]);
 
+  const handleToggleTaskStatus = async (task: CrmTask) => {
+    const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+    try {
+      await api.updateTask(task.id || task.referenceId || '', { status: newStatus });
+      fetchTasks();
+    } catch (e: any) {
+      alert(`Failed to update task: ${e.message}`);
+    }
+  };
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTask.title) return;
     try {
       await api.createTask({
         ...newTask,
-        assignedEmployeeId: currentUser.id || 'emp-01',
-        assignedEmployeeName: currentUser.fullName || 'Executive',
+        id: `task-${Date.now()}`,
+        status: 'pending',
+        assignedTo: currentUser.id || 'emp-senthil-01',
       });
       setCreateModalOpen(false);
       setNewTask({
@@ -92,38 +106,40 @@ export const AdminTasksModule: React.FC<AdminTasksModuleProps> = ({ currentUser,
     }
   };
 
-  const handleToggleTaskStatus = async (task: CrmTask) => {
-    const nextStatus = task.status === 'completed' ? 'pending' : 'completed';
-    try {
-      await api.updateTask(task.id || task.referenceId || '', { status: nextStatus });
-      fetchTasks();
-    } catch (e: any) {
-      alert(`Update failed: ${e.message}`);
-    }
-  };
-
   const filtered = tasks.filter((t) => {
-    if (taskViewFilter === 'my') {
-      return (
-        t.assignedEmployeeId === currentUser.id ||
-        t.assignedEmployeeName === currentUser.fullName ||
-        currentUser.role === 'super-admin'
-      );
-    }
     if (taskViewFilter === 'overdue') {
       return new Date(t.dueDate) < new Date() && t.status !== 'completed';
     }
     return true;
   });
 
+  const overdueCount = tasks.filter((t) => new Date(t.dueDate) < new Date() && t.status !== 'completed').length;
+
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+      {/* Header bar */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          gap: 1.5,
+          mb: 2.5,
+        }}
+      >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: '#18241B' }}>
-            {lang === 'ta' ? 'பணிகள் & வாடிக்கையாளர் தொடர்வுகள்' : 'Tasks & Follow-up Action Items'}
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#536458', mt: 0.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#18241B', fontSize: '1.25rem' }}>
+              {lang === 'ta' ? 'பணிகள் & வாடிக்கையாளர் தொடர்வுகள்' : 'Tasks & Follow-up Action Items'}
+            </Typography>
+            <Chip
+              label={`${tasks.length} Total Tasks`}
+              size="small"
+              sx={{ bgcolor: '#FAF8F2', color: '#013E18', fontWeight: 700, fontSize: '0.72rem', height: 22 }}
+            />
+          </Box>
+          <Typography variant="body2" sx={{ color: '#536458', mt: 0.25, fontSize: '0.82rem' }}>
             Time-bound action items linked to leads, site visit reminders, and document verifications.
           </Typography>
         </Box>
@@ -131,14 +147,17 @@ export const AdminTasksModule: React.FC<AdminTasksModuleProps> = ({ currentUser,
         <Button
           variant="contained"
           size="small"
-          startIcon={<AddIcon />}
+          startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           onClick={() => setCreateModalOpen(true)}
           sx={{
             bgcolor: '#013E18',
             color: '#F5F2E9',
             fontWeight: 700,
-            borderRadius: '10px',
+            borderRadius: '8px',
             textTransform: 'none',
+            fontSize: '0.82rem',
+            py: 0.6,
+            px: 1.75,
             '&:hover': { bgcolor: '#00280F' },
           }}
         >
@@ -147,65 +166,102 @@ export const AdminTasksModule: React.FC<AdminTasksModuleProps> = ({ currentUser,
       </Box>
 
       {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={taskViewFilter} onChange={(_, val) => setTaskViewFilter(val)}>
-          <Tab value="my" label="My Active Tasks" sx={{ fontWeight: 700, textTransform: 'none' }} />
-          <Tab value="team" label="Team Workload" sx={{ fontWeight: 700, textTransform: 'none' }} />
-          <Tab value="overdue" label="⚠️ Overdue Items" sx={{ fontWeight: 700, textTransform: 'none', color: '#BE123C' }} />
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2.5 }}>
+        <Tabs
+          value={taskViewFilter}
+          onChange={(_, val) => setTaskViewFilter(val)}
+          sx={{
+            minHeight: 40,
+            '& .MuiTab-root': { fontWeight: 700, textTransform: 'none', fontSize: '0.82rem', minHeight: 40 },
+            '& .Mui-selected': { color: '#013E18' },
+            '& .MuiTabs-indicator': { backgroundColor: '#013E18' },
+          }}
+        >
+          <Tab value="my" label={`My Active Tasks (${tasks.length})`} />
+          <Tab value="team" label="Team Workload" />
+          <Tab
+            value="overdue"
+            label={`Overdue Items (${overdueCount})`}
+            sx={{ color: overdueCount > 0 ? '#BE123C !important' : 'inherit' }}
+          />
         </Tabs>
       </Box>
 
       {/* Task List */}
       {isLoading ? (
         <Box sx={{ py: 8, textAlign: 'center' }}>
-          <CircularProgress size={36} sx={{ color: '#013E18' }} />
+          <CircularProgress size={32} sx={{ color: '#013E18' }} />
         </Box>
+      ) : filtered.length === 0 ? (
+        <Paper elevation={0} sx={{ p: 5, textAlign: 'center', borderRadius: '14px', bgcolor: '#FFFFFF', border: '1px solid rgba(24, 36, 27, 0.08)' }}>
+          <TaskAltIcon sx={{ fontSize: 44, color: '#9CA3AF', mb: 1.5 }} />
+          <Typography variant="body1" sx={{ fontWeight: 700, color: '#18241B', mb: 0.5 }}>
+            No tasks in this view
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#536458', mb: 2 }}>
+            All follow-ups and inspections are up to date.
+          </Typography>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateModalOpen(true)}
+            sx={{ bgcolor: '#013E18', textTransform: 'none', borderRadius: '8px', fontWeight: 700 }}
+          >
+            Create Task
+          </Button>
+        </Paper>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {filtered.map((t) => {
             const isOverdue = new Date(t.dueDate) < new Date() && t.status !== 'completed';
+            const isCompleted = t.status === 'completed';
             return (
               <Paper
                 key={t.id || t.referenceId}
-                elevation={1}
+                elevation={0}
                 sx={{
-                  p: 2.5,
-                  borderRadius: '14px',
+                  p: 2,
+                  borderRadius: '12px',
                   bgcolor: '#FFFFFF',
                   border: isOverdue ? '1px solid #FCA5A5' : '1px solid rgba(24, 36, 27, 0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 2,
+                  transition: 'border-color 0.15s ease-in-out',
+                  '&:hover': { borderColor: isOverdue ? '#F87171' : 'rgba(1, 62, 24, 0.3)' },
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, flex: 1, minWidth: 0 }}>
                   <IconButton
                     size="small"
                     onClick={() => handleToggleTaskStatus(t)}
-                    sx={{ color: t.status === 'completed' ? '#10B981' : '#9CA3AF', mt: 0.25 }}
+                    sx={{ color: isCompleted ? '#10B981' : '#9CA3AF', p: 0.5, mt: 0.25 }}
+                    aria-label={isCompleted ? 'Mark task incomplete' : 'Mark task complete'}
                   >
-                    <CheckCircleIcon />
+                    {isCompleted ? <CheckCircleIcon sx={{ fontSize: 22 }} /> : <RadioButtonUncheckedIcon sx={{ fontSize: 22 }} />}
                   </IconButton>
 
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25, flexWrap: 'wrap' }}>
                       <Typography
-                        variant="subtitle1"
+                        variant="subtitle2"
                         sx={{
-                          fontWeight: 800,
-                          color: '#18241B',
-                          textDecoration: t.status === 'completed' ? 'line-through' : 'none',
+                          fontWeight: 700,
+                          color: isCompleted ? '#9CA3AF' : '#18241B',
+                          textDecoration: isCompleted ? 'line-through' : 'none',
+                          fontSize: '0.88rem',
                         }}
                       >
                         {t.title}
                       </Typography>
                       <Chip
-                        label={t.priority.toUpperCase()}
+                        label={(t.priority || 'medium').toUpperCase()}
                         size="small"
                         sx={{
-                          height: 20,
-                          fontSize: '0.68rem',
+                          height: 18,
+                          fontSize: '0.64rem',
                           fontWeight: 700,
                           bgcolor: t.priority === 'urgent' || t.priority === 'high' ? '#FEE2E2' : '#FEF3C7',
                           color: t.priority === 'urgent' || t.priority === 'high' ? '#991B1B' : '#92400E',
@@ -213,116 +269,121 @@ export const AdminTasksModule: React.FC<AdminTasksModuleProps> = ({ currentUser,
                       />
                     </Box>
 
-                    <Typography variant="body2" sx={{ color: '#536458', mb: 1, fontSize: '0.85rem' }}>
+                    <Typography variant="body2" sx={{ color: '#536458', mb: 0.75, fontSize: '0.80rem', lineHeight: 1.3 }}>
                       {t.description || t.entityTitle || 'Follow-up on inquiry specifications.'}
                     </Typography>
 
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AccessTimeIcon sx={{ fontSize: 15, color: isOverdue ? '#BE123C' : '#536458' }} />
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            fontWeight: 700,
-                            color: isOverdue ? '#BE123C' : '#536458',
-                          }}
-                        >
-                          Due: {new Date(t.dueDate).toLocaleDateString('en-IN')} {isOverdue && '(OVERDUE)'}
+                        <AccessTimeIcon sx={{ fontSize: 14, color: isOverdue ? '#BE123C' : '#536458' }} />
+                        <Typography variant="caption" sx={{ color: isOverdue ? '#BE123C' : '#536458', fontWeight: isOverdue ? 700 : 500, fontSize: '0.72rem' }}>
+                          Due: {t.dueDate} {isOverdue && '(Overdue)'}
                         </Typography>
                       </Box>
-
-                      <Typography variant="caption" sx={{ color: '#013E18', fontWeight: 600 }}>
-                        Assigned to: {t.assignedEmployeeName}
-                      </Typography>
+                      {t.entityTitle && (
+                        <Typography variant="caption" sx={{ color: '#013E18', fontWeight: 600, fontSize: '0.72rem' }}>
+                          Linked: {t.entityTitle}
+                        </Typography>
+                      )}
                     </Box>
                   </Box>
                 </Box>
-
-                <Button
-                  size="small"
-                  variant={t.status === 'completed' ? 'outlined' : 'contained'}
-                  onClick={() => handleToggleTaskStatus(t)}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    borderRadius: '8px',
-                    bgcolor: t.status === 'completed' ? 'transparent' : '#013E18',
-                    color: t.status === 'completed' ? '#065F46' : '#F5F2E9',
-                  }}
-                >
-                  {t.status === 'completed' ? 'Reopen' : 'Complete'}
-                </Button>
               </Paper>
             );
           })}
-
-          {filtered.length === 0 && (
-            <Paper elevation={0} sx={{ p: 6, textAlign: 'center', bgcolor: '#FAF8F2', borderRadius: '16px' }}>
-              <Typography variant="body2" sx={{ color: '#6B7280' }}>
-                No active tasks found in this view.
-              </Typography>
-            </Paper>
-          )}
         </Box>
       )}
 
       {/* Create Task Modal */}
-      <Dialog open={createModalOpen} onClose={() => setCreateModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800 }}>Create New Task / Follow-up</DialogTitle>
-        <DialogContent dividers>
-          <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <TextField
-              required
-              label="Task Title"
-              placeholder="e.g. Call Mr. Mohanraj regarding plot legal EC"
-              value={newTask.title}
-              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-            />
+      <Dialog
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: { sx: { borderRadius: '16px' } },
+        }}
+      >
+        <form onSubmit={handleCreateTask}>
+          <DialogTitle sx={{ fontWeight: 800, fontSize: '1.1rem', pb: 1 }}>
+            Create CRM Task or Follow-up
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 2.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                required
+                fullWidth
+                size="small"
+                label="Task Title"
+                placeholder="e.g. Call buyer regarding DTCP approval copy..."
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+              />
 
-            <TextField
-              multiline
-              rows={2}
-              label="Description / Context"
-              value={newTask.description}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-            />
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <FormControl size="small">
+                  <InputLabel>Priority</InputLabel>
+                  <Select
+                    value={newTask.priority}
+                    label="Priority"
+                    onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as any })}
+                    sx={{ borderRadius: '8px' }}
+                  >
+                    <MenuItem value="low">Low</MenuItem>
+                    <MenuItem value="medium">Medium</MenuItem>
+                    <MenuItem value="high">High</MenuItem>
+                    <MenuItem value="urgent">Urgent</MenuItem>
+                  </Select>
+                </FormControl>
 
-            <FormControl fullWidth size="small">
-              <InputLabel>Priority</InputLabel>
-              <Select
-                value={newTask.priority}
-                label="Priority"
-                onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as any })}
-              >
-                <MenuItem value="low">Low</MenuItem>
-                <MenuItem value="medium">Medium</MenuItem>
-                <MenuItem value="high">High</MenuItem>
-                <MenuItem value="urgent">Urgent</MenuItem>
-              </Select>
-            </FormControl>
+                <TextField
+                  required
+                  type="date"
+                  size="small"
+                  label="Due Date"
+                  value={newTask.dueDate}
+                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                />
+              </Box>
 
-            <TextField
-              required
-              type="date"
-              label="Due Date"
-              slotProps={{ inputLabel: { shrink: true } }}
-              value={newTask.dueDate}
-              onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={() => setCreateModalOpen(false)} sx={{ textTransform: 'none', color: '#536458' }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleCreateTask}
-            sx={{ bgcolor: '#013E18', color: '#F5F2E9', fontWeight: 700, textTransform: 'none' }}
-          >
-            Create Task
-          </Button>
-        </DialogActions>
+              <TextField
+                fullWidth
+                size="small"
+                label="Linked Entity (Lead or Property Name)"
+                value={newTask.entityTitle}
+                onChange={(e) => setNewTask({ ...newTask, entityTitle: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+              />
+
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                size="small"
+                label="Action Description / Notes"
+                value={newTask.description}
+                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, gap: 1 }}>
+            <Button size="small" onClick={() => setCreateModalOpen(false)} sx={{ textTransform: 'none', color: '#536458', fontSize: '0.82rem' }}>
+              Cancel
+            </Button>
+            <Button
+              size="small"
+              type="submit"
+              variant="contained"
+              sx={{ bgcolor: '#013E18', color: '#F5F2E9', fontWeight: 700, textTransform: 'none', borderRadius: '8px', fontSize: '0.82rem', '&:hover': { bgcolor: '#00280F' } }}
+            >
+              Save Task
+            </Button>
+          </DialogActions>
+        </form>
       </Dialog>
     </Box>
   );

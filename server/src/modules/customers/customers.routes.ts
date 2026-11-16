@@ -20,9 +20,15 @@ export const getCustomers = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-export const getCustomerById = async (req: Request, res: Response): Promise<void> => {
+export const getCustomerById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const userRole = req.user?.role;
+    const userId = req.user?.userId;
+    const userEmail = req.user?.email?.toLowerCase();
+
+    const isStaff = ['super-admin', 'admin', 'sales-manager', 'sales-executive'].includes(userRole || '');
+
     const customer = await Customer.findOne({
       $or: [
         { referenceId: id },
@@ -32,6 +38,16 @@ export const getCustomerById = async (req: Request, res: Response): Promise<void
 
     if (!customer) {
       errorResponse(res, 'Customer not found', 404);
+      return;
+    }
+
+    const isOwner = Boolean(
+      (customer.user && userId && customer.user.toString() === userId) ||
+      (customer.email && userEmail && customer.email.toLowerCase() === userEmail)
+    );
+
+    if (!isStaff && !isOwner) {
+      errorResponse(res, 'Access denied. You do not have permission to view this customer record.', 403);
       return;
     }
 

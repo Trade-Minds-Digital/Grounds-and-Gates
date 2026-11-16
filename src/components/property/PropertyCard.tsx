@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Property, LanguageCode } from '../../types/property';
 import { Badge } from '../common/Badge';
 import { formatPriceINR, formatArea } from '../../utils/propertyUtils';
+import { resolveImageUrl, DEFAULT_PROPERTY_FALLBACK_IMAGE } from '../../utils/imageUrl';
 import { translations } from '../../i18n/translations';
 import {
   Card,
@@ -52,8 +53,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const [isHeartBouncing, setIsHeartBouncing] = useState(false);
 
   const title = lang === 'ta' && property.tamilTitle ? property.tamilTitle : property.title;
-  const fallbackImage = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80';
-  const displayImage = imageError || !property.images?.length ? fallbackImage : property.images[0];
+  const rawImage = property.images && property.images.length > 0 ? property.images[0] : '';
+  const displayImage = imageError || !rawImage ? DEFAULT_PROPERTY_FALLBACK_IMAGE : resolveImageUrl(rawImage);
 
   const formattedPrice = formatPriceINR(property.price, property.listingType, property.priceUnit);
   const formattedAreaText = formatArea(property.plotArea, property.plotAreaUnit, property.builtUpArea);

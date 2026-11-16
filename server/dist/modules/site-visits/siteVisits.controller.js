@@ -1,5 +1,7 @@
 import { SiteVisit } from '../../models/SiteVisit.js';
+import { Customer } from '../../models/Customer.js';
 import { Lead } from '../../models/Lead.js';
+import { Property } from '../../models/Property.js';
 import { Activity } from '../../models/Activity.js';
 import { Notification } from '../../models/Notification.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
@@ -14,13 +16,44 @@ export const getSiteVisits = async (req, res) => {
             filter.status = status;
         if (date)
             filter.date = date;
-        // Sales Executive ownership isolation: Only see assigned visits
+        // Role-based record scoping
         const userRole = req.user?.role;
         const userId = req.user?.userId;
         if (userRole === 'sales-executive' && userId) {
             filter.$or = [
                 { assignedEmployeeId: userId },
                 { assignedEmployee: userId },
+            ];
+        }
+        else if (userRole === 'seller' && userId) {
+            // Seller scoping: only visits for properties owned by this seller
+            const sellerProperties = await Property.find({
+                $or: [
+                    { ownerId: userId },
+                    { 'seller.email': req.user?.email },
+                ],
+            }).select('_id referenceId slug');
+            const propIdentifiers = sellerProperties
+                .flatMap((p) => [p._id.toString(), p.referenceId, p.slug])
+                .filter(Boolean);
+            filter.propertyId = { $in: propIdentifiers };
+        }
+        else if (userRole === 'buyer' && userId) {
+            // Buyer scoping: match both direct userId and linked Customer records (referenceId and _id)
+            const userEmail = req.user?.email?.toLowerCase();
+            const customerDocs = await Customer.find({
+                $or: [
+                    { user: userId },
+                    ...(userEmail ? [{ email: userEmail }] : []),
+                ],
+            }).select('_id referenceId');
+            const customerIds = [
+                userId,
+                ...customerDocs.flatMap((c) => [c._id.toString(), c.referenceId]).filter(Boolean),
+            ];
+            filter.$or = [
+                { customerId: { $in: customerIds } },
+                { customer: { $in: customerDocs.map((c) => c._id) } },
             ];
         }
         else if (assignedEmployeeId) {
@@ -30,7 +63,14 @@ export const getSiteVisits = async (req, res) => {
             .sort({ date: -1 })
             .populate('property')
             .populate('assignedEmployee');
-        successResponse(res, visits);
+        const sanitizedVisits = userRole === 'seller'
+            ? visits.map((v) => {
+                const obj = v.toObject ? v.toObject() : { ...v };
+                delete obj.notes;
+                return obj;
+            })
+            : visits;
+        successResponse(res, sanitizedVisits);
     }
     catch (err) {
         errorResponse(res, err.message, 500);

@@ -947,3 +947,461 @@ test('27. Masters & Content RBAC: Anonymous & Unauthorized Access Denied', async
     .set('Authorization', `Bearer ${executive1Token}`);
   assert.strictEqual(execPubRes.status, 403);
 });
+
+test('28. Geospatial Search: Center + Radius, Straight-Line Distance, and Sorting', async () => {
+  // Search near Coimbatore center (11.0168, 76.9558) within 15 km
+  const res = await request.get('/api/v1/properties?nearLat=11.0168&nearLng=76.9558&radius=15&includeSample=true&sortBy=distance');
+  assert.strictEqual(res.status, 200);
+  assert.ok(Array.isArray(res.body.data));
+  assert.ok(res.body.data.length > 0);
+
+  // Verify distance calculations are attached and labelled
+  const first = res.body.data[0];
+  assert.ok(typeof first.distanceKm === 'number');
+  assert.ok(first.distanceLabel.includes('Straight-line distance'));
+
+  // Verify distance sorting: item 0 <= item 1
+  if (res.body.data.length > 1) {
+    assert.ok(res.body.data[0].distanceKm <= res.body.data[1].distanceKm);
+  }
+});
+
+test('29. Geospatial Viewport Search & Lightweight Map Markers Endpoint', async () => {
+  // Query lightweight map markers within Tamil Nadu bounds
+  const markersRes = await request.get('/api/v1/properties/map-markers?includeSample=true');
+  assert.strictEqual(markersRes.status, 200);
+  assert.ok(Array.isArray(markersRes.body.data));
+  assert.ok(markersRes.body.data.length > 0);
+
+  const marker = markersRes.body.data[0];
+  assert.ok(marker.id);
+  assert.ok(marker.title);
+  assert.ok(typeof marker.lat === 'number');
+  assert.ok(typeof marker.lng === 'number');
+  assert.ok(typeof marker.price === 'number');
+
+  // Test bbox filtering around Coimbatore [minLng, minLat, maxLng, maxLat]
+  const bboxRes = await request.get('/api/v1/properties/map-markers?bbox=76.8,10.9,77.2,11.2&includeSample=true');
+  assert.strictEqual(bboxRes.status, 200);
+  assert.ok(Array.isArray(bboxRes.body.data));
+});
+
+test('30. Location Missing vs Confirmed CRM Inventory Filter', async () => {
+  const confirmedRes = await request.get('/api/v1/properties?locationStatus=confirmed&includeSample=true');
+  assert.strictEqual(confirmedRes.status, 200);
+  assert.ok(Array.isArray(confirmedRes.body.data));
+
+  const missingRes = await request.get('/api/v1/properties?locationStatus=missing&includeSample=true');
+  assert.strictEqual(missingRes.status, 200);
+  assert.ok(Array.isArray(missingRes.body.data));
+});
+
+test('31. Geoapify Service Status & Graceful Provider Handling', async () => {
+  const statusRes = await request.get('/api/v1/geo/status');
+  assert.strictEqual(statusRes.status, 200);
+  assert.strictEqual(statusRes.body.success, true);
+  assert.ok('configured' in statusRes.body);
+
+  // Invalid coordinates rejected with 400
+  const invalidGeoRes = await request.get('/api/v1/geo/reverse?lat=invalid&lng=invalid');
+  assert.strictEqual(invalidGeoRes.status, 400);
+});
+
+test('32. Location Save, Reload, and GeoJSON Point Synchronization', async () => {
+  // Create a new property with explicit GPS coordinates
+  const createRes = await request
+    .post('/api/v1/properties')
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({
+      title: 'Automated GPS Verification Villa',
+      description: 'Clear title test property with verified pin coordinates.',
+      category: 'villas',
+      listingType: 'buy',
+      ownershipType: 'company',
+      price: 5500000,
+      priceUnit: 'Total',
+      location: 'Saravanampatti',
+      locality: 'Saravanampatti',
+      district: 'Coimbatore',
+      state: 'Tamil Nadu',
+      pincode: '641035',
+      address: 'KGISL IT Park Road, Saravanampatti',
+      coordinates: {
+        lat: 11.0764,
+        lng: 77.0045,
+      },
+      locationConfirmed: true,
+      locationSource: 'picker',
+      isApproximateLocation: false,
+      plotArea: 5,
+      plotAreaUnit: 'cents',
+      status: 'active',
+      published: true,
+    });
+
+  assert.strictEqual(createRes.status, 201);
+  const createdId = createRes.body.data._id || createRes.body.data.id;
+  assert.ok(createdId);
+  assert.strictEqual(createRes.body.data.locationConfirmed, true);
+  assert.strictEqual(createRes.body.data.coordinates?.lat, 11.0764);
+  assert.strictEqual(createRes.body.data.coordinates?.lng, 77.0045);
+  // Verify GeoJSON [longitude, latitude] order
+  assert.strictEqual(createRes.body.data.locationGeo?.coordinates?.[0], 77.0045);
+  assert.strictEqual(createRes.body.data.locationGeo?.coordinates?.[1], 11.0764);
+
+  // Reload the property from database
+  const reloadRes = await request
+    .get(`/api/v1/properties/${createdId}`)
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(reloadRes.status, 200);
+  assert.strictEqual(reloadRes.body.data.locationConfirmed, true);
+  assert.strictEqual(reloadRes.body.data.coordinates?.lat, 11.0764);
+  assert.strictEqual(reloadRes.body.data.coordinates?.lng, 77.0045);
+
+  // Update coordinates via PATCH
+  const patchRes = await request
+    .patch(`/api/v1/properties/${createdId}`)
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({
+      coordinates: {
+        lat: 11.0800,
+        lng: 77.0100,
+      },
+      locationConfirmed: true,
+    });
+  assert.strictEqual(patchRes.status, 200);
+  assert.strictEqual(patchRes.body.data.coordinates?.lat, 11.08);
+  assert.strictEqual(patchRes.body.data.coordinates?.lng, 77.01);
+  assert.strictEqual(patchRes.body.data.locationGeo?.coordinates?.[0], 77.01);
+  assert.strictEqual(patchRes.body.data.locationGeo?.coordinates?.[1], 11.08);
+
+  // Clean up
+  await request
+    .delete(`/api/v1/properties/${createdId}`)
+    .set('Authorization', `Bearer ${superAdminToken}`);
+});
+
+test('33. Nearby Facilities (Places) & Autocomplete Provider Live Calls', async () => {
+  const statusRes = await request.get('/api/v1/geo/status');
+  assert.strictEqual(statusRes.status, 200);
+
+  if (statusRes.body.configured) {
+    // Autocomplete test
+    const autoRes = await request.get('/api/v1/geo/autocomplete?text=Saravanampatti');
+    assert.strictEqual(autoRes.status, 200);
+    assert.ok(Array.isArray(autoRes.body.data));
+
+    // Nearby facilities test near Coimbatore
+    const placesRes = await request.get('/api/v1/geo/places?lat=11.0168&lng=76.9558&category=schools&radius=3000');
+    assert.strictEqual(placesRes.status, 200);
+    assert.ok(Array.isArray(placesRes.body.data));
+  }
+});
+
+test('34. Category-Aware Property Creation, Seller Whitelisting, Draft Persistence & Document Upload', async () => {
+  // 1. Register a genuine seller
+  const sellerEmail = `seller_${Date.now()}@testgrounds.com`;
+  const sellerReg = await request.post('/api/v1/auth/register').send({
+    fullName: 'Senthil Nathan Seller',
+    email: sellerEmail,
+    mobile: '9842212345',
+    password: 'SellerPass123!',
+    role: 'seller',
+  });
+  assert.strictEqual(sellerReg.status, 201);
+  const sellerToken = sellerReg.body.data.accessToken;
+
+  // 2. Seller saves an initial draft listing with incomplete data
+  const draftCreateRes = await request
+    .post('/api/v1/properties')
+    .set('Authorization', `Bearer ${sellerToken}`)
+    .send({
+      title: 'Kovaipudur Hillside Villa Plot',
+      category: 'residential-plots',
+      listingType: 'buy',
+      isDraft: true,
+      draftStep: 2,
+      locality: 'Kovaipudur',
+      district: 'Coimbatore',
+      // Attacker attempts privilege escalation:
+      verified: true,
+      ownershipType: 'company',
+      isSample: true,
+      featured: true,
+    });
+  assert.strictEqual(draftCreateRes.status, 201);
+  const draftProp = draftCreateRes.body.data;
+  assert.strictEqual(draftProp.publishingStatus, 'draft');
+  assert.strictEqual(draftProp.verified, false, 'Seller must not be able to self-verify listing');
+  assert.strictEqual(draftProp.ownershipType, 'third-party', 'Seller listing must not be labeled as company-owned');
+  assert.strictEqual(draftProp.isSample, false);
+  assert.strictEqual(draftProp.featured, false);
+
+  // 3. Seller resumes draft from /drafts/mine
+  const resumeRes = await request
+    .get('/api/v1/properties/drafts/mine')
+    .set('Authorization', `Bearer ${sellerToken}`);
+  assert.strictEqual(resumeRes.status, 200);
+  assert.strictEqual(resumeRes.body.data.referenceId, draftProp.referenceId);
+  assert.strictEqual(resumeRes.body.data.draftStep, 2);
+
+  // 4. Seller uploads a private legal document for verification
+  const fakeDocBuffer = Buffer.from('%PDF-1.4 sample verification deed content');
+  const docUploadRes = await request
+    .post('/api/v1/upload/document')
+    .set('Authorization', `Bearer ${sellerToken}`)
+    .attach('file', fakeDocBuffer, 'kovaipudur_patta.pdf');
+  assert.strictEqual(docUploadRes.status, 201);
+  assert.strictEqual(docUploadRes.body.data.isPrivate, true);
+  assert.ok(docUploadRes.body.data.url.includes('/api/v1/upload/documents/'));
+
+  // 5. Seller updates draft with category-specific plot specifications & legal doc reference
+  const updateRes = await request
+    .patch(`/api/v1/properties/${draftProp.referenceId}`)
+    .set('Authorization', `Bearer ${sellerToken}`)
+    .send({
+      price: 4500000,
+      plotArea: 5,
+      plotAreaUnit: 'cents',
+      plotLength: 60,
+      plotWidth: 36.3,
+      roadWidthFeet: 30,
+      roadType: 'tar',
+      isCornerPlot: true,
+      isGatedLayout: true,
+      boundaryWall: true,
+      legalDocuments: [
+        {
+          title: 'Patta & Title Deed',
+          url: docUploadRes.body.data.url,
+          documentType: 'Patta',
+          isPrivate: true,
+        },
+      ],
+      draftStep: 6,
+      isDraft: true,
+    });
+  assert.strictEqual(updateRes.status, 200);
+  assert.strictEqual(updateRes.body.data.plotLength, 60);
+  assert.strictEqual(updateRes.body.data.isCornerPlot, true);
+  assert.strictEqual(updateRes.body.data.roadType, 'tar');
+
+  // 6. Submit property for review (finalize draft)
+  const submitRes = await request
+    .patch(`/api/v1/properties/${draftProp.referenceId}`)
+    .set('Authorization', `Bearer ${sellerToken}`)
+    .send({
+      isDraft: false,
+      publishingStatus: 'pending-review',
+    });
+  assert.strictEqual(submitRes.status, 200);
+  assert.strictEqual(submitRes.body.data.publishingStatus, 'pending-review');
+  assert.strictEqual(submitRes.body.data.published, false);
+
+  // 7. Ownership protection: Another seller cannot tamper with this listing
+  const anotherSellerReg = await request.post('/api/v1/auth/register').send({
+    fullName: 'Intruder Seller',
+    email: `intruder_${Date.now()}@testgrounds.com`,
+    mobile: '9842299881',
+    password: 'IntruderPass123!',
+    role: 'seller',
+  });
+  const intruderToken = anotherSellerReg.body.data.accessToken;
+
+  const intruderTamperRes = await request
+    .patch(`/api/v1/properties/${draftProp.referenceId}`)
+    .set('Authorization', `Bearer ${intruderToken}`)
+    .send({ price: 1000 });
+  assert.strictEqual(intruderTamperRes.status, 403);
+  assert.ok(intruderTamperRes.body.message.includes('only modify your own'));
+
+  // 8. Public detail access is blocked while listing is pending review
+  const publicUnpublishedRes = await request.get(`/api/v1/properties/${draftProp.slug}`);
+  assert.strictEqual(publicUnpublishedRes.status, 404);
+  assert.strictEqual(publicUnpublishedRes.body.message, 'Property listing is not currently published.');
+
+  // 9. Seller can preview their own unpublished listing via authenticated seller endpoint (by slug and referenceId)
+  const ownerPreviewSlugRes = await request
+    .get(`/api/v1/properties/seller/${draftProp.slug}`)
+    .set('Authorization', `Bearer ${sellerToken}`);
+  assert.strictEqual(ownerPreviewSlugRes.status, 200);
+  assert.strictEqual(ownerPreviewSlugRes.body.data.referenceId, draftProp.referenceId);
+
+  const ownerPreviewRefRes = await request
+    .get(`/api/v1/properties/seller/${draftProp.referenceId}`)
+    .set('Authorization', `Bearer ${sellerToken}`);
+  assert.strictEqual(ownerPreviewRefRes.status, 200);
+
+  // 10. Another seller is rejected with 403 when trying to preview this private listing
+  const intruderPreviewRes = await request
+    .get(`/api/v1/properties/seller/${draftProp.slug}`)
+    .set('Authorization', `Bearer ${intruderToken}`);
+  assert.strictEqual(intruderPreviewRes.status, 403);
+
+  // 11. Authorized admin can review unpublished listing with complete documents
+  const adminReviewRes = await request
+    .get(`/api/v1/properties/admin/review/${draftProp.slug}`)
+    .set('Authorization', `Bearer ${superAdminToken}`);
+  assert.strictEqual(adminReviewRes.status, 200);
+  assert.strictEqual(adminReviewRes.body.data.referenceId, draftProp.referenceId);
+
+  // 12. Admin approves and publishes the listing
+  const publishRes = await request
+    .patch(`/api/v1/properties/${draftProp.referenceId}/publish-status`)
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({ publishingStatus: 'published' });
+  assert.strictEqual(publishRes.status, 200);
+  assert.strictEqual(publishRes.body.data.publishingStatus, 'published');
+  assert.strictEqual(publishRes.body.data.published, true);
+
+  // 13. Public detail URL now returns 200
+  const publicPublishedRes = await request.get(`/api/v1/properties/${draftProp.slug}`);
+  assert.strictEqual(publicPublishedRes.status, 200);
+  assert.strictEqual(publicPublishedRes.body.data.title, 'Kovaipudur Hillside Villa Plot');
+
+  // 14. Admin unpublishes the listing (moves to draft)
+  const unpublishRes = await request
+    .patch(`/api/v1/properties/${draftProp.referenceId}/publish-status`)
+    .set('Authorization', `Bearer ${superAdminToken}`)
+    .send({ publishingStatus: 'draft' });
+  assert.strictEqual(unpublishRes.status, 200);
+  assert.strictEqual(unpublishRes.body.data.publishingStatus, 'draft');
+  assert.strictEqual(unpublishRes.body.data.published, false);
+
+  // 15. Public access is immediately revoked
+  const publicRevokedRes = await request.get(`/api/v1/properties/${draftProp.slug}`);
+  assert.strictEqual(publicRevokedRes.status, 404);
+  assert.strictEqual(publicRevokedRes.body.message, 'Property listing is not currently published.');
+
+  // Clean up
+  await request
+    .delete(`/api/v1/properties/${draftProp.referenceId}`)
+    .set('Authorization', `Bearer ${superAdminToken}`);
+});
+
+test('35. Firebase Authentication: Identity Mapping, Idempotent Onboarding, Email Verification & Session Revocation', async () => {
+  const makeTestFbToken = (uid: string, email: string, emailVerified = true) =>
+    `test_token_${uid}_${Buffer.from(email.toLowerCase()).toString('base64')}_${emailVerified ? '1' : '0'}`;
+
+  // 1. Rejection of unauthenticated request to onboarding
+  const unauthOnboarding = await request.post('/api/v1/auth/onboarding').send({
+    fullName: 'Test User',
+    mobile: '9842271000',
+  });
+  assert.strictEqual(unauthOnboarding.status, 401);
+
+  // 2. Public registration onboarding with Firebase token
+  const testUid = `fb_client_${Date.now()}`;
+  const testEmail = `fb_buyer_${Date.now()}@groundsandgates.com`;
+  const fbTokenUnverified = makeTestFbToken(testUid, testEmail, false);
+
+  // Privilege escalation guard: trying to register as super-admin in onboarding must be rejected with 403
+  const privEscRes = await request
+    .post('/api/v1/auth/onboarding')
+    .set('Authorization', `Bearer ${fbTokenUnverified}`)
+    .send({
+      fullName: 'Hacker User',
+      mobile: '9842271000',
+      role: 'super-admin',
+      termsAccepted: true,
+    });
+  assert.strictEqual(privEscRes.status, 403);
+
+  // Valid buyer onboarding
+  const onboardRes = await request
+    .post('/api/v1/auth/onboarding')
+    .set('Authorization', `Bearer ${fbTokenUnverified}`)
+    .send({
+      fullName: 'Kavitha Rajan',
+      mobile: '9842271000',
+      accountUsage: 'buyer',
+      role: 'buyer',
+      address: { district: 'Coimbatore', city: 'R.S. Puram' },
+      termsAccepted: true,
+      marketingConsent: true,
+    });
+  assert.strictEqual(onboardRes.status, 201);
+  assert.strictEqual(onboardRes.body.data.user.fullName, 'Kavitha Rajan');
+  assert.strictEqual(onboardRes.body.data.user.email, testEmail);
+  assert.strictEqual(onboardRes.body.data.user.firebaseUid, testUid);
+  assert.strictEqual(onboardRes.body.data.user.emailVerified, false);
+
+  // 3. Idempotent onboarding retry does not create duplicates
+  const retryOnboard = await request
+    .post('/api/v1/auth/onboarding')
+    .set('Authorization', `Bearer ${fbTokenUnverified}`)
+    .send({
+      fullName: 'Kavitha Rajan Updated',
+      mobile: '9842271000',
+      accountUsage: 'buyer',
+      termsAccepted: true,
+    });
+  assert.strictEqual(retryOnboard.status, 200);
+  assert.strictEqual(retryOnboard.body.data.user.fullName, 'Kavitha Rajan Updated');
+
+  // Verify only 1 record exists in MongoDB
+  const count = await User.countDocuments({ firebaseUid: testUid });
+  assert.strictEqual(count, 1);
+
+  // 4. Authenticated profile endpoint resolves correctly with Firebase token
+  const profileRes = await request
+    .get('/api/v1/auth/me')
+    .set('Authorization', `Bearer ${fbTokenUnverified}`);
+  assert.strictEqual(profileRes.status, 200);
+  assert.strictEqual(profileRes.body.data.email, testEmail);
+
+  // 5. Verification sync: unverified remains false
+  const syncUnverified = await request
+    .post('/api/v1/auth/sync-verification')
+    .set('Authorization', `Bearer ${fbTokenUnverified}`);
+  assert.strictEqual(syncUnverified.status, 200);
+  assert.strictEqual(syncUnverified.body.data.emailVerified, false);
+
+  // 6. Verification sync: token with verified email updates MongoDB profile
+  const fbTokenVerified = makeTestFbToken(testUid, testEmail, true);
+  const syncVerified = await request
+    .post('/api/v1/auth/sync-verification')
+    .set('Authorization', `Bearer ${fbTokenVerified}`);
+  assert.strictEqual(syncVerified.status, 200);
+  assert.strictEqual(syncVerified.body.data.emailVerified, true);
+
+  const updatedUserRecord = await User.findOne({ firebaseUid: testUid });
+  assert.strictEqual(updatedUserRecord?.emailVerified, true);
+
+  // 7. Role permissions: Buyer with verified Firebase token cannot access Admin team endpoint
+  const adminDenied = await request
+    .get('/api/v1/auth/staff')
+    .set('Authorization', `Bearer ${fbTokenVerified}`);
+  assert.strictEqual(adminDenied.status, 403);
+
+  // 8. Super Admin authentication with Firebase token
+  const superAdminUid = `fb_superadmin_${Date.now()}`;
+  const superAdminFbToken = makeTestFbToken(superAdminUid, 'admin@groundsandgates.com', true);
+
+  // Linking legacy Super Admin by verified email
+  const superAdminProfile = await request
+    .get('/api/v1/auth/me')
+    .set('Authorization', `Bearer ${superAdminFbToken}`);
+  assert.strictEqual(superAdminProfile.status, 200);
+  assert.strictEqual(superAdminProfile.body.data.role, 'super-admin');
+
+  // Super Admin can access staff endpoint using Firebase token
+  const staffList = await request
+    .get('/api/v1/auth/staff')
+    .set('Authorization', `Bearer ${superAdminFbToken}`);
+  assert.strictEqual(staffList.status, 200);
+  assert.ok(Array.isArray(staffList.body.data));
+
+  // 9. Legacy User Migration dry-run status
+  const migrationRes = await request
+    .get('/api/v1/auth/migration/status')
+    .set('Authorization', `Bearer ${superAdminFbToken}`);
+  assert.strictEqual(migrationRes.status, 200);
+  assert.ok(migrationRes.body.data.totalUsers > 0);
+  assert.ok(migrationRes.body.data.superAdminsCount >= 1);
+  assert.strictEqual(migrationRes.body.data.passwordHashAlgorithm.includes('bcrypt'), true);
+  assert.strictEqual(migrationRes.body.data.supportedFirebaseImportFormat.includes('BCRYPT'), true);
+
+  // Clean up test user
+  await User.deleteOne({ firebaseUid: testUid });
+});

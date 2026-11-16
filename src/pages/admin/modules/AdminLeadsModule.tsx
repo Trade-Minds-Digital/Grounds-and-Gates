@@ -22,6 +22,13 @@ import {
   Tabs,
   Tab,
   Tooltip,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableContainer,
+  TablePagination,
 } from '@mui/material';
 
 // Icons
@@ -126,7 +133,7 @@ export const AdminLeadsModule: React.FC<AdminLeadsModuleProps> = ({ currentUser,
 
     try {
       await api.updateLeadStage(leadId, newStage);
-      setSuccessMessage(`Lead moved to ${newStage.toUpperCase()}`);
+      setSuccessMessage(`Lead moved to ${(newStage || '').toUpperCase()}`);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
       // Revert if backend write fails
@@ -344,13 +351,28 @@ export const AdminLeadsModule: React.FC<AdminLeadsModuleProps> = ({ currentUser,
 
         <Button
           size="small"
-          variant="outlined"
-          startIcon={<RefreshIcon />}
+          variant="contained"
+          startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
           onClick={fetchLeads}
-          sx={{ borderRadius: '10px', textTransform: 'none', color: '#013E18', borderColor: 'rgba(24, 36, 27, 0.2)' }}
+          sx={{ borderRadius: '8px', textTransform: 'none', bgcolor: '#013E18', color: '#F5F2E9', fontWeight: 700, fontSize: '0.80rem', height: 38, px: 1.5, '&:hover': { bgcolor: '#00280F' } }}
         >
           Apply Filters
         </Button>
+
+        {(searchQuery || stageFilter !== 'all' || priorityFilter !== 'all') && (
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => {
+              setSearchQuery('');
+              setStageFilter('all');
+              setPriorityFilter('all');
+            }}
+            sx={{ borderRadius: '8px', textTransform: 'none', color: '#536458', fontWeight: 600, fontSize: '0.80rem' }}
+          >
+            Reset
+          </Button>
+        )}
       </Paper>
 
       {/* Kanban Pipeline View */}
@@ -416,7 +438,7 @@ export const AdminLeadsModule: React.FC<AdminLeadsModuleProps> = ({ currentUser,
                           {lead.buyerName}
                         </Typography>
                         <Chip
-                          label={lead.priority.toUpperCase()}
+                          label={(lead.priority || 'medium').toUpperCase()}
                           size="small"
                           sx={{
                             height: 18,
@@ -477,59 +499,88 @@ export const AdminLeadsModule: React.FC<AdminLeadsModuleProps> = ({ currentUser,
 
       {/* Table View */}
       {viewMode === 'table' && (
-        <Paper elevation={1} sx={{ borderRadius: '16px', overflow: 'hidden' }}>
-          <Box sx={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#FAF8F2', borderBottom: '1px solid rgba(24, 36, 27, 0.08)' }}>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Lead Name</th>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Phone / Email</th>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Property Enquired</th>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Offer (INR)</th>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Stage</th>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Priority</th>
-                  <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 800, color: '#18241B' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+        <Paper elevation={0} sx={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(24, 36, 27, 0.08)', bgcolor: '#FFFFFF' }}>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#FAF8F2' }}>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Lead Name</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Phone / Email</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Property Enquired</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Offer (INR)</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Stage</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Priority</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800, color: '#18241B', fontSize: '0.78rem', py: 1.5 }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {leads.map((l) => (
-                  <tr
+                  <TableRow
                     key={l.id || l.referenceId}
-                    style={{ borderBottom: '1px solid rgba(24, 36, 27, 0.05)', cursor: 'pointer' }}
+                    hover
                     onClick={() => handleOpenLeadDetails(l)}
+                    sx={{ cursor: 'pointer', '&:last-child td': { border: 0 } }}
                   >
-                    <td style={{ padding: '14px 18px', fontWeight: 700, color: '#18241B' }}>{l.buyerName}</td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.82rem', color: '#536458' }}>
-                      <div>{l.phone}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>{l.email}</div>
-                    </td>
-                    <td style={{ padding: '14px 18px', fontSize: '0.82rem', color: '#18241B' }}>{l.propertyTitle}</td>
-                    <td style={{ padding: '14px 18px', fontWeight: 700, color: '#013E18' }}>{formatPriceINR(l.offerAmount || 0)}</td>
-                    <td style={{ padding: '14px 18px' }}>
-                      <Chip label={l.stage.toUpperCase()} size="small" sx={{ fontWeight: 700, fontSize: '0.7rem' }} />
-                    </td>
-                    <td style={{ padding: '14px 18px' }}>
+                    <TableCell sx={{ py: 1.5, fontWeight: 700, color: '#18241B', fontSize: '0.84rem' }}>
+                      {l.buyerName}
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.80rem', color: '#18241B', fontWeight: 600 }}>
+                        {l.phone}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#536458', display: 'block', fontSize: '0.72rem' }}>
+                        {l.email}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5, fontSize: '0.80rem', color: '#18241B', maxWidth: 220 }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.80rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {l.propertyTitle}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5, fontWeight: 800, color: '#013E18', fontSize: '0.84rem' }}>
+                      {formatPriceINR(l.offerAmount || 0)}
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Chip label={(l.stage || 'new').toUpperCase()} size="small" sx={{ fontWeight: 700, fontSize: '0.68rem', height: 20 }} />
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5 }}>
                       <Chip
-                        label={l.priority.toUpperCase()}
+                        label={(l.priority || 'medium').toUpperCase()}
                         size="small"
                         sx={{
                           fontWeight: 700,
-                          fontSize: '0.7rem',
+                          fontSize: '0.68rem',
+                          height: 20,
                           bgcolor: l.priority === 'high' ? '#FEE2E2' : '#FEF3C7',
                           color: l.priority === 'high' ? '#991B1B' : '#92400E',
                         }}
                       />
-                    </td>
-                    <td style={{ padding: '14px 18px' }} onClick={(e) => e.stopPropagation()}>
-                      <Button size="small" onClick={() => handleOpenLeadDetails(l)} sx={{ textTransform: 'none', fontWeight: 700 }}>
-                        Details →
+                    </TableCell>
+                    <TableCell align="right" sx={{ py: 1.5 }} onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleOpenLeadDetails(l)}
+                        sx={{
+                          borderColor: 'rgba(1, 62, 24, 0.4)',
+                          color: '#013E18',
+                          fontWeight: 700,
+                          fontSize: '0.74rem',
+                          textTransform: 'none',
+                          borderRadius: '6px',
+                          py: 0.35,
+                          px: 1,
+                          '&:hover': { bgcolor: 'rgba(1, 62, 24, 0.05)', borderColor: '#013E18' },
+                        }}
+                      >
+                        Details
                       </Button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </Box>
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Paper>
       )}
 

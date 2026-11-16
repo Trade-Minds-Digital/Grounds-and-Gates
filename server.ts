@@ -35,7 +35,8 @@ app.get(['/property/:idOrSlug', '/properties/:idOrSlug'], (req: Request, res: Re
 
   const title = `${prop.title} | Grounds & Gates Tamil Nadu`;
   const description = `${prop.location}, ${prop.district} - ₹${(prop.price / 100000).toFixed(1)}L | ${prop.plotArea} ${prop.plotAreaUnit} | ${prop.approvalAuthority || 'Verified'} property.`;
-  const image = prop.images[0] || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80';
+  const rawImage = prop.images?.[0] || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80';
+  const image = rawImage.startsWith('http') ? rawImage : `https://groundsandgates.in${rawImage.startsWith('/') ? '' : '/'}${rawImage}`;
   const url = `https://groundsandgates.in/property/${prop.slug}`;
 
   const enrichedHtml = baseHtml

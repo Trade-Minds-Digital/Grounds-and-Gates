@@ -37,6 +37,8 @@ export interface NearbyFacility {
 
 export interface Property {
   id: string;
+  _id?: string;
+  referenceId?: string;
   slug: string;
   title: string;
   tamilTitle?: string;
@@ -51,6 +53,7 @@ export interface Property {
   
   // Location
   location: string; // Locality / Area
+  locality?: string;
   district: string; // e.g., 'Coimbatore', 'Chennai', etc.
   state: string; // Tamil Nadu
   pincode: string;
@@ -59,6 +62,21 @@ export interface Property {
     lat: number;
     lng: number;
   };
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  locationGeo?: {
+    type: 'Point';
+    coordinates: [number, number]; // [longitude, latitude] in GeoJSON order
+  };
+  locationConfirmed?: boolean;
+  locationConfirmedAt?: string;
+  locationSource?: 'picker' | 'manual' | 'geocoded';
+  isApproximateLocation?: boolean;
+  placeId?: string;
+  distanceKm?: number;
+  distanceLabel?: string;
   landmark?: string;
   
   // Sizing & Specs
@@ -66,23 +84,82 @@ export interface Property {
   plotAreaUnit: 'cents' | 'sq.ft' | 'acres';
   builtUpArea?: number; // In sq.ft
   builtUpAreaUnit?: 'sq.ft';
+  carpetArea?: number;
+  superBuiltUpArea?: number;
+  plotLength?: number;
+  plotWidth?: number;
+  roadType?: 'tar' | 'concrete' | 'gravel' | 'mud';
+  isCornerPlot?: boolean;
+  isGatedLayout?: boolean;
+  boundaryWall?: boolean;
   bedrooms?: number;
   bathrooms?: number;
+  balconies?: number;
   floors?: number;
+  floorNumber?: number;
+  totalFloors?: number;
   facing: FacingDirection;
+  furnishingStatus?: 'unfurnished' | 'semi-furnished' | 'fully-furnished';
+  parkingSpaces?: number;
+  parkingType?: 'covered' | 'open' | 'none';
+  hasLift?: boolean;
   roadWidthFeet?: number;
   approvalAuthority?: 'DTCP' | 'CMDA' | 'RERA' | 'Panchayat' | 'Agricultural Patta';
-  reraId?: string; // Clearly labeled demo
+  approvalNumber?: string;
+  reraId?: string;
   waterSource?: string[];
   electricitySupply?: string;
   ageOfPropertyYears?: number;
+  propertyAgeYears?: number;
   
+  // Category-specific
+  landUseClassification?: 'dry-land' | 'wet-land' | 'garden-land';
+  irrigationSource?: string[];
+  cropType?: string;
+  structuresOnLand?: string[];
+  soilType?: string;
+  commercialSubtype?: 'office' | 'retail' | 'warehouse' | 'industrial' | 'land';
+  powerLoadKw?: number;
+  frontageFeet?: number;
+  ceilingHeightFeet?: number;
+  suitableUse?: string[];
+  constructionStatus?: 'ready-to-move' | 'under-construction' | 'new-launch';
+  possessionDate?: string;
+
+  // Financials
+  priceBasis?: 'total' | 'per_cent' | 'per_sqft' | 'per_acre' | 'per_month';
+  deposit?: number;
+  maintenanceFee?: number;
+  maintenanceFrequency?: 'monthly' | 'quarterly' | 'annual';
+
   // Amenities & Features
   amenities: string[];
   nearbyFacilities: NearbyFacility[];
   
   // Media
   images: string[];
+  videos?: string[];
+  videoUrl?: string;
+  videoType?: 'direct' | 'youtube' | 'vimeo';
+  floorPlans?: string[];
+
+  // Legal & Verification
+  legalDocuments?: Array<{
+    title: string;
+    url: string;
+    documentType: string;
+    isPrivate: boolean;
+    uploadedAt?: string;
+  }>;
+
+  // Contact preferences
+  contactPreferences?: {
+    preferredTime?: string;
+    allowWhatsApp?: boolean;
+    phoneAvailable?: boolean;
+    siteVisitDays?: string[];
+  };
+  draftStep?: number;
   
   // Seller
   seller: SellerInfo;
@@ -91,13 +168,32 @@ export interface Property {
   projectId?: string;
   listingDate: string;
   status: ListingStatus;
+  publishingStatus?: 'draft' | 'pending-review' | 'published' | 'rejected' | 'archived';
   featured: boolean;
-  demoLabel: string; // 'Demo Listing'
+  demoLabel: string;
   viewsCount?: number;
   enquiriesCount?: number;
   verified?: boolean;
   legalApprovalStatus?: 'pending' | 'approved' | 'rejected';
   verificationStatus?: 'verified' | 'pending' | 'unverified';
+}
+
+export interface MapMarkerItem {
+  id: string;
+  slug: string;
+  title: string;
+  tamilTitle?: string;
+  category: PropertyCategory;
+  listingType: ListingType;
+  price: number;
+  priceUnit: string;
+  locality: string;
+  district: string;
+  image: string;
+  lat: number;
+  lng: number;
+  isApproximateLocation?: boolean;
+  verified?: boolean;
 }
 
 export interface PropertyFilterState {
@@ -115,7 +211,12 @@ export interface PropertyFilterState {
   facing: FacingDirection | 'all';
   ownershipType: OwnershipType | 'all';
   featuredOnly: boolean;
-  sortBy: 'relevance' | 'newest' | 'price-low' | 'price-high' | 'area-low' | 'area-high';
+  nearLat?: number | null;
+  nearLng?: number | null;
+  radius?: number | null;
+  bbox?: string | null;
+  locationStatus?: 'all' | 'confirmed' | 'missing';
+  sortBy: 'relevance' | 'newest' | 'price-low' | 'price-high' | 'area-low' | 'area-high' | 'distance';
 }
 
 export interface EnquirySubmission {
@@ -165,6 +266,8 @@ export type UserRole =
   | 'sales-executive'
   | 'listing-manager'
   | 'buyer'
+  | 'seller'
   | 'owner'
   | 'agent'
+  | 'developer'
   | 'company-admin';

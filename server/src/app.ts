@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import path from 'node:path';
+import fs from 'node:fs';
 
 import { config } from './config/index.js';
 import { errorHandler } from './middleware/error.middleware.js';
@@ -29,6 +30,7 @@ import settingsRoutes from './modules/settings/settings.routes.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
 import mastersRoutes from './modules/masters/masters.routes.js';
 import contentRoutes from './modules/content/content.routes.js';
+import geoRoutes from './modules/geo/geo.routes.js';
 
 export const createApp = () => {
   const app = express();
@@ -59,8 +61,26 @@ export const createApp = () => {
     app.use(morgan('dev'));
   }
 
-  // Static uploads directory: Public images only (private documents are protected by staff authentication)
+  // Static uploads directory: Public images & videos (private documents are protected by staff authentication)
+  app.use('/uploads', (_req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  });
   app.use('/uploads/images', express.static(path.join(config.uploadDir, 'images')));
+  app.use('/uploads/videos', express.static(path.join(config.uploadDir, 'videos')));
+  app.use('/uploads', express.static(config.uploadDir));
+
+  const alternateUploadDirs = [
+    path.resolve(process.cwd(), 'server', 'uploads'),
+    path.resolve(process.cwd(), 'uploads'),
+  ];
+  for (const altDir of alternateUploadDirs) {
+    if (altDir !== config.uploadDir && fs.existsSync(altDir)) {
+      app.use('/uploads/images', express.static(path.join(altDir, 'images')));
+      app.use('/uploads/videos', express.static(path.join(altDir, 'videos')));
+      app.use('/uploads', express.static(altDir));
+    }
+  }
 
   // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {
@@ -95,6 +115,7 @@ export const createApp = () => {
   apiV1.use('/reports', reportsRoutes);
   apiV1.use('/masters', mastersRoutes);
   apiV1.use('/content', contentRoutes);
+  apiV1.use('/geo', geoRoutes);
 
   app.use('/api/v1', apiV1);
 

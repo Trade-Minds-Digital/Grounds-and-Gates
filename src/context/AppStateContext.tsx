@@ -1,10 +1,10 @@
 /**
- * Grounds & Gates - Production Application State Context
- * Replaces legacy DemoStateContext with real-time API-driven state management.
- * Connects directly to Express + MongoDB REST APIs.
+ * Grounds & Gates - Unified Application State Bridge
+ * Connects TanStack React Query and Redux Toolkit to legacy context consumers.
+ * Eliminates redundant useEffect fetching and competing client caches.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import { Property, ListingStatus } from '../types/property';
 import {
   Developer,
@@ -18,8 +18,39 @@ import {
   Activity,
   DemoNotification,
 } from '../types/demo';
-import { api } from '../services/api';
 import { MasterItem } from '../types/masters';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../query/queryKeys';
+import {
+  useProperties,
+  useCreateProperty,
+  useUpdateProperty,
+  useDeleteProperty,
+} from '../query/hooks/usePropertyQueries';
+import { usePublicMasters } from '../query/hooks/useMasterQueries';
+import { usePublicContent } from '../query/hooks/useContentQueries';
+import { useCurrentUser, useLogin, useRegister, useLogout } from '../query/hooks/useAuthQueries';
+import {
+  useLeads,
+  useCreateLead,
+  useUpdateLeadStage,
+  useBookings,
+  useCreateBooking,
+  useSiteVisits,
+  useCreateSiteVisit,
+  useCustomers,
+  useProjects,
+  useDevelopers,
+  useTeam,
+} from '../query/hooks/useCrmQueries';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import {
+  toggleSaveProperty as toggleSaveRedux,
+  clearSavedProperties as clearSavedRedux,
+  toggleCompareProperty as toggleCompareRedux,
+  clearComparedProperties as clearComparedRedux,
+} from '../store/slices/uiSlice';
+import { api } from '../services/api';
 
 export interface UserProfile {
   id: string;
@@ -103,180 +134,64 @@ export interface AppStateContextType {
 const AppStateContext = createContext<AppStateContextType | undefined>(undefined);
 
 export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [developers, setDevelopers] = useState<Developer[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [notifications, setNotifications] = useState<DemoNotification[]>([]);
-  const [masters, setMasters] = useState<Record<string, MasterItem[]>>({});
-  const [webContent, setWebContent] = useState<Record<string, any>>({});
+  const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
 
-  const [isLoadingProperties, setIsLoadingProperties] = useState<boolean>(true);
-  const [propertiesError, setPropertiesError] = useState<string | null>(null);
-  const [isBackendConnected, setIsBackendConnected] = useState<boolean>(true);
+  // Redux Client UI State
+  const savedPropertyIds = useAppSelector((state) => state.ui.savedPropertyIds);
+  const comparedPropertyIds = useAppSelector((state) => state.ui.comparedPropertyIds);
 
-  // Authentication state
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  // TanStack React Query Hooks for Server State
+  const { data: properties = [], isLoading: isLoadingProperties, error: propertiesQueryError } = useProperties();
+  const { data: masters = {} } = usePublicMasters();
+  const { data: webContent = {} } = usePublicContent();
+  const {
+    user: authUser,
+    authReady,
+    profileReady,
+    accountActive,
+    isStaff,
+    isSeller,
+    canReadCustomers,
+    canReadTeam,
+    canReadLeads,
+    canReadBookings,
+    canReadSiteVisits,
+  } = useCurrentUser();
+  
+  // Scoped queries: ONLY enabled if the user has the required permission
+  const { data: leads = [] } = useLeads({}, { enabled: Boolean(authUser && accountActive && canReadLeads) });
+  const { data: bookings = [] } = useBookings({ enabled: Boolean(authUser && accountActive && canReadBookings) });
+  const { data: siteVisits = [] } = useSiteVisits({ enabled: Boolean(authUser && accountActive && canReadSiteVisits) });
+  const { data: customers = [] } = useCustomers({ enabled: Boolean(authUser && accountActive && canReadCustomers) });
+  const { data: projects = [] } = useProjects();
+  const { data: developers = [] } = useDevelopers();
+  const { data: team = [] } = useTeam({ enabled: Boolean(authUser && accountActive && canReadTeam) });
 
-  // Saved properties & comparisons
-  const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem('gg_guest_saved');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Mutations
+  const createPropertyMutation = useCreateProperty();
+  const updatePropertyMutation = useUpdateProperty();
+  const deletePropertyMutation = useDeleteProperty();
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
+  const logoutMutation = useLogout();
+  const createLeadMutation = useCreateLead();
+  const updateLeadStageMutation = useUpdateLeadStage();
+  const createBookingMutation = useCreateBooking();
+  const createSiteVisitMutation = useCreateSiteVisit();
 
-  const [comparedPropertyIds, setComparedPropertyIds] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem('gg_guest_compared');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const currentUser: UserProfile | null = useMemo(() => {
+    if (!authUser) return null;
+    return {
+      id: authUser._id || authUser.id,
+      name: authUser.fullName || authUser.name || 'User',
+      fullName: authUser.fullName || authUser.name || 'User',
+      email: authUser.email,
+      role: authUser.role || 'buyer',
+      phone: authUser.mobile || authUser.phone,
+    };
+  }, [authUser]);
 
-  // Verify authentication profile on mount
-  const checkAuthProfile = useCallback(async () => {
-    const token = api.getToken();
-    if (!token) {
-      setCurrentUser(null);
-      setIsLoggedIn(false);
-      return;
-    }
-
-    try {
-      const profile = await api.getProfile();
-      if (profile) {
-        setCurrentUser({
-          id: profile._id || profile.id,
-          name: profile.fullName || profile.name || 'User',
-          fullName: profile.fullName || profile.name || 'User',
-          email: profile.email,
-          role: profile.role || 'buyer',
-          phone: profile.mobile || profile.phone,
-        });
-        setIsLoggedIn(true);
-
-        // Sync authenticated user's favorites from API
-        try {
-          const favs = await api.getFavorites();
-          if (favs && Array.isArray(favs.propertyIds)) {
-            setSavedPropertyIds(favs.propertyIds);
-          }
-        } catch {}
-
-        // Sync authenticated user's comparisons from API
-        try {
-          const comp = await api.getComparison();
-          if (comp && Array.isArray(comp.propertyIds)) {
-            setComparedPropertyIds(comp.propertyIds);
-          }
-        } catch {}
-      }
-    } catch (err) {
-      console.warn('Session verification failed, cleared token:', err);
-      api.setToken(null);
-      setCurrentUser(null);
-      setIsLoggedIn(false);
-    }
-  }, []);
-
-  // Fetch live properties from MongoDB
-  const fetchProperties = useCallback(async () => {
-    setIsLoadingProperties(true);
-    setPropertiesError(null);
-    try {
-      const response = await api.getProperties({}, 1, 100);
-      const propsList = Array.isArray(response) ? response : response.data || [];
-      // Map MongoDB referenceId or _id to standard frontend id
-      const normalizedProps = propsList.map((p: any) => ({
-        ...p,
-        id: p.referenceId || p._id || p.id,
-      }));
-      setProperties(normalizedProps);
-      setIsBackendConnected(true);
-    } catch (err: any) {
-      console.error('Failed to fetch properties from API:', err);
-      setPropertiesError(err.message || 'Unable to connect to property listings server.');
-      setIsBackendConnected(false);
-    } finally {
-      setIsLoadingProperties(false);
-    }
-  }, []);
-
-  // Fetch ancillary datasets if authenticated
-  const fetchAncillaryData = useCallback(async () => {
-    try {
-      const [projs, devs] = await Promise.all([
-        api.getProjects().catch(() => []),
-        api.getDevelopers().catch(() => []),
-      ]);
-      setProjects(projs);
-      setDevelopers(devs);
-    } catch {}
-
-    // CRM datasets (if authenticated as staff)
-    if (api.getToken()) {
-      try {
-        const [empList, custList, leadList, visitList, bkgList] = await Promise.all([
-          api.getEmployees().catch(() => []),
-          api.getCustomers().catch(() => []),
-          api.getLeads().catch(() => []),
-          api.getSiteVisits().catch(() => []),
-          api.getBookings().catch(() => []),
-        ]);
-        setEmployees(empList);
-        setCustomers(custList);
-        setLeads(leadList);
-        setSiteVisits(visitList);
-        setBookings(bkgList);
-      } catch {}
-    }
-  }, []);
-
-  const fetchMasters = useCallback(async () => {
-    try {
-      const batch = await api.getPublicMastersBatch();
-      if (batch && typeof batch === 'object') {
-        setMasters(batch);
-      }
-    } catch (err) {
-      console.warn('Failed to load masters batch from backend API:', err);
-    }
-  }, []);
-
-  const fetchWebContent = useCallback(async () => {
-    try {
-      const content = await api.getPublicContent();
-      if (content && typeof content === 'object') {
-        setWebContent(content);
-      }
-    } catch (err) {
-      console.warn('Failed to load published web content from backend API:', err);
-    }
-  }, []);
-
-  const refreshAll = useCallback(async () => {
-    await Promise.all([fetchProperties(), fetchAncillaryData(), checkAuthProfile(), fetchMasters(), fetchWebContent()]);
-  }, [fetchProperties, fetchAncillaryData, checkAuthProfile, fetchMasters, fetchWebContent]);
-
-  useEffect(() => {
-    checkAuthProfile();
-    fetchProperties();
-    fetchAncillaryData();
-    fetchMasters();
-    fetchWebContent();
-  }, [checkAuthProfile, fetchProperties, fetchAncillaryData, fetchMasters, fetchWebContent]);
-
-  // Derived Saved & Compared Properties
   const savedProperties = useMemo(() => {
     return properties.filter((p) => savedPropertyIds.includes(p.id));
   }, [properties, savedPropertyIds]);
@@ -285,253 +200,130 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return properties.filter((p) => comparedPropertyIds.includes(p.id));
   }, [properties, comparedPropertyIds]);
 
-  const unreadNotificationCount = useMemo(() => {
-    return notifications.filter((n) => !n.read).length;
-  }, [notifications]);
+  const refreshProperties = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.properties.all });
+  }, [queryClient]);
 
-  // Query Selectors
-  const getPropertyById = useCallback(
-    (id: string) => {
-      return properties.find((p) => p.id === id || p.slug === id);
+  const refreshMasters = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.masters.all });
+  }, [queryClient]);
+
+  const refreshWebContent = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.content.all });
+  }, [queryClient]);
+
+  const refreshAll = useCallback(async () => {
+    const invalidations = [
+      queryClient.invalidateQueries({ queryKey: queryKeys.properties.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.masters.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.content.all }),
+    ];
+    if (canReadLeads) {
+      invalidations.push(queryClient.invalidateQueries({ queryKey: queryKeys.leads.all }));
+    }
+    if (authUser && accountActive) {
+      if (canReadBookings) {
+        invalidations.push(queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all }));
+      }
+      if (canReadSiteVisits) {
+        invalidations.push(queryClient.invalidateQueries({ queryKey: queryKeys.siteVisits.all }));
+      }
+      if (canReadCustomers) {
+        invalidations.push(queryClient.invalidateQueries({ queryKey: queryKeys.customers.all }));
+      }
+      if (canReadTeam) {
+        invalidations.push(queryClient.invalidateQueries({ queryKey: queryKeys.team.all }));
+      }
+    }
+    await Promise.all(invalidations);
+  }, [queryClient, canReadLeads, canReadBookings, canReadSiteVisits, canReadCustomers, canReadTeam, authUser, accountActive]);
+
+  const value: AppStateContextType = {
+    properties,
+    developers,
+    projects,
+    employees: team,
+    customers,
+    leads,
+    siteVisits,
+    bookings,
+    activities: [],
+    notifications: [],
+
+    currentUser,
+    isLoggedIn: Boolean(currentUser),
+    userRole: currentUser?.role || 'buyer',
+
+    savedPropertyIds,
+    comparedPropertyIds,
+    savedProperties,
+    comparedProperties,
+    unreadNotificationCount: 0,
+
+    isLoadingProperties,
+    propertiesError: propertiesQueryError ? (propertiesQueryError as Error).message : null,
+    isBackendConnected: true,
+
+    masters: masters as Record<string, MasterItem[]>,
+    webContent: webContent as Record<string, any>,
+    refreshMasters,
+    refreshWebContent,
+
+    refreshProperties,
+    refreshAll,
+
+    login: async (credentials) => loginMutation.mutateAsync(credentials),
+    register: async (payload) => registerMutation.mutateAsync(payload),
+    logout: async () => logoutMutation.mutateAsync(),
+
+    addProperty: async (prop) => createPropertyMutation.mutateAsync(prop),
+    updateProperty: async (id, updates) => updatePropertyMutation.mutateAsync({ id, updates }),
+    deleteProperty: async (id) => deletePropertyMutation.mutateAsync(id),
+    updatePropertyStatus: async (id, status) => {
+      const updated = await api.updatePropertyStatus(id, status);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.properties.all });
+      return updated;
     },
-    [properties]
-  );
+    getPropertyById: (id: string) => properties.find((p) => p.id === id || p.slug === id),
 
-  // Authentication Handlers
-  const handleLogin = async (credentials: { email: string; password: string }) => {
-    const res = await api.login(credentials);
-    await checkAuthProfile();
-    await fetchAncillaryData();
-    return res;
-  };
-
-  const handleRegister = async (data: { fullName: string; email: string; password: string; mobile?: string; role?: string }) => {
-    const res = await api.register(data);
-    await checkAuthProfile();
-    return res;
-  };
-
-  const handleLogout = async () => {
-    try {
-      await api.logout();
-    } catch {}
-    setCurrentUser(null);
-    setIsLoggedIn(false);
-    setSavedPropertyIds([]);
-    setComparedPropertyIds([]);
-    localStorage.removeItem('gg_guest_saved');
-    localStorage.removeItem('gg_guest_compared');
-  };
-
-  // Property Actions
-  const handleAddProperty = async (propData: Partial<Property>): Promise<Property> => {
-    const created = await api.createProperty(propData);
-    await fetchProperties();
-    return created;
-  };
-
-  const handleUpdateProperty = async (id: string, updates: Partial<Property>): Promise<Property> => {
-    const updated = await api.updateProperty(id, updates);
-    await fetchProperties();
-    return updated;
-  };
-
-  const handleDeleteProperty = async (id: string): Promise<void> => {
-    await api.deleteProperty(id);
-    await fetchProperties();
-  };
-
-  const handleUpdatePropertyStatus = async (id: string, status: ListingStatus): Promise<Property> => {
-    const updated = await api.updatePropertyStatus(id, status);
-    await fetchProperties();
-    return updated;
-  };
-
-  // Favorites Handler
-  const handleToggleSaveProperty = async (id: string) => {
-    const isSaved = savedPropertyIds.includes(id);
-    const updatedIds = isSaved ? savedPropertyIds.filter((pId) => pId !== id) : [...savedPropertyIds, id];
-    setSavedPropertyIds(updatedIds);
-
-    if (isLoggedIn) {
-      try {
-        await api.toggleFavorite(id);
-      } catch (err) {
-        console.warn('Failed to sync favorite to server:', err);
+    toggleSaveProperty: async (id: string) => {
+      dispatch(toggleSaveRedux(id));
+      if (currentUser) {
+        try {
+          await api.toggleFavorite(id);
+        } catch {}
       }
-    } else {
-      try {
-        localStorage.setItem('gg_guest_saved', JSON.stringify(updatedIds));
-      } catch {}
-    }
-  };
-
-  // Compare Handler
-  const handleToggleCompareProperty = async (id: string) => {
-    const isCompared = comparedPropertyIds.includes(id);
-    let updatedIds: string[];
-    if (isCompared) {
-      updatedIds = comparedPropertyIds.filter((pId) => pId !== id);
-    } else {
-      if (comparedPropertyIds.length >= 4) {
-        throw new Error('Maximum 4 properties can be compared simultaneously.');
+    },
+    toggleCompareProperty: async (id: string) => {
+      dispatch(toggleCompareRedux(id));
+      if (currentUser) {
+        try {
+          await api.updateComparison([...comparedPropertyIds, id]);
+        } catch {}
       }
-      updatedIds = [...comparedPropertyIds, id];
-    }
-    setComparedPropertyIds(updatedIds);
+    },
+    clearFavorites: async () => {
+      dispatch(clearSavedRedux());
+    },
+    clearComparison: async () => {
+      dispatch(clearComparedRedux());
+    },
 
-    if (isLoggedIn) {
-      try {
-        await api.updateComparison(updatedIds);
-      } catch (err) {
-        console.warn('Failed to sync comparison to server:', err);
-      }
-    } else {
-      try {
-        localStorage.setItem('gg_guest_compared', JSON.stringify(updatedIds));
-      } catch {}
-    }
+    addLead: async (lead) => createLeadMutation.mutateAsync(lead),
+    updateLeadStage: async (id, stage) => updateLeadStageMutation.mutateAsync({ id, stage }),
+    assignLead: async (id, employeeId) => {
+      const updated = await api.assignLead(id, employeeId);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.leads.all });
+      return updated;
+    },
+    scheduleSiteVisit: async (visit) => createSiteVisitMutation.mutateAsync(visit),
+    createBooking: async (bkg) => createBookingMutation.mutateAsync(bkg),
+    submitEnquiry: async (enquiry) => api.createEnquiry(enquiry),
+
+    resetDemoData: () => {},
   };
 
-  const handleClearFavorites = async () => {
-    setSavedPropertyIds([]);
-    localStorage.removeItem('gg_guest_saved');
-  };
-
-  const handleClearComparison = async () => {
-    setComparedPropertyIds([]);
-    localStorage.removeItem('gg_guest_compared');
-    if (isLoggedIn) {
-      try {
-        await api.updateComparison([]);
-      } catch {}
-    }
-  };
-
-  // CRM Actions
-  const handleAddLead = async (leadData: Partial<Lead>): Promise<Lead> => {
-    const created = await api.createLead(leadData);
-    setLeads((prev) => [created, ...prev]);
-    return created;
-  };
-
-  const handleUpdateLeadStage = async (leadId: string, stage: LeadStage): Promise<Lead> => {
-    const updated = await api.updateLeadStage(leadId, stage);
-    setLeads((prev) => prev.map((l) => (l.id === leadId ? updated : l)));
-    return updated;
-  };
-
-  const handleAssignLead = async (leadId: string, employeeId: string): Promise<Lead> => {
-    const updated = await api.assignLead(leadId, employeeId);
-    setLeads((prev) => prev.map((l) => (l.id === leadId ? updated : l)));
-    return updated;
-  };
-
-  const handleScheduleSiteVisit = async (visitData: Partial<SiteVisit>): Promise<SiteVisit> => {
-    const created = await api.scheduleSiteVisit(visitData);
-    setSiteVisits((prev) => [created, ...prev]);
-    return created;
-  };
-
-  const handleCreateBooking = async (bookingData: Partial<Booking>): Promise<Booking> => {
-    const created = await api.createBooking(bookingData);
-    setBookings((prev) => [created, ...prev]);
-    await fetchProperties();
-    return created;
-  };
-
-  const handleSubmitEnquiry = async (data: any) => {
-    const res = await api.createEnquiry(data);
-    await fetchAncillaryData();
-    return res;
-  };
-
-  // Reversible, safe no-op for backward compatibility
-  const resetDemoData = () => {
-    console.info('resetDemoData called: In production API mode, sample state reset is disabled.');
-  };
-
-  const contextValue = useMemo<AppStateContextType>(
-    () => ({
-      properties,
-      developers,
-      projects,
-      employees,
-      customers,
-      leads,
-      siteVisits,
-      bookings,
-      activities,
-      notifications,
-      currentUser,
-      isLoggedIn,
-      userRole: currentUser?.role || 'buyer',
-      savedPropertyIds,
-      comparedPropertyIds,
-      savedProperties,
-      comparedProperties,
-      unreadNotificationCount,
-      isLoadingProperties,
-      propertiesError,
-      isBackendConnected,
-      masters,
-      webContent,
-      refreshMasters: fetchMasters,
-      refreshWebContent: fetchWebContent,
-      refreshProperties: fetchProperties,
-      refreshAll,
-      login: handleLogin,
-      register: handleRegister,
-      logout: handleLogout,
-      addProperty: handleAddProperty,
-      updateProperty: handleUpdateProperty,
-      deleteProperty: handleDeleteProperty,
-      updatePropertyStatus: handleUpdatePropertyStatus,
-      getPropertyById,
-      toggleSaveProperty: handleToggleSaveProperty,
-      toggleCompareProperty: handleToggleCompareProperty,
-      clearFavorites: handleClearFavorites,
-      clearComparison: handleClearComparison,
-      addLead: handleAddLead,
-      updateLeadStage: handleUpdateLeadStage,
-      assignLead: handleAssignLead,
-      scheduleSiteVisit: handleScheduleSiteVisit,
-      createBooking: handleCreateBooking,
-      submitEnquiry: handleSubmitEnquiry,
-      resetDemoData,
-    }),
-    [
-      properties,
-      developers,
-      projects,
-      employees,
-      customers,
-      leads,
-      siteVisits,
-      bookings,
-      activities,
-      notifications,
-      currentUser,
-      isLoggedIn,
-      savedPropertyIds,
-      comparedPropertyIds,
-      savedProperties,
-      comparedProperties,
-      unreadNotificationCount,
-      isLoadingProperties,
-      propertiesError,
-      isBackendConnected,
-      fetchProperties,
-      refreshAll,
-      getPropertyById,
-      masters,
-      webContent,
-      fetchMasters,
-      fetchWebContent,
-    ]
-  );
-
-  return <AppStateContext.Provider value={contextValue}>{children}</AppStateContext.Provider>;
+  return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 };
 
 export const useAppState = (): AppStateContextType => {
@@ -542,7 +334,4 @@ export const useAppState = (): AppStateContextType => {
   return context;
 };
 
-// Also export useDemoState alias for seamless backward compatibility during transition
 export const useDemoState = useAppState;
-export const DemoStateProvider = AppStateProvider;
-

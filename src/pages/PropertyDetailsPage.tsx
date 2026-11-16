@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Property, LanguageCode } from '../types/property';
 import { formatPriceINR, formatArea } from '../utils/propertyUtils';
+import { resolveImageUrl, resolvePropertyImages, handleImageError, DEFAULT_PROPERTY_FALLBACK_IMAGE } from '../utils/imageUrl';
 import { translations } from '../i18n/translations';
 import { Badge } from '../components/common/Badge';
 import { PropertyCard } from '../components/property/PropertyCard';
@@ -27,6 +28,10 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import PrintIcon from '@mui/icons-material/Print';
 import DescriptionIcon from '@mui/icons-material/Description';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import ViewInArIcon from '@mui/icons-material/ViewInAr';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import { PropertyDetailMap } from '../components/map/PropertyDetailMap';
 
 interface PropertyDetailsPageProps {
   property: Property;
@@ -58,6 +63,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
   onOpenEnquiry
 }) => {
   const t = translations[lang];
+  const propId = property.id || property.referenceId || (property as any)._id?.toString() || '';
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showShareToast, setShowShareToast] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -66,13 +72,11 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
   const title = lang === 'ta' && property.tamilTitle ? property.tamilTitle : property.title;
   const description = lang === 'ta' && property.tamilDescription ? property.tamilDescription : property.description;
 
-  const images = property.images && property.images.length > 0
-    ? property.images
-    : ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80'];
+  const images = resolvePropertyImages(property.images);
 
   useEffect(() => {
     setSelectedImageIndex(0);
-  }, [property.id]);
+  }, [propId]);
 
   useEffect(() => {
     if (!isLightboxOpen) return;
@@ -91,13 +95,27 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
     setTimeout(() => setShowShareToast(false), 3000);
   };
 
+  const videoData = React.useMemo(() => {
+    const rawUrl = property.videoUrl || property.videos?.[0];
+    if (!rawUrl) return null;
+    const ytMatch = rawUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+    if (ytMatch) {
+      return { type: 'youtube', embedUrl: `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?rel=0` };
+    }
+    const vimeoMatch = rawUrl.match(/(?:vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/[^\/]*\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+))/i);
+    if (vimeoMatch) {
+      return { type: 'vimeo', embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?dnt=1` };
+    }
+    return { type: 'direct', embedUrl: rawUrl };
+  }, [property.videoUrl, property.videos]);
+
   // Similar properties in same category or district
   const similarProperties = allProperties
-    .filter(p => p.id !== property.id && (p.district === property.district || p.category === property.category))
+    .filter(p => (p.id || p.referenceId) !== propId && (p.district === property.district || p.category === property.category))
     .slice(0, 3);
 
   return (
-    <div className="bg-[#FAF8F2] min-h-screen pb-16">
+    <div className="bg-[#FAF8F2] min-h-screen pb-28 lg:pb-16">
       
       {/* Toast Notification */}
       {showShareToast && (
@@ -137,7 +155,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               <ShareIcon sx={{ fontSize: 16 }} />
             </button>
             <button
-              onClick={() => onToggleCompare(property.id)}
+              onClick={() => onToggleCompare(propId)}
               className={`p-2 rounded-lg border transition-colors cursor-pointer ${
                 isCompared
                   ? 'border-[#C99325] bg-[#C99325] text-white'
@@ -149,7 +167,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               <BalanceIcon sx={{ fontSize: 16 }} />
             </button>
             <button
-              onClick={() => onToggleSave(property.id)}
+              onClick={() => onToggleSave(propId)}
               className={`p-2 rounded-lg border transition-colors cursor-pointer ${
                 isSaved
                   ? 'border-rose-500 bg-rose-50 text-rose-600'
@@ -180,8 +198,9 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               className={`relative ${images.length > 1 ? 'md:col-span-8' : ''} h-72 sm:h-96 md:h-[480px] rounded-2xl overflow-hidden bg-stone-100 cursor-zoom-in group`}
             >
               <img
-                src={images[selectedImageIndex]}
+                src={images[selectedImageIndex] || DEFAULT_PROPERTY_FALLBACK_IMAGE}
                 alt={title}
+                onError={handleImageError}
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-104"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/15 pointer-events-none" />
@@ -231,6 +250,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                       <img
                         src={img}
                         alt={`${title} view ${actualIdx + 1}`}
+                        onError={handleImageError}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-106"
                       />
                       <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors" />
@@ -279,7 +299,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                       : 'border-transparent opacity-65 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt="" onError={handleImageError} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -297,10 +317,10 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-extrabold uppercase tracking-wider text-[#C99325] bg-[#C99325]/10 px-2.5 py-0.5 rounded">
-                      {property.category.replace('-', ' ')}
+                      {property.category ? property.category.replace('-', ' ') : 'Property'}
                     </span>
                     <span className="text-xs font-bold text-[#013E18] bg-[#013E18]/10 px-2.5 py-0.5 rounded uppercase">
-                      For {property.listingType}
+                      For {property.listingType || 'Sale'}
                     </span>
                     {property.approvalAuthority && (
                       <span className="text-xs font-semibold text-stone-600 bg-stone-100 px-2 py-0.5 rounded">
@@ -397,11 +417,11 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-xs">
                 <div className="flex items-center justify-between py-2 border-b border-stone-100">
                   <span className="text-stone-500 font-medium">Listing ID:</span>
-                  <span className="font-bold text-[#18241B]">{property.id.toUpperCase()}</span>
+                  <span className="font-bold text-[#18241B]">{(propId || 'N/A').toUpperCase()}</span>
                 </div>
                 <div className="flex items-center justify-between py-2 border-b border-stone-100">
                   <span className="text-stone-500 font-medium">Property Category:</span>
-                  <span className="font-bold text-[#18241B] capitalize">{property.category.replace('-', ' ')}</span>
+                  <span className="font-bold text-[#18241B] capitalize">{property.category ? property.category.replace('-', ' ') : 'Land / Plot'}</span>
                 </div>
                 <div className="flex items-center justify-between py-2 border-b border-stone-100">
                   <span className="text-stone-500 font-medium">Ownership Verification:</span>
@@ -431,8 +451,167 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                   <span className="text-stone-500 font-medium">Electricity Supply:</span>
                   <span className="font-bold text-[#18241B]">{property.electricitySupply || 'EB 3-Phase Available'}</span>
                 </div>
+                {property.approvalNumber && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Approval Reference No:</span>
+                    <span className="font-bold text-[#18241B]">{property.approvalNumber}</span>
+                  </div>
+                )}
+                {property.plotLength && property.plotWidth && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Plot Dimensions:</span>
+                    <span className="font-bold text-[#18241B]">{property.plotLength} ft × {property.plotWidth} ft</span>
+                  </div>
+                )}
+                {property.isCornerPlot && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Corner Property:</span>
+                    <span className="font-bold text-emerald-800">Yes (Dual Road Access)</span>
+                  </div>
+                )}
+                {property.isGatedLayout && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Gated Layout:</span>
+                    <span className="font-bold text-[#013E18]">Secured Community</span>
+                  </div>
+                )}
+                {property.boundaryWall && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Boundary Wall:</span>
+                    <span className="font-bold text-[#18241B]">Constructed</span>
+                  </div>
+                )}
+                {property.carpetArea && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Carpet Area:</span>
+                    <span className="font-bold text-[#18241B]">{property.carpetArea} sq.ft</span>
+                  </div>
+                )}
+                {property.superBuiltUpArea && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Super Built-Up Area:</span>
+                    <span className="font-bold text-[#18241B]">{property.superBuiltUpArea} sq.ft</span>
+                  </div>
+                )}
+                {property.floorNumber !== undefined && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Floor Level:</span>
+                    <span className="font-bold text-[#18241B]">{property.floorNumber} / {property.totalFloors || '—'}</span>
+                  </div>
+                )}
+                {property.parkingSpaces !== undefined && property.parkingSpaces > 0 && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Car Parking:</span>
+                    <span className="font-bold text-[#18241B]">{property.parkingSpaces} ({property.parkingType || 'Covered'})</span>
+                  </div>
+                )}
+                {property.hasLift && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Elevator / Lift:</span>
+                    <span className="font-bold text-[#013E18]">Available</span>
+                  </div>
+                )}
+                {property.constructionStatus && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Construction Status:</span>
+                    <span className="font-bold text-[#18241B] capitalize">{String(property.constructionStatus).replace(/-/g, ' ')}</span>
+                  </div>
+                )}
+                {property.landUseClassification && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Land Classification:</span>
+                    <span className="font-bold text-[#18241B] capitalize">{String(property.landUseClassification).replace(/-/g, ' ')}</span>
+                  </div>
+                )}
+                {property.soilType && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Soil Type:</span>
+                    <span className="font-bold text-[#18241B]">{property.soilType}</span>
+                  </div>
+                )}
+                {property.cropType && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Standing Crops:</span>
+                    <span className="font-bold text-[#18241B]">{property.cropType}</span>
+                  </div>
+                )}
+                {property.irrigationSource && property.irrigationSource.length > 0 && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Irrigation Sources:</span>
+                    <span className="font-bold text-[#18241B]">{property.irrigationSource.join(', ')}</span>
+                  </div>
+                )}
+                {property.powerLoadKw && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Connected Power:</span>
+                    <span className="font-bold text-[#18241B]">{property.powerLoadKw} KW</span>
+                  </div>
+                )}
+                {property.deposit && property.deposit > 0 && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Security Deposit:</span>
+                    <span className="font-bold text-[#013E18]">{formatPriceINR(property.deposit, 'buy', 'Total')}</span>
+                  </div>
+                )}
+                {property.maintenanceFee && property.maintenanceFee > 0 && (
+                  <div className="flex items-center justify-between py-2 border-b border-stone-100">
+                    <span className="text-stone-500 font-medium">Maintenance:</span>
+                    <span className="font-bold text-[#18241B]">₹{property.maintenanceFee} / {property.maintenanceFrequency || 'month'}</span>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Video Tour Section (if present) */}
+            {videoData && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
+                <h2 className="text-lg font-bold text-[#18241B] mb-4 flex items-center gap-2">
+                  <VideocamIcon sx={{ fontSize: 20, color: '#013E18' }} />
+                  <span>{lang === 'ta' ? 'சொத்து வீடியோ பார்வை' : 'Property Video Tour'}</span>
+                </h2>
+                <div className="rounded-2xl overflow-hidden bg-black aspect-video w-full flex items-center justify-center">
+                  {videoData.type === 'direct' ? (
+                    <video controls playsInline preload="metadata" className="w-full h-full object-contain">
+                      <source src={videoData.embedUrl} />
+                      Your browser does not support HTML5 video.
+                    </video>
+                  ) : (
+                    <iframe
+                      src={videoData.embedUrl}
+                      title={`${property.title} Video Tour`}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Floor Plans Section (if present) */}
+            {property.floorPlans && property.floorPlans.length > 0 && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
+                <h2 className="text-lg font-bold text-[#18241B] mb-4 flex items-center gap-2">
+                  <ViewInArIcon sx={{ fontSize: 20, color: '#C99325' }} />
+                  <span>{lang === 'ta' ? 'கட்டிட வரைபடம்' : 'Architectural Floor Plans'}</span>
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {property.floorPlans.map((fp, i) => (
+                    <div key={i} className="rounded-2xl overflow-hidden border border-stone-200 bg-stone-50 p-2">
+                      <img
+                        src={resolveImageUrl(fp)}
+                        alt={`Floor Plan ${i + 1}`}
+                        onError={handleImageError}
+                        className="w-full h-64 object-contain rounded-xl bg-white"
+                      />
+                      <div className="text-xs font-semibold text-stone-600 text-center py-2">
+                        Plan {i + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Amenities Grid */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
@@ -478,38 +657,9 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               </div>
             )}
 
-            {/* Simulated Location Map Preview */}
+            {/* Interactive Leaflet + Geoapify Location & Vicinity Section */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-bold text-[#18241B] flex items-center gap-2">
-                  <LocationOnIcon sx={{ fontSize: 20, color: '#C99325' }} />
-                  <span>{t.propertyDetails.locationPreview}</span>
-                </h2>
-                <span className="text-[11px] text-stone-400">{t.propertyDetails.mapNotice}</span>
-              </div>
-
-              {/* Styled Interactive Map Mockup */}
-              <div className="relative h-64 rounded-2xl overflow-hidden border border-stone-200 bg-[#E8E2D5] flex items-center justify-center">
-                <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#013E18_1px,transparent_1px)] [background-size:16px_16px]" />
-                
-                {/* Simulated Roads & Water Bodies */}
-                <div className="absolute top-1/2 left-0 right-0 h-4 bg-stone-400/50 -rotate-6" />
-                <div className="absolute top-0 bottom-0 left-1/3 w-3 bg-stone-400/50" />
-                
-                {/* Central Pin */}
-                <div className="relative z-10 flex flex-col items-center animate-bounce">
-                  <div className="bg-[#013E18] text-[#F5F2E9] p-2 rounded-full shadow-xl border-2 border-[#C99325]">
-                    <LocationOnIcon sx={{ fontSize: 24, color: '#C99325' }} />
-                  </div>
-                  <div className="bg-white px-3 py-1 rounded-full text-xs font-black text-[#18241B] shadow-md mt-1 border border-stone-300">
-                    {property.location}, {property.district}
-                  </div>
-                </div>
-
-                <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-md text-[10px] font-semibold text-stone-600">
-                  Tamil Nadu GIS Coordinate Map Preview
-                </div>
-              </div>
+              <PropertyDetailMap property={property} lang={lang} />
             </div>
 
             {/* Estimated Monthly EMI Calculator (Pre-filled with Property Price) */}
@@ -544,7 +694,12 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                 <div className="pt-4 flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-[#013E18]/10 text-[#013E18] font-black text-base flex items-center justify-center shrink-0 border border-[#013E18]/20 overflow-hidden">
                     {property.seller.avatarUrl ? (
-                      <img src={property.seller.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      <img
+                        src={resolveImageUrl(property.seller.avatarUrl)}
+                        alt=""
+                        onError={handleImageError}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <ApartmentIcon sx={{ fontSize: 24, color: '#013E18' }} />
                     )}
@@ -573,6 +728,24 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                   </p>
                 </div>
 
+                {/* Contact Preferences & Visit Schedule */}
+                {(property.contactPreferences?.preferredTime || property.contactPreferences?.siteVisitDays?.length) && (
+                  <div className="mt-4 p-3 rounded-xl bg-stone-50 border border-stone-200/80 text-[11px] text-stone-600 space-y-1">
+                    {property.contactPreferences.preferredTime && (
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <AccessTimeIcon sx={{ fontSize: 13, color: '#013E18' }} />
+                        <span>Best Calling Hours: {property.contactPreferences.preferredTime}</span>
+                      </div>
+                    )}
+                    {property.contactPreferences.siteVisitDays && property.contactPreferences.siteVisitDays.length > 0 && (
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <CalendarMonthIcon sx={{ fontSize: 13, color: '#C99325' }} />
+                        <span>Visit Days: {property.contactPreferences.siteVisitDays.join(', ')}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Contact Buttons */}
                 <div className="mt-5 space-y-2.5">
                   <button
@@ -582,6 +755,18 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                     <CalendarMonthIcon sx={{ fontSize: 16, color: '#C99325' }} />
                     <span>{t.propertyDetails.scheduleVisit}</span>
                   </button>
+
+                  {property.contactPreferences?.allowWhatsApp !== false && property.seller?.phone && (
+                    <a
+                      href={`https://wa.me/${String(property.seller.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello, I am interested in property ${property.title} (ID: ${propId || 'N/A'}) listed on Grounds & Gates.`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-xs"
+                    >
+                      <WhatsAppIcon sx={{ fontSize: 16 }} />
+                      <span>WhatsApp Seller</span>
+                    </a>
+                  )}
 
                   <button
                     onClick={onOpenEnquiry}
@@ -633,18 +818,21 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {similarProperties.map(p => (
-                <PropertyCard
-                  key={p.id}
-                  property={p}
-                  lang={lang}
-                  isSaved={savedPropertyIds.includes(p.id)}
-                  onToggleSave={onToggleSave}
-                  isCompared={comparedPropertyIds.includes(p.id)}
-                  onToggleCompare={onToggleCompare}
-                  onSelect={onSelectProperty}
-                />
-              ))}
+              {similarProperties.map((p) => {
+                const sId = p.id || p.referenceId || (p as any)._id?.toString() || '';
+                return (
+                  <PropertyCard
+                    key={sId}
+                    property={p}
+                    lang={lang}
+                    isSaved={savedPropertyIds.includes(sId)}
+                    onToggleSave={onToggleSave}
+                    isCompared={comparedPropertyIds.includes(sId)}
+                    onToggleCompare={onToggleCompare}
+                    onSelect={onSelectProperty}
+                  />
+                );
+              })}
             </div>
           </div>
         )}
@@ -652,7 +840,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
       </div>
 
       {/* Sticky Mobile Enquiry Bar */}
-      <div className="fixed bottom-0 inset-x-0 lg:hidden z-30 bg-white/95 backdrop-blur-xl border-t border-stone-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+      <div className="fixed bottom-0 inset-x-0 lg:hidden z-30 bg-white/95 backdrop-blur-xl border-t border-stone-200 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center justify-between gap-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
         <div className="min-w-0">
           <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
             {property.negotiable ? 'Negotiable Price' : 'Direct Price'}
@@ -661,13 +849,26 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
             {formatPriceINR(property.price, property.listingType, property.priceUnit)}
           </div>
         </div>
-        <button
-          onClick={onOpenEnquiry}
-          className="px-5 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs flex items-center gap-2 shrink-0 shadow-md cursor-pointer"
-        >
-          <CalendarMonthIcon sx={{ fontSize: 16, color: '#C99325' }} />
-          <span>{t.propertyDetails.scheduleVisit}</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {property.contactPreferences?.allowWhatsApp !== false && property.seller?.phone && (
+            <a
+              href={`https://wa.me/${String(property.seller.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello, I am interested in property ${property.title} (ID: ${propId || 'N/A'}) listed on Grounds & Gates.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-xs"
+              aria-label="WhatsApp Seller"
+            >
+              <WhatsAppIcon sx={{ fontSize: 18 }} />
+            </a>
+          )}
+          <button
+            onClick={onOpenEnquiry}
+            className="px-4 py-2.5 rounded-xl bg-[#013E18] text-[#F5F2E9] hover:bg-[#00280f] font-bold text-xs flex items-center gap-1.5 shrink-0 shadow-md cursor-pointer"
+          >
+            <CalendarMonthIcon sx={{ fontSize: 16, color: '#C99325' }} />
+            <span>{t.propertyDetails.scheduleVisit}</span>
+          </button>
+        </div>
       </div>
 
       {/* Immersive Fullscreen Lightbox Modal */}
@@ -748,7 +949,7 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                         : 'border-white/20 opacity-50 hover:opacity-80'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img src={img} alt="" onError={handleImageError} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -799,7 +1000,12 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
               {/* Brochure Content */}
               <div className="p-6 sm:p-8 space-y-6 text-stone-800">
                 <div className="relative h-64 rounded-2xl overflow-hidden bg-stone-100">
-                  <img src={images[0]} alt={title} className="w-full h-full object-cover" />
+                  <img
+                    src={images[0] || DEFAULT_PROPERTY_FALLBACK_IMAGE}
+                    alt={title}
+                    onError={handleImageError}
+                    className="w-full h-full object-cover"
+                  />
                   <div className="absolute bottom-3 left-3 bg-[#013E18]/90 text-white text-xs font-bold px-3 py-1 rounded-full">
                     {formatPriceINR(property.price, property.listingType, property.priceUnit)}
                   </div>

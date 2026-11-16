@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
-import { upload } from '../../middleware/upload.middleware.js';
+import { upload, videoUpload } from '../../middleware/upload.middleware.js';
 import { authenticate } from '../../middleware/auth.middleware.js';
 import { requireRole } from '../../middleware/rbac.middleware.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
@@ -28,8 +28,30 @@ router.post('/image', authenticate, requireRole('super-admin', 'admin', 'listing
         errorResponse(res, err.message, 500);
     }
 });
+// Upload Property Video (Direct MP4, WebM, MOV upload up to 50MB)
+router.post('/video', authenticate, requireRole('super-admin', 'admin', 'listing-manager', 'sales-manager', 'seller', 'developer', 'agent'), videoUpload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            errorResponse(res, 'No video file uploaded', 400);
+            return;
+        }
+        const fileUrl = `/uploads/videos/${req.file.filename}`;
+        successResponse(res, {
+            url: fileUrl,
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            size: req.file.size,
+            mimeType: req.file.mimetype,
+            isPrivate: false,
+        }, 'Video uploaded successfully', 201);
+    }
+    catch (err) {
+        errorResponse(res, err.message, 500);
+    }
+});
 // Upload Private Legal Document (Patta, DTCP, RERA certificates, parent deeds)
-router.post('/document', authenticate, requireRole('super-admin', 'admin', 'listing-manager'), upload.single('file'), async (req, res) => {
+// Accessible to sellers/developers for verification review; strictly private from public access
+router.post('/document', authenticate, requireRole('super-admin', 'admin', 'listing-manager', 'sales-manager', 'seller', 'developer', 'agent'), upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             errorResponse(res, 'No document file uploaded', 400);
@@ -44,7 +66,7 @@ router.post('/document', authenticate, requireRole('super-admin', 'admin', 'list
             size: req.file.size,
             mimeType: req.file.mimetype,
             isPrivate: true,
-        }, 'Private legal document uploaded successfully', 201);
+        }, 'Private legal document uploaded successfully. This document is retained for administrative verification only and will not be displayed on the public listing.', 201);
     }
     catch (err) {
         errorResponse(res, err.message, 500);

@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   Box,
   Paper,
@@ -19,6 +22,15 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Logo } from '../../components/common/Logo';
 import { api } from '../../services/api';
 import { LanguageCode } from '../../types/property';
+import { resetPasswordSchema } from '../../schemas/auth.schema';
+
+const adminResetPasswordSchema = resetPasswordSchema.and(
+  z.object({
+    token: z.string().trim().min(1, 'Please provide the password reset token / மீட்டமைப்பு டோக்கனை உள்ளிடவும்'),
+  })
+);
+
+type AdminResetPasswordFormData = z.infer<typeof adminResetPasswordSchema>;
 
 interface AdminResetPasswordPageProps {
   lang: LanguageCode;
@@ -31,42 +43,36 @@ export const AdminResetPasswordPage: React.FC<AdminResetPasswordPageProps> = ({
   initialToken = '',
   onNavigate,
 }) => {
-  const [token, setToken] = useState(initialToken);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (initialToken) setToken(initialToken);
-  }, [initialToken]);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<AdminResetPasswordFormData>({
+    resolver: zodResolver(adminResetPasswordSchema),
+    defaultValues: {
+      token: initialToken,
+      password: '',
+      confirmPassword: '',
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (initialToken) setValue('token', initialToken);
+  }, [initialToken, setValue]);
+
+  const onSubmit = async (data: AdminResetPasswordFormData) => {
     setErrorMessage(null);
     setSuccessMessage(null);
-
-    if (!token.trim()) {
-      setErrorMessage(lang === 'ta' ? 'மீட்டமைப்பு டோக்கனை உள்ளிடவும்.' : 'Please provide the password reset token.');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setErrorMessage(lang === 'ta' ? 'கடவுச்சொல் குறைந்தது 6 எழுத்துகள் கொண்டதாக இருக்க வேண்டும்.' : 'Password must be at least 6 characters long.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setErrorMessage(lang === 'ta' ? 'இரு கடவுச்சொற்களும் பொருந்தவில்லை.' : 'Passwords do not match.');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      await api.resetPassword(token.trim(), newPassword);
+      await api.resetPassword(data.token.trim(), data.password);
       setSuccessMessage(
         lang === 'ta'
           ? 'கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது! உங்கள் புதிய கடவுச்சொல்லுடன் உள்நுழையலாம்.'
@@ -145,16 +151,16 @@ export const AdminResetPasswordPage: React.FC<AdminResetPasswordPageProps> = ({
             </Button>
           </Box>
         ) : (
-          <Box component="form" onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
             <Typography variant="caption" sx={{ fontWeight: 700, color: '#18241B', mb: 0.75, display: 'block' }}>
               {lang === 'ta' ? 'மீட்டமைப்பு டோக்கன்' : 'Reset Token'}
             </Typography>
             <TextField
               fullWidth
-              required
               placeholder="e.g. 4f981b2a..."
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
+              {...register('token')}
+              error={!!errors.token}
+              helperText={errors.token?.message}
               disabled={isLoading}
               slotProps={{
                 input: {
@@ -179,11 +185,11 @@ export const AdminResetPasswordPage: React.FC<AdminResetPasswordPageProps> = ({
             </Typography>
             <TextField
               fullWidth
-              required
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••••••"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              {...register('password')}
+              error={!!errors.password}
+              helperText={errors.password?.message}
               disabled={isLoading}
               slotProps={{
                 input: {
@@ -215,11 +221,11 @@ export const AdminResetPasswordPage: React.FC<AdminResetPasswordPageProps> = ({
             </Typography>
             <TextField
               fullWidth
-              required
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              {...register('confirmPassword')}
+              error={!!errors.confirmPassword}
+              helperText={errors.confirmPassword?.message}
               disabled={isLoading}
               slotProps={{
                 input: {

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { LanguageCode } from '../types/property';
 import { api } from '../services/api';
 import { useAppState } from '../context/AppStateContext';
+import { contactPageFormSchema, ContactPageFormData } from '../schemas/enquiry.schema';
 import {
   Container,
   Box,
@@ -35,34 +38,43 @@ interface ContactPageProps {
 export const ContactPage: React.FC<ContactPageProps> = ({ lang: _lang, onNavigate: _onNavigate, onShowToast }) => {
   const { masters, webContent } = useAppState();
   const contactInfo = webContent['contact_branches']?.content || {};
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    district: 'Coimbatore',
-    inquiryType: 'buying',
-    message: ''
-  });
 
   const [submitted, setSubmitted] = useState(false);
+  const [submittedUser, setSubmittedUser] = useState<{ name: string; phone: string }>({ name: '', phone: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.phone) {
-      alert('Please provide your name and contact phone number.');
-      return;
-    }
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<ContactPageFormData>({
+    resolver: zodResolver(contactPageFormSchema),
+    defaultValues: {
+      name: '',
+      phone: '',
+      email: '',
+      district: 'Coimbatore',
+      inquiryType: 'buying',
+      message: '',
+    },
+  });
 
+  const selectedInquiryType = watch('inquiryType');
+
+  const onSubmit = async (data: ContactPageFormData) => {
     setIsSubmitting(true);
     try {
       await api.createEnquiry({
         propertyId: 'prop-general',
-        fullName: formData.name,
-        phone: formData.phone,
-        email: formData.email || `${formData.phone}@lead.gg`,
-        message: `[Inquiry: ${formData.inquiryType.toUpperCase()}] [District: ${formData.district}] ${formData.message}`,
+        fullName: data.name,
+        phone: data.phone,
+        email: data.email || `${data.phone}@lead.gg`,
+        message: `[Inquiry: ${(data.inquiryType || 'general').toUpperCase()}] [District: ${data.district || 'General'}] ${data.message || ''}`,
       });
+      setSubmittedUser({ name: data.name, phone: data.phone });
       setSubmitted(true);
       if (onShowToast) {
         onShowToast('Enquiry received and registered in CRM! Our desk coordinator will reach out shortly.', 'success');
@@ -216,27 +228,27 @@ export const ContactPage: React.FC<ContactPageProps> = ({ lang: _lang, onNavigat
                   Enquiry Submitted Successfully!
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 0.5 }}>
-                  Thank you, <strong>{formData.name}</strong>. Our senior property advisor will reach out to you at <strong>{formData.phone}</strong> shortly.
+                  Thank you, <strong>{submittedUser.name}</strong>. Our senior property advisor will reach out to you at <strong>{submittedUser.phone}</strong> shortly.
                 </Typography>
               </Alert>
             ) : (
-              <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
                   <TextField
                     label="Full Name *"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    {...register('name')}
+                    error={!!errors.name}
+                    helperText={errors.name?.message}
                     placeholder="e.g. Senthil Kumar"
                     fullWidth
                     size="small"
                   />
                   <TextField
                     label="Phone Number *"
-                    required
                     type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    {...register('phone')}
+                    error={!!errors.phone}
+                    helperText={errors.phone?.message}
                     placeholder="+91 98422 00000"
                     fullWidth
                     size="small"
@@ -247,45 +259,53 @@ export const ContactPage: React.FC<ContactPageProps> = ({ lang: _lang, onNavigat
                   <TextField
                     label="Email Address"
                     type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    {...register('email')}
+                    error={!!errors.email}
+                    helperText={errors.email?.message}
                     placeholder="senthil@example.com"
                     fullWidth
                     size="small"
                   />
-                  <TextField
-                    select
-                    label="Target District / Region"
-                    value={formData.district}
-                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    fullWidth
-                    size="small"
-                  >
-                    {(masters['district'] && masters['district'].length > 0) ? (
-                      masters['district'].map(d => (
-                        <MenuItem key={d.code} value={d.name}>
-                          {d.name} {d.nameTa ? `(${d.nameTa})` : ''}
-                        </MenuItem>
-                      ))
-                    ) : (
-                      [
-                        { name: 'Coimbatore', ta: 'கோயம்புத்தூர்' },
-                        { name: 'Chennai', ta: 'சென்னை' },
-                        { name: 'Madurai', ta: 'மதுரை' },
-                        { name: 'Tiruppur', ta: 'திருப்பூர்' },
-                        { name: 'Erode', ta: 'ஈரோடு' },
-                        { name: 'Salem', ta: 'சேலம்' },
-                        { name: 'Trichy', ta: 'திருச்சிராப்பள்ளி' },
-                        { name: 'Pollachi', ta: 'பொள்ளாச்சி' },
-                        { name: 'Ooty', ta: 'ஊட்டி' },
-                        { name: 'Hosur', ta: 'ஓசூர்' },
-                      ].map(d => (
-                        <MenuItem key={d.name} value={d.name}>
-                          {d.name} ({d.ta})
-                        </MenuItem>
-                      ))
+                  <Controller
+                    name="district"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        select
+                        label="Target District / Region"
+                        {...field}
+                        error={!!errors.district}
+                        helperText={errors.district?.message}
+                        fullWidth
+                        size="small"
+                      >
+                        {(masters['district'] && masters['district'].length > 0) ? (
+                          masters['district'].map(d => (
+                            <MenuItem key={d.code} value={d.name}>
+                              {d.name} {d.nameTa ? `(${d.nameTa})` : ''}
+                            </MenuItem>
+                          ))
+                        ) : (
+                          [
+                            { name: 'Coimbatore', ta: 'கோயம்புத்தூர்' },
+                            { name: 'Chennai', ta: 'சென்னை' },
+                            { name: 'Madurai', ta: 'மதுரை' },
+                            { name: 'Tiruppur', ta: 'திருப்பூர்' },
+                            { name: 'Erode', ta: 'ஈரோடு' },
+                            { name: 'Salem', ta: 'சேலம்' },
+                            { name: 'Trichy', ta: 'திருச்சிராப்பள்ளி' },
+                            { name: 'Pollachi', ta: 'பொள்ளாச்சி' },
+                            { name: 'Ooty', ta: 'ஊட்டி' },
+                            { name: 'Hosur', ta: 'ஓசூர்' },
+                          ].map(d => (
+                            <MenuItem key={d.name} value={d.name}>
+                              {d.name} ({d.ta})
+                            </MenuItem>
+                          ))
+                        )}
+                      </TextField>
                     )}
-                  </TextField>
+                  />
                 </Box>
 
                 <Box>
@@ -303,30 +323,36 @@ export const ContactPage: React.FC<ContactPageProps> = ({ lang: _lang, onNavigat
                         key={type.id}
                         label={type.label}
                         clickable
-                        onClick={() => setFormData({ ...formData, inquiryType: type.id })}
+                        onClick={() => setValue('inquiryType', type.id, { shouldValidate: true })}
                         sx={{
-                          bgcolor: formData.inquiryType === type.id ? '#013E18' : '#FAF8F2',
-                          color: formData.inquiryType === type.id ? '#F5F2E9' : '#18241B',
+                          bgcolor: selectedInquiryType === type.id ? '#013E18' : '#FAF8F2',
+                          color: selectedInquiryType === type.id ? '#F5F2E9' : '#18241B',
                           fontWeight: 700,
                           fontSize: '0.72rem',
                           border: '1px solid',
-                          borderColor: formData.inquiryType === type.id ? '#013E18' : '#ECE7DA',
+                          borderColor: selectedInquiryType === type.id ? '#013E18' : '#ECE7DA',
                           py: 2,
                           '&:hover': {
-                            bgcolor: formData.inquiryType === type.id ? '#00280F' : '#EFEAE0',
+                            bgcolor: selectedInquiryType === type.id ? '#00280F' : '#EFEAE0',
                           },
                         }}
                       />
                     ))}
                   </Box>
+                  {errors.inquiryType && (
+                    <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                      {errors.inquiryType.message}
+                    </Typography>
+                  )}
                 </Box>
 
                 <TextField
                   label="Message / Requirement Details"
                   multiline
                   rows={3}
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  {...register('message')}
+                  error={!!errors.message}
+                  helperText={errors.message?.message}
                   placeholder="Share your budget, preferred locality, facing, or specific survey queries..."
                   fullWidth
                   size="small"

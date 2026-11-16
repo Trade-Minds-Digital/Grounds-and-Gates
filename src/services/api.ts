@@ -3,9 +3,12 @@
  * Connects React Frontend to the Express 4.x + MongoDB Backend
  */
 
-import { Property, EnquirySubmission, PropertyFilterState, ListingStatus } from '../types/property';
+import { Property, EnquirySubmission, PropertyFilterState, ListingStatus, MapMarkerItem } from '../types/property';
 import { Lead, SiteVisit, Booking, DemoNotification, Developer, Project, Employee, Customer, Activity } from '../types/demo';
 import { MasterItem, MasterGroupSummary, MasterUsageReport, WebContentSection } from '../types/masters';
+
+import { ApiError, normalizeError } from './apiClient';
+import { getCurrentFirebaseToken } from '../config/firebase';
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api/v1';
 
@@ -33,36 +36,108 @@ class ApiClient {
     return this.token;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  async getTokenAsync(forceRefresh = false): Promise<string | null> {
+    const fbToken = await getCurrentFirebaseToken(forceRefresh);
+    if (fbToken) {
+      this.token = fbToken;
+      return fbToken;
+    }
+    return this.token;
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}, isRetry = false): Promise<T> {
     const url = `${API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    const token = await this.getTokenAsync();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
 
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorMessage;
-      } catch {}
-      throw new Error(errorMessage);
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let code = `HTTP_${response.status}`;
+        let fieldErrors: Record<string, string> | undefined = undefined;
+        let details: any = undefined;
+
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+          code = errorData.code || code;
+          fieldErrors = errorData.fieldErrors || (errorData.errors && typeof errorData.errors === 'object' ? errorData.errors : undefined);
+          details = errorData.details || errorData.data;
+        } catch {}
+
+        // Single safe refresh-and-retry on expired token for idempotent queries
+        if (response.status === 401 && code === 'TOKEN_EXPIRED' && !isRetry && (options.method === 'GET' || !options.method)) {
+          const freshToken = await this.getTokenAsync(true);
+          if (freshToken) {
+            return this.request<T>(endpoint, options, true);
+          }
+        }
+
+        throw new ApiError({
+          status: response.status,
+          code,
+          message: errorMessage,
+          fieldErrors,
+          details,
+        });
+      }
+
+      const json = await response.json();
+      return json.data !== undefined ? json.data : json;
+    } catch (err: any) {
+      if (err instanceof ApiError) throw err;
+      throw normalizeError(err);
     }
-
-    const json = await response.json();
-    return json.data !== undefined ? json.data : json;
   }
 
-  // ─── Authentication ──────────────────────────────
+  // ─── Firebase Authentication & Profile Sync ──────
+  async onboarding(data: {
+    fullName: string;
+    mobile: string;
+    accountUsage?: 'buyer' | 'seller' | 'both';
+    role?: 'buyer' | 'seller';
+    address?: { street?: string; locality?: string; city?: string; district?: string; state?: string; pincode?: string };
+    sellerDetails?: any;
+    consents?: { termsAccepted: boolean; termsPolicyVersion?: string; marketingConsent?: boolean };
+    termsAccepted?: boolean;
+    marketingConsent?: boolean;
+  }) {
+    return this.request<{ user: any }>('/auth/onboarding', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async syncVerification() {
+    return this.request<{ emailVerified: boolean; email: string; message: string }>('/auth/sync-verification', {
+      method: 'POST',
+    });
+  }
+
+  async updateProfile(data: any) {
+    return this.request<{ user: any }>('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMigrationStatus(dryRun = true) {
+    return this.request<any>(`/auth/migration/status?dryRun=${dryRun}`);
+  }
+
+  // ─── Legacy / Compatibility Authentication ────────
   async login(credentials: { email: string; password: string }) {
     const res = await this.request<{ user: any; accessToken: string; refreshToken?: string }>('/auth/login', {
       method: 'POST',
@@ -117,6 +192,11 @@ class ApiClient {
     if (filters.facing && filters.facing !== 'all') params.append('facing', filters.facing);
     if (filters.featuredOnly) params.append('featuredOnly', 'true');
     if (filters.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters.nearLat !== undefined && filters.nearLat !== null) params.append('nearLat', String(filters.nearLat));
+    if (filters.nearLng !== undefined && filters.nearLng !== null) params.append('nearLng', String(filters.nearLng));
+    if (filters.radius !== undefined && filters.radius !== null) params.append('radius', String(filters.radius));
+    if (filters.bbox) params.append('bbox', filters.bbox);
+    if (filters.locationStatus && filters.locationStatus !== 'all') params.append('locationStatus', filters.locationStatus);
     params.append('page', String(page));
     params.append('limit', String(limit));
 
@@ -128,9 +208,90 @@ class ApiClient {
     return { data: res || [], pagination: (res as any)?.pagination };
   }
 
+  async getMapMarkers(filters: Partial<PropertyFilterState> = {}): Promise<MapMarkerItem[]> {
+    const params = new URLSearchParams();
+    if (filters.category && filters.category !== 'all') params.append('category', filters.category);
+    if (filters.district && filters.district !== 'All' && filters.district !== 'all') params.append('district', filters.district);
+    if (filters.listingType && filters.listingType !== 'all') params.append('listingType', filters.listingType);
+    if (filters.minPrice) params.append('minPrice', String(filters.minPrice));
+    if (filters.maxPrice) params.append('maxPrice', String(filters.maxPrice));
+    if (filters.nearLat !== undefined && filters.nearLat !== null) params.append('nearLat', String(filters.nearLat));
+    if (filters.nearLng !== undefined && filters.nearLng !== null) params.append('nearLng', String(filters.nearLng));
+    if (filters.radius !== undefined && filters.radius !== null) params.append('radius', String(filters.radius));
+    if (filters.bbox) params.append('bbox', filters.bbox);
+
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const res = await this.request<any>(`/properties/map-markers${qs}`);
+    return Array.isArray(res) ? res : ((res as any)?.data || []);
+  }
+
   async getPropertyByIdOrSlug(idOrSlug: string): Promise<Property | null> {
     try {
       return await this.request<Property>(`/properties/${idOrSlug}`);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  async getSellerProperty(idOrSlug: string): Promise<Property | null> {
+    try {
+      return await this.request<Property>(`/properties/seller/${idOrSlug}`);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  async getMySellerProperties(): Promise<Property[]> {
+    try {
+      const res = await this.request<any>('/properties/seller/mine');
+      return Array.isArray(res) ? res : ((res as any)?.data || []);
+    } catch (err) {
+      return [];
+    }
+  }
+
+  async getAdminProperty(idOrSlug: string): Promise<Property | null> {
+    try {
+      return await this.request<Property>(`/properties/admin/review/${idOrSlug}`);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  async getAdminProperties(filters: any = {}, page = 1, limit = 100): Promise<{ data: Property[]; total: number }> {
+    const params = new URLSearchParams();
+    params.append('page', String(page));
+    params.append('limit', String(limit));
+    if (filters.publishingStatus && filters.publishingStatus !== 'all') params.append('publishingStatus', filters.publishingStatus);
+    if (filters.status && filters.status !== 'all') params.append('status', filters.status);
+    if (filters.category && filters.category !== 'all') params.append('category', filters.category);
+    if (filters.district && filters.district !== 'all' && filters.district !== 'All') params.append('district', filters.district);
+    if (filters.searchQuery) params.append('searchQuery', filters.searchQuery);
+
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const res = await this.request<any>(`/properties/manage${qs}`);
+    return {
+      data: Array.isArray(res) ? res : ((res as any)?.data || []),
+      total: (res as any)?.pagination?.total || (Array.isArray(res) ? res.length : 0),
+    };
+  }
+
+  async updatePropertyPublishStatus(
+    id: string,
+    publishingStatus: 'published' | 'pending-review' | 'draft' | 'rejected' | 'archived',
+    rejectionReason?: string,
+    notes?: string
+  ): Promise<Property> {
+    return this.request<Property>(`/properties/${id}/publish-status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ publishingStatus, rejectionReason, notes }),
+    });
+  }
+
+  async getMyDraftProperty(): Promise<Property | null> {
+    try {
+      const res = await this.request<any>('/properties/drafts/mine');
+      return res || null;
     } catch (err) {
       return null;
     }
@@ -190,26 +351,25 @@ class ApiClient {
     }
   }
 
-  async getCustomers(): Promise<Customer[]> {
-    try {
-      return await this.request<Customer[]>('/customers');
-    } catch {
-      return [];
-    }
+  async getCustomers(options: { signal?: AbortSignal } = {}): Promise<Customer[]> {
+    return this.request<Customer[]>('/customers', options);
   }
 
   // ─── Leads & CRM ─────────────────────────────────
-  async getLeads(filters: { stage?: string; priority?: string; search?: string } = {}): Promise<Lead[]> {
+  async getLeads(
+    filters: { stage?: string; priority?: string; search?: string } = {},
+    options: { signal?: AbortSignal } = {}
+  ): Promise<Lead[]> {
     const params = new URLSearchParams();
     if (filters.stage && filters.stage !== 'all') params.append('stage', filters.stage);
     if (filters.priority && filters.priority !== 'all') params.append('priority', filters.priority);
     if (filters.search) params.append('search', filters.search);
     const qs = params.toString() ? `?${params.toString()}` : '';
-    return this.request<Lead[]>(`/leads${qs}`);
+    return this.request<Lead[]>(`/leads${qs}`, options);
   }
 
-  async getLeadById(id: string): Promise<Lead> {
-    return this.request<Lead>(`/leads/${id}`);
+  async getLeadById(id: string, options: { signal?: AbortSignal } = {}): Promise<Lead> {
+    return this.request<Lead>(`/leads/${id}`, options);
   }
 
   async createLead(leadData: Partial<Lead>): Promise<Lead> {
@@ -258,12 +418,15 @@ class ApiClient {
   }
 
   // ─── Site Visits ─────────────────────────────────
-  async getSiteVisits(filters: { status?: string; date?: string } = {}): Promise<SiteVisit[]> {
+  async getSiteVisits(
+    filters: { status?: string; date?: string } = {},
+    options: { signal?: AbortSignal } = {}
+  ): Promise<SiteVisit[]> {
     const params = new URLSearchParams();
     if (filters.status && filters.status !== 'all') params.append('status', filters.status);
     if (filters.date) params.append('date', filters.date);
     const qs = params.toString() ? `?${params.toString()}` : '';
-    return this.request<SiteVisit[]>(`/site-visits${qs}`);
+    return this.request<SiteVisit[]>(`/site-visits${qs}`, options);
   }
 
   async scheduleSiteVisit(visitData: Partial<SiteVisit>): Promise<SiteVisit> {
@@ -285,11 +448,14 @@ class ApiClient {
   }
 
   // ─── Bookings ────────────────────────────────────
-  async getBookings(filters: { status?: string } = {}): Promise<Booking[]> {
+  async getBookings(
+    filters: { status?: string } = {},
+    options: { signal?: AbortSignal } = {}
+  ): Promise<Booking[]> {
     const params = new URLSearchParams();
     if (filters.status && filters.status !== 'all') params.append('status', filters.status);
     const qs = params.toString() ? `?${params.toString()}` : '';
-    return this.request<Booking[]>(`/bookings${qs}`);
+    return this.request<Booking[]>(`/bookings${qs}`, options);
   }
 
   async createBooking(bookingData: Partial<Booking>): Promise<Booking> {
@@ -307,8 +473,12 @@ class ApiClient {
   }
 
   // ─── Dashboard Analytics ─────────────────────────
-  async getDashboardAnalytics() {
-    return this.request<any>('/analytics/dashboard');
+  async getDashboardAnalytics(params?: { dateRange?: string; includeSample?: boolean }) {
+    const q = new URLSearchParams();
+    if (params?.dateRange) q.append('dateRange', params.dateRange);
+    if (params?.includeSample !== undefined) q.append('includeSample', String(params.includeSample));
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return this.request<any>(`/analytics/dashboard${qs}`);
   }
 
   // ─── Notifications ───────────────────────────────
@@ -347,7 +517,7 @@ class ApiClient {
     });
   }
 
-  // ─── Media Upload ────────────────────────────────
+  // ─── Media & Document Upload ──────────────────────
   async uploadMedia(file: File): Promise<{ url: string; filename: string; originalName: string }> {
     const formData = new FormData();
     formData.append('file', file);
@@ -357,14 +527,63 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(`${API_BASE}/upload`, {
+    const response = await fetch(`${API_BASE}/upload/image`, {
       method: 'POST',
       headers,
       body: formData,
     });
 
     if (!response.ok) {
-      throw new Error(`Media upload failed: ${response.statusText}`);
+      const errJson = await response.json().catch(() => null);
+      throw new Error(errJson?.message || `Image upload failed: ${response.statusText}`);
+    }
+
+    const json = await response.json();
+    return json.data || json;
+  }
+
+  async uploadVideo(file: File): Promise<{ url: string; filename: string; originalName: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE}/upload/video`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => null);
+      throw new Error(errJson?.message || `Video upload failed: ${response.statusText}`);
+    }
+
+    const json = await response.json();
+    return json.data || json;
+  }
+
+  async uploadDocument(file: File): Promise<{ url: string; filename: string; originalName: string; isPrivate: boolean }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE}/upload/document`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => null);
+      throw new Error(errJson?.message || `Document upload failed: ${response.statusText}`);
     }
 
     const json = await response.json();
@@ -386,8 +605,8 @@ class ApiClient {
     });
   }
 
-  async getStaffUsers() {
-    return this.request<any[]>('/auth/users');
+  async getStaffUsers(options: { signal?: AbortSignal } = {}) {
+    return this.request<any[]>('/auth/users', options);
   }
 
   async createStaffUser(data: { fullName: string; email: string; password: string; mobile: string; role: string }) {
@@ -419,10 +638,10 @@ class ApiClient {
   }
 
   // ─── Tasks & Follow-ups ───────────────────────────
-  async getTasks(filters: Record<string, string> = {}) {
+  async getTasks(filters: Record<string, string> = {}, options: { signal?: AbortSignal } = {}) {
     const params = new URLSearchParams(filters);
     const qs = params.toString() ? `?${params.toString()}` : '';
-    return this.request<any[]>(`/tasks${qs}`);
+    return this.request<any[]>(`/tasks${qs}`, options);
   }
 
   async createTask(taskData: any) {
@@ -446,15 +665,15 @@ class ApiClient {
   }
 
   // ─── Audit Logs ──────────────────────────────────
-  async getAuditLogs(filters: Record<string, string> = {}) {
+  async getAuditLogs(filters: Record<string, string> = {}, options: { signal?: AbortSignal } = {}) {
     const params = new URLSearchParams(filters);
     const qs = params.toString() ? `?${params.toString()}` : '';
-    return this.request<any[]>(`/audit-logs${qs}`);
+    return this.request<any[]>(`/audit-logs${qs}`, options);
   }
 
   // ─── System Settings ─────────────────────────────
-  async getSettings() {
-    return this.request<Record<string, any>>('/settings');
+  async getSettings(options: { signal?: AbortSignal } = {}) {
+    return this.request<Record<string, any>>('/settings', options);
   }
 
   async updateSettings(settings: Record<string, any>) {
@@ -465,8 +684,8 @@ class ApiClient {
   }
 
   // ─── Reports & Exports ───────────────────────────
-  async getReportsSummary() {
-    return this.request<any>('/reports/summary');
+  async getReportsSummary(options: { signal?: AbortSignal } = {}) {
+    return this.request<any>('/reports/summary', options);
   }
 
   async checkDuplicateLead(email: string, phone: string) {
